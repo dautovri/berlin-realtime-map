@@ -1,0 +1,12 @@
+# Appfile for BerlinTransportMap
+
+app_identifier(ENV["APP_IDENTIFIER"] || "com.dautov.berlintransportmap")
+
+# Prefer App Store Connect API Key auth. Apple ID is optional (only needed for some actions).
+apple_id(ENV["APPLE_ID"]) if ENV["APPLE_ID"]
+
+# Developer Portal Team ID
+team_id(ENV["TEAM_ID"]) if ENV["TEAM_ID"]
+
+# App Store Connect Team ID (numeric). Optional.
+itc_team_id(ENV["ITC_TEAM_ID"]) if ENV["ITC_TEAM_ID"]

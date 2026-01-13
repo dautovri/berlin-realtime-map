@@ -1,0 +1,40 @@
+# Deliverfile for Berlin Transport Map
+# Configure metadata and screenshots upload
+
+# App identifier
+app_identifier "com.dautov.berlintransportmap"
+
+# Metadata path
+metadata_path "./fastlane/metadata"
+
+# Screenshots path  
+screenshots_path "./fastlane/screenshots"
+
+# Skip binary upload in deliver (use upload_to_app_store action instead)
+skip_binary_upload true
+
+# Don't set price tier via fastlane (use App Store Connect web UI instead)
+# price_tier 0
+
+# Automatic release after approval
+automatic_release false
+
+# Submit for review automatically
+submit_for_review false
+
+# Overwrite screenshots when uploading new ones
+overwrite_screenshots true
+
+# Precheck settings
+precheck_include_in_app_purchases false
+run_precheck_before_submit false
+
+# App uses standard HTTPS encryption only (no custom encryption)
+submission_information({
+  add_id_info_uses_idfa: false,
+  export_compliance_uses_encryption: false,
+  export_compliance_encryption_updated: false
+})
+
+# Force - skip confirmation prompts
+force true

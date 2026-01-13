@@ -1,0 +1,5 @@
+• Erste Veröffentlichung
+• Echtzeit-Fahrzeugverfolgung für den gesamten BVG-Nahverkehr
+• Schöne Kartenoberfläche
+• Live U-Bahn, S-Bahn, Tram und Bus Positionen
+• Flüssige Animationen und modernes Design

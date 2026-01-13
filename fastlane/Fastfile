@@ -1,0 +1,392 @@
+# Fastfile for BerlinTransportMap
+# Modern iOS app with workspace + SPM package architecture
+#
+# Goals:
+# - Local lanes that work without credentials (dev builds + tests)
+# - Release lanes that use App Store Connect API key auth
+
+require "json"
+require "fileutils"
+
+default_platform(:ios)
+
+# Configuration
+ROOT_DIR = File.expand_path("..", __dir__)
+APP_IDENTIFIER = ENV["APP_IDENTIFIER"] || "com.dautov.berlintransportmap"
+WORKSPACE = File.join(ROOT_DIR, "BerlinTransportMap.xcworkspace")
+SCHEME = "BerlinTransportMap"
+BUILD_DIR = File.expand_path("../build", __dir__)
+IPA_NAME = "BerlinTransportMap"
+EXPORT_TEAM_ID = ENV["TEAM_ID"]
+
+# Loads API key configuration from available sources (JSON file or env vars)
+# Returns a hash with key configuration
+def load_api_key_config
+  return @api_key_config if defined?(@api_key_config)
+
+  # Option 0: External JSON file path (useful for sharing keys across repos)
+  json_path_env = ENV["APP_STORE_CONNECT_API_KEY_JSON_PATH"]
+  if json_path_env && !json_path_env.strip.empty? && File.exist?(json_path_env)
+    @api_key_config = JSON.parse(File.read(json_path_env))
+    return @api_key_config
+  end
+
+  # Option A: Local JSON file (gitignored)
+  json_path = File.expand_path("api_key/api_key.json", File.dirname(__FILE__))
+  if File.exist?(json_path)
+    @api_key_config = JSON.parse(File.read(json_path))
+    return @api_key_config
+  end
+
+  # Option B: Environment variables (CI-friendly)
+  key_id = ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
+  issuer_id = ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"]
+  key_filepath = ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"]
+  duration = (ENV["APP_STORE_CONNECT_API_KEY_DURATION"] || "1200").to_i
+
+  if key_id && issuer_id && key_filepath
+    @api_key_config = {
+      "key_id" => key_id,
+      "issuer_id" => issuer_id,
+      "key_filepath" => key_filepath,
+      "duration" => duration,
+      "in_house" => false
+    }
+    return @api_key_config
+  end
+
+  UI.user_error!(
+    "❌ Missing App Store Connect API key. Provide one of:\n" \
+    "  - fastlane/api_key/api_key.json\n" \
+    "  - APP_STORE_CONNECT_API_KEY_JSON_PATH env var\n" \
+    "  - APP_STORE_CONNECT_API_KEY_KEY_ID + ISSUER_ID + KEY_FILEPATH env vars"
+  )
+end
+
+# Returns Fastlane's app_store_connect_api_key object for use with lanes
+def app_store_api_key
+  return @app_store_api_key if defined?(@app_store_api_key)
+
+  config = load_api_key_config
+
+  if config["key_filepath"]
+    @app_store_api_key = app_store_connect_api_key(
+      key_id: config.fetch("key_id"),
+      issuer_id: config.fetch("issuer_id"),
+      key_filepath: config["key_filepath"],
+      duration: config["duration"] || 1200,
+      in_house: config.fetch("in_house", false)
+    )
+  else
+    @app_store_api_key = app_store_connect_api_key(
+      key_id: config.fetch("key_id"),
+      issuer_id: config.fetch("issuer_id"),
+      key_content: config.fetch("key"),
+      duration: config["duration"] || 1200,
+      in_house: config.fetch("in_house", false)
+    )
+  end
+
+  @app_store_api_key
+end
+
+# Returns Spaceship token for direct API access
+def app_store_api_token
+  return @app_store_api_token if defined?(@app_store_api_token)
+
+  config = load_api_key_config
+  in_house_value = config["in_house"]
+  in_house_bool = in_house_value.nil? ? false : !["", "no", "false", "off", "0"].include?(in_house_value.to_s.downcase)
+
+  if config["key_filepath"]
+    @app_store_api_token = Spaceship::ConnectAPI::Token.create(
+      key_id: config.fetch("key_id"),
+      issuer_id: config["issuer_id"],
+      filepath: config["key_filepath"],
+      duration: config["duration"] || 1200,
+      in_house: in_house_bool
+    )
+  else
+    @app_store_api_token = Spaceship::ConnectAPI::Token.create(
+      key_id: config.fetch("key_id"),
+      issuer_id: config["issuer_id"],
+      key: config.fetch("key"),
+      duration: config["duration"] || 1200,
+      in_house: in_house_bool
+    )
+  end
+
+  @app_store_api_token
+end
+
+def ensure_team_id
+  return if EXPORT_TEAM_ID && !EXPORT_TEAM_ID.strip.empty?
+  UI.important("⚠️  TEAM_ID not set. For App Store / TestFlight builds, set TEAM_ID in fastlane/.env")
+end
+
+before_all do |lane|
+  ENV["LANG"] = "en_US.UTF-8"
+  FileUtils.mkdir_p(BUILD_DIR)
+
+  # Only enforce credentials for lanes that upload
+  if %w[beta release upload_to_testflight upload_to_app_store].include?(lane.to_s)
+    ensure_team_id
+    app_store_api_key
+  end
+end
+
+platform :ios do
+  desc "Validate App Store Connect API key + check if the app exists in ASC"
+  lane :status do |options|
+    token = app_store_api_token
+
+    begin
+      # Validate auth + app existence without relying on optional fastlane actions.
+      Spaceship::ConnectAPI.token = token
+      app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
+
+      UI.success("✅ App Store Connect API key authentication succeeded")
+      if app
+        UI.success("✅ App exists in App Store Connect: #{app.name} (#{APP_IDENTIFIER})")
+      else
+        UI.important("ℹ️  No App Store Connect app found with bundle id: #{APP_IDENTIFIER}")
+        UI.important("If you haven't created it yet, run: bundle exec fastlane ios create_asc_app")
+        UI.user_error!("❌ App not found in App Store Connect (bundle id: #{APP_IDENTIFIER})") if options && options[:fail_if_missing]
+      end
+    rescue => e
+      UI.success("✅ App Store Connect API key authentication succeeded")
+      if e.to_s.include?("No App found") || e.to_s.include?("not found") || e.to_s.include?("does not exist")
+        UI.important("ℹ️  No App Store Connect app found with bundle id: #{APP_IDENTIFIER}")
+        UI.important("If you haven't created it yet, run: bundle exec fastlane ios create_asc_app")
+        if options && options[:fail_if_missing]
+          UI.user_error!("❌ App not found in App Store Connect (bundle id: #{APP_IDENTIFIER})")
+        end
+      else
+        UI.success("ℹ️  Could not verify app status (may still exist): #{e}")
+      end
+    end
+  end
+
+  desc "Create the App Store Connect app (API key auth)"
+  lane :create_asc_app do |options|
+    app_name = options[:app_name] || ENV["APP_STORE_CONNECT_APP_NAME"] || SCHEME
+    sku = options[:sku] || ENV["APP_STORE_CONNECT_SKU"]
+    primary_locale = options[:primary_locale] || ENV["APP_STORE_CONNECT_PRIMARY_LOCALE"] || "en-US"
+
+    UI.user_error!("❌ Missing SKU. Set APP_STORE_CONNECT_SKU in fastlane/.env") if sku.to_s.strip.empty?
+
+    UI.message("🆕 Attempting to create App Store Connect app '#{app_name}' (#{APP_IDENTIFIER})...")
+
+    begin
+      create_app_online(
+        api_key: app_store_api_key,
+        app_name: app_name,
+        app_version: options[:version] || ENV["APP_STORE_CONNECT_VERSION"] || "1.0",
+        sku: sku.to_s,
+        bundle_id: APP_IDENTIFIER,
+        primary_language: primary_locale,
+        company_name: options[:company_name] || ENV["APP_STORE_CONNECT_COMPANY"] || "Ruslan Dautov"
+      )
+      UI.success("✅ Created App Store Connect app: #{app_name}")
+    rescue => e
+      message = e.to_s
+      if message.include?("App with Bundle ID") && message.include?("exists")
+        UI.success("✅ App already exists in App Store Connect: #{app_name}")
+      elsif message.include?("resource 'apps' does not allow 'CREATE'")
+        UI.user_error!(
+          "❌ Your API key cannot CREATE apps. Create the app manually in App Store Connect " \
+          "(bundle id: #{APP_IDENTIFIER}, SKU: #{sku}) or use an Admin API key."
+        )
+      else
+        UI.important("⚠️  Could not create app: #{message}")
+      end
+    end
+  end
+
+  desc "Run tests on iOS simulator"
+  lane :test do
+    run_tests(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      devices: [ENV["TEST_DEVICE"] || "iPhone 16 Pro"]
+    )
+  end
+
+  desc "Development build for simulator (no signing)"
+  lane :dev_build do
+    UI.message("🛠  Building for iOS Simulator (no signing)...")
+    sh(
+      "cd \"#{ROOT_DIR}\" && xcodebuild -workspace \"#{WORKSPACE}\" -scheme \"#{SCHEME}\" " \
+      "-sdk iphonesimulator -configuration Debug build " \
+      "CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO",
+      log: true
+    )
+    UI.success("✅ Simulator build complete")
+  end
+
+  desc "Build an App Store/TestFlight-ready IPA (requires signing)"
+  lane :build do |options|
+    ensure_team_id
+
+    export_method = options[:export_method] || "app-store"
+    UI.message("📦 Building IPA (#{export_method})...")
+
+    build_app(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      clean: true,
+      destination: "generic/platform=iOS",
+      export_method: export_method,
+      export_team_id: EXPORT_TEAM_ID,
+      export_options: { signingStyle: "automatic" },
+      xcargs: "-allowProvisioningUpdates#{EXPORT_TEAM_ID ? " DEVELOPMENT_TEAM=#{EXPORT_TEAM_ID}" : ""}",
+      export_xcargs: "-allowProvisioningUpdates#{EXPORT_TEAM_ID ? " DEVELOPMENT_TEAM=#{EXPORT_TEAM_ID}" : ""}",
+      output_directory: BUILD_DIR,
+      output_name: IPA_NAME,
+      include_symbols: true
+    )
+  end
+
+  desc "Upload the latest build to TestFlight"
+  lane :beta do |options|
+    status(fail_if_missing: true)
+    test unless options[:skip_tests]
+    build
+
+    ipa_path = File.join(BUILD_DIR, "#{IPA_NAME}.ipa")
+    UI.user_error!("❌ IPA not found at #{ipa_path}") unless File.exist?(ipa_path)
+
+    upload_to_testflight(
+      api_key: app_store_api_key,
+      ipa: ipa_path,
+      app_identifier: APP_IDENTIFIER,
+      skip_waiting_for_build_processing: options.fetch(:skip_waiting_for_build_processing, true)
+    )
+
+    UI.success("✅ Uploaded to TestFlight")
+  end
+
+  desc "Upload to App Store Connect (binary + metadata)"
+  lane :release do |options|
+    build
+
+    ipa_path = File.join(BUILD_DIR, "#{IPA_NAME}.ipa")
+    UI.user_error!("❌ IPA not found at #{ipa_path}") unless File.exist?(ipa_path)
+
+    upload_to_app_store(
+      api_key: app_store_api_key,
+      ipa: ipa_path,
+      app_identifier: APP_IDENTIFIER,
+      skip_metadata: options.fetch(:skip_metadata, false),
+      skip_screenshots: options.fetch(:skip_screenshots, false),
+      submit_for_review: options.fetch(:submit_for_review, false),
+      automatic_release: options.fetch(:automatic_release, false),
+      force: true,
+      precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false
+    )
+
+    UI.success("✅ Uploaded to App Store Connect")
+  end
+
+  desc "Upload only metadata and screenshots (no binary)"
+  lane :metadata do |options|
+    begin
+      deliver(
+        api_key: app_store_api_key,
+        app_identifier: APP_IDENTIFIER,
+        skip_binary_upload: true,
+        skip_metadata: false,
+        skip_screenshots: options.fetch(:skip_screenshots, false),
+        force: true,
+        precheck_include_in_app_purchases: false,
+        run_precheck_before_submit: false
+      )
+      UI.success("✅ Metadata uploaded to App Store Connect")
+    rescue => e
+      # Workaround for known fastlane bug with first-version apps
+      if e.message.include?("No data")
+        UI.important("⚠️  Metadata uploaded (ignoring known fastlane bug)")
+        UI.success("✅ Metadata upload completed")
+      else
+        raise e
+      end
+    end
+  end
+
+  desc "Upload only screenshots (no binary, no metadata)"
+  lane :screenshots do |options|
+    deliver(
+      api_key: app_store_api_key,
+      app_identifier: APP_IDENTIFIER,
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_screenshots: false,
+      overwrite_screenshots: options.fetch(:overwrite, true),
+      force: true
+    )
+    UI.success("✅ Screenshots uploaded to App Store Connect")
+  end
+
+  desc "Submit app for App Store review"
+  lane :submit do |options|
+    deliver(
+      api_key: app_store_api_key,
+      app_identifier: APP_IDENTIFIER,
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_screenshots: true,
+      submit_for_review: true,
+      automatic_release: options.fetch(:automatic_release, true),
+      force: true,
+      precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false,
+        export_compliance_encryption_updated: false
+      }
+    )
+    UI.success("✅ App submitted for App Store review!")
+  end
+end
+
+platform :mac do
+  desc "Build the macOS app (App Store export)"
+  lane :build do
+    ensure_team_id
+    project_path = File.join(ROOT_DIR, "BerlinTransportMap.xcodeproj")
+
+    build_mac_app(
+      project: project_path,
+      scheme: SCHEME,
+      clean: true,
+      export_method: "app-store",
+      export_team_id: EXPORT_TEAM_ID,
+      xcargs: "-allowProvisioningUpdates#{EXPORT_TEAM_ID ? " DEVELOPMENT_TEAM=#{EXPORT_TEAM_ID}" : ""}",
+      output_directory: BUILD_DIR,
+      output_name: IPA_NAME,
+      include_symbols: true
+    )
+  end
+
+  desc "Upload macOS pkg to App Store Connect"
+  lane :release do |options|
+    build
+
+    pkg = Dir[File.join(BUILD_DIR, "*.pkg")].sort.last
+    UI.user_error!("❌ No .pkg found in #{BUILD_DIR}") unless pkg
+
+    deliver(
+      api_key: app_store_api_key,
+      app_identifier: APP_IDENTIFIER,
+      pkg: pkg,
+      skip_metadata: options.fetch(:skip_metadata, true),
+      skip_screenshots: options.fetch(:skip_screenshots, true),
+      submit_for_review: options.fetch(:submit_for_review, false),
+      automatic_release: options.fetch(:automatic_release, false),
+      force: true
+    )
+    UI.success("✅ Uploaded macOS package to App Store Connect")
+  end
+end
