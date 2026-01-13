@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8B41F6852DEDD25C001A66F9 /* BerlinTransportMapFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* BerlinTransportMapFeature */; };
+		8B41F6852DEDD25C001A66F9 /* TripKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* TripKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8B41F6852DEDD25C001A66F9 /* BerlinTransportMapFeature in Frameworks */,
+				8B41F6852DEDD25C001A66F9 /* TripKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,7 +78,7 @@
 			);
 			name = BerlinTransportMap;
 			packageProductDependencies = (
-				8B41F6842DEDD25C001A66F9 /* BerlinTransportMapFeature */,
+				8B41F6842DEDD25C001A66F9 /* TripKit */,
 			);
 			productName = BerlinTransportMap;
 			productReference = 8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */;
@@ -109,7 +109,7 @@
 			mainGroup = 8B41F63C2DEDD0D5001A66F9;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8B41F6862DEDD300001A66F9 /* XCLocalSwiftPackageReference "BerlinTransportMapPackage" */,
+				8B41F6862DEDD300001A66F9 /* XCRemoteSwiftPackageReference "tripkit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8B41F6462DEDD0D5001A66F9 /* Products */;
@@ -292,9 +292,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap;
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
-				TARGETED_DEVICE_FAMILY = "1,2";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -325,9 +325,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap;
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
-				TARGETED_DEVICE_FAMILY = "1,2";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -354,18 +354,22 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		8B41F6862DEDD300001A66F9 /* XCLocalSwiftPackageReference "BerlinTransportMapPackage" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = BerlinTransportMapPackage;
+/* Begin XCRemoteSwiftPackageReference section */
+		8B41F6862DEDD300001A66F9 /* XCRemoteSwiftPackageReference "tripkit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alexander-albers/tripkit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8B41F6842DEDD25C001A66F9 /* BerlinTransportMapFeature */ = {
+		8B41F6842DEDD25C001A66F9 /* TripKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8B41F6862DEDD300001A66F9 /* XCLocalSwiftPackageReference "BerlinTransportMapPackage" */;
-			productName = BerlinTransportMapFeature;
+			package = 8B41F6862DEDD300001A66F9 /* XCRemoteSwiftPackageReference "tripkit" */;
+			productName = TripKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

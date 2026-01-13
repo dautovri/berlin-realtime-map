@@ -16,13 +16,7 @@
     }
   },
   "testTargets" : [
-    {
-      "target" : {
-        "containerPath" : "container:BerlinTransportMapPackage",
-        "identifier" : "BerlinTransportMapFeatureTests",
-        "name" : "BerlinTransportMapFeatureTests"
-      }
-    }
+  
   ],
   "version" : 1
 }
