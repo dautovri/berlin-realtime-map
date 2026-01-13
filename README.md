@@ -12,18 +12,6 @@ Real-time public transport tracker for Berlin. See where your train, bus, or tra
 - 📱 **Native iOS** - Built with SwiftUI and MapKit for a fast, modern experience
 - 🔒 **Privacy First** - No account required, no tracking, no third-party analytics. Location (if granted) is used to show nearby transit and isn't stored by the app.
 
-## Screenshots
-
-| Live Map | Departures | Vehicle Info |
-|----------|------------|--------------|
-| ![Map](docs/screenshots/iPhone67_01_map.png) | ![Departures](docs/screenshots/iPhone67_02_live.png) | ![Details](docs/screenshots/iPhone67_03_detail.png) |
-
-### iPad
-
-| Live Map | Departures | Vehicle Info |
-|----------|------------|--------------|
-| ![Map](docs/screenshots/iPad_Pro_13_01.png) | ![Departures](docs/screenshots/iPad_Pro_13_02.png) | ![Details](docs/screenshots/iPad_Pro_13_03.png) |
-
 ## Requirements
 
 - iOS 17.0+
@@ -31,10 +19,10 @@ Real-time public transport tracker for Berlin. See where your train, bus, or tra
 
 ## Architecture
 
-Modern iOS project using **workspace + SPM package** architecture:
+Simple single-target iOS app:
 
-- **App Shell**: `BerlinTransportMap/` - Minimal lifecycle code
-- **Features**: `BerlinTransportMapPackage/` - All business logic in a Swift Package
+- **App code**: `BerlinTransportMap/`
+- **Dependencies**: Swift Package dependencies managed by Xcode (TripKit)
 - **Build Settings**: Stored in `BerlinTransportMap.xcodeproj` (no separate xcconfig files)
 
 ## Libraries used
