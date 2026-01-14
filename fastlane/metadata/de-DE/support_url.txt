@@ -1,1 +1,1 @@
-https://github.com/dautovri/berlin-realtime-map/blob/main/docs/support.md
+https://github.com/dautovri/berlin-realtime-map#support

@@ -88,3 +88,23 @@ MIT License - see [LICENSE](LICENSE)
 ## Author
 
 **Ruslan Dautov** - [GitHub](https://github.com/dautovri)
+
+---
+
+## Support
+
+For bugs and feature requests:
+
+- https://github.com/dautovri/berlin-realtime-map/issues/new
+
+When reporting a problem, please include:
+- iPhone/iPad model
+- iOS version
+- What you expected vs what happened
+- Screenshot/screen recording (if possible)
+
+## Privacy
+
+Privacy policy:
+
+- https://gist.github.com/dautovri/2ca5f7b5b4b3789056c5dadbf1f60966
