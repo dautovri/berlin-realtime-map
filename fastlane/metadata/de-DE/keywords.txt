@@ -1,1 +1,1 @@
-berlin,öpnv,bvg,nahverkehr,fahrplan,echtzeit,ubahn,sbahn,tram,bus,karte,vbb,live,tracker,metro
+berlin,öpnv,bvg,vbb,nahverkehr,echtzeit,ubahn,sbahn,tram,bus,karte,abfahrten,haltestelle,verspätung

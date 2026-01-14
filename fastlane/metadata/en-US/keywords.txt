@@ -1,1 +1,1 @@
-berlin,transport,bvg,transit,map,ubahn,sbahn,tram,bus,live,tracking,realtime,metro,train,germany
+berlin,bvg,vbb,transit,map,ubahn,sbahn,tram,bus,live,departures,delays,stops
