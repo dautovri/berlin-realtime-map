@@ -1,1 +1,1 @@
-berlin,öpnv,bvg,vbb,nahverkehr,echtzeit,ubahn,sbahn,tram,bus,karte,abfahrten,haltestelle,verspätung
+berlin,öpnv,bvg,vbb,echtzeit,ubahn,sbahn,tram,bus,karte,abfahrten,haltestelle,verspätung
