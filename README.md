@@ -2,7 +2,7 @@
 
 Real-time public transport tracker for Berlin. See where your train, bus, or tram is right now on a live map.
 
-[![App Store](https://img.shields.io/badge/App%20Store-Download-blue?logo=apple)](https://apps.apple.com/app/id6753555139)
+[![App Store](https://img.shields.io/badge/App%20Store-Download-blue?logo=apple)](https://apps.apple.com/de/app/berlin-transport-map/id6757723208?l=en-GB)
 [![Stars](https://img.shields.io/github/stars/dautovri/berlin-realtime-map?style=flat)](https://github.com/dautovri/berlin-realtime-map/stargazers)
 [![Issues](https://img.shields.io/github/issues/dautovri/berlin-realtime-map?style=flat)](https://github.com/dautovri/berlin-realtime-map/issues)
 [![License](https://img.shields.io/github/license/dautovri/berlin-realtime-map?style=flat)](LICENSE)
