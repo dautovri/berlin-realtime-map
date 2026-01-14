@@ -25,10 +25,6 @@ GitHub READMEs don’t reliably embed playable video inline, but a hosted MP4 li
 
 https://github.com/user-attachments/assets/24c63c55-b6df-4db9-b696-d4b377d96b81
 
-
-
-Tip: the easiest way to get a stable GitHub-hosted URL is to upload the video to a GitHub Issue (or Release), then copy the resulting `https://github.com/<owner>/<repo>/assets/...` link.
-
 ## Requirements
 
 - iOS 17.0+
