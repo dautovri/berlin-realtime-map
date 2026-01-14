@@ -119,6 +119,7 @@ def check_metadata_locale(locale_dir: str) -> list[CheckResult]:
         "subtitle.txt",
         "description.txt",
         "keywords.txt",
+        "marketing_url.txt",
         "privacy_url.txt",
         "support_url.txt",
         "promotional_text.txt",
