@@ -1,0 +1,72 @@
+name: Test Suite - Berlin Transport Map
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'BerlinTransportMap/**'
+      - 'BerlinTransportMapPackage/**'
+      - 'BerlinTransportMapTests/**'
+      - 'fastlane/Fastfile'
+      - '.github/workflows/test-berlintransportmap.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'BerlinTransportMap/**'
+      - 'BerlinTransportMapPackage/**'
+      - 'BerlinTransportMapTests/**'
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        xcode-version: ['16.2']
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        run: sudo xcode-select --switch /Applications/Xcode_${{ matrix.xcode-version }}.app
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/swift-package-manager
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Cache Fastlane
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install Ruby dependencies
+        run: |
+          gem install bundler
+          bundle install --path vendor/bundle
+
+      - name: Run tests
+        run: bundle exec fastlane ios test
+        timeout-minutes: 30
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/test-results.xcresult
+
+      - name: Upload code coverage
+        if: always()
+        uses: codecov/codecov-action@v3
+        with:
+          files: build/coverage.xml
+          flags: unittests
+          fail_ci_if_error: false

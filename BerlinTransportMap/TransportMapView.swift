@@ -27,12 +27,15 @@ struct TransportMapView: View {
     @State private var currentRegion: MKCoordinateRegion?
     @State private var showingDepartures = false
     @State private var showingVehicleInfo = false
+    @State private var showingDeveloperInfo = false
     @State private var lastLoadTime: Date?
     @State private var lastVehiclesLoadTime: Date?
     @State private var isLoadingVehicles = false
     @State private var isLiveUpdating = true
     @State private var routeCoordinates: [CLLocationCoordinate2D] = []
     @State private var routeColor: Color = .blue
+    @State private var showingAbout = false
+    @State private var showingHelp = false
 
     var body: some View {
         ZStack {
@@ -163,6 +166,24 @@ struct TransportMapView: View {
 
                     Spacer()
 
+                    Menu {
+                        Button(action: { showingHelp = true }) {
+                            Label("Help & Support", systemImage: "questionmark.circle")
+                        }
+                        Button(action: { showingAbout = true }) {
+                            Label("About", systemImage: "info.circle")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 44, height: 44)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                    }
+                    .buttonStyle(.plain)
+
                     Button {
                         centerOnUserLocation()
                     } label: {
@@ -223,6 +244,16 @@ struct TransportMapView: View {
                     }
                 )
             }
+        }
+        .sheet(isPresented: $showingAbout) {
+            BerlinTransportMapAboutView()
+        }
+        .sheet(isPresented: $showingHelp) {
+            BerlinTransportMapHelpCenterView()
+        }
+        .sheet(isPresented: $showingDeveloperInfo) {
+            DeveloperInfoSheet()
+                .presentationDetents([.medium])
         }
         .task {
             if let region = currentRegion {
@@ -580,6 +611,144 @@ struct VehicleInfoSheet: View {
         case .bus: return "Bus"
         case .ferry: return "Ferry"
         case .regionalTrain: return "Regional Train"
+        }
+    }
+}
+
+// MARK: - Developer Info
+
+struct DeveloperInfoSheet: View {
+    private let developerName = "Ruslan Dautov"
+    private let websiteURL = URL(string: "https://dautovri.com")
+    private let githubURL = URL(string: "https://github.com/dautovri")
+    private let linkedInURL = URL(string: "https://linkedin.com/in/dautovri")
+    private let twitterURL = URL(string: "https://x.com/dautovri")
+    private let emailURL = URL(string: "mailto:dautovri@outlook.com")
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    VStack(alignment: .center, spacing: 12) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.blue)
+
+                        VStack(alignment: .center, spacing: 4) {
+                            Text("Berlin Transport Map")
+                                .font(.headline)
+                            Text("Live vehicle radar and nearby stops")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("by \(developerName)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                } header: {
+                    Text("About App")
+                } footer: {
+                    Text("Explore Berlin transit with live vehicles, nearby stops, and clean map controls.")
+                }
+
+                Section {
+                    VStack(spacing: 10) {
+                        if let githubURL {
+                            Link(destination: githubURL) {
+                                HStack {
+                                    Image(systemName: "arrow.up.right.square.fill")
+                                        .foregroundColor(.primary)
+                                    Text("GitHub")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .foregroundColor(.primary)
+                        }
+
+                        if let linkedInURL {
+                            Link(destination: linkedInURL) {
+                                HStack {
+                                    Image(systemName: "arrow.up.right.square.fill")
+                                        .foregroundColor(.primary)
+                                    Text("LinkedIn")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .foregroundColor(.primary)
+                        }
+
+                        if let twitterURL {
+                            Link(destination: twitterURL) {
+                                HStack {
+                                    Image(systemName: "arrow.up.right.square.fill")
+                                        .foregroundColor(.primary)
+                                    Text("X (Twitter)")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .foregroundColor(.primary)
+                        }
+
+                        if let emailURL {
+                            Link(destination: emailURL) {
+                                HStack {
+                                    Image(systemName: "arrow.up.right.square.fill")
+                                        .foregroundColor(.primary)
+                                    Text("Email")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .foregroundColor(.primary)
+                        }
+                    }
+                } header: {
+                    Text("Connect with Developer")
+                } footer: {
+                    Text("Follow Ruslan Dautov on social media or get in touch via email.")
+                }
+
+                Section {
+                    if let websiteURL {
+                        Link(destination: websiteURL) {
+                            HStack {
+                                Image(systemName: "globe")
+                                    .foregroundColor(.blue)
+                                Text("Visit Portfolio")
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        .foregroundColor(.primary)
+                    }
+                } header: {
+                    Text("More")
+                } footer: {
+                    Text("Explore more projects and technical work on the developer's portfolio.")
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("About")
         }
     }
 }

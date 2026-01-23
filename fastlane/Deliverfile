@@ -17,10 +17,10 @@ skip_binary_upload true
 # price_tier 0
 
 # Automatic release after approval
-automatic_release false
+automatic_release true
 
 # Submit for review automatically
-submit_for_review false
+submit_for_review true
 
 # Overwrite screenshots when uploading new ones
 overwrite_screenshots true

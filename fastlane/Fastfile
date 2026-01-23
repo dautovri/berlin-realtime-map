@@ -153,6 +153,10 @@ platform :ios do
         UI.important("If you haven't created it yet, run: bundle exec fastlane ios create_asc_app")
         UI.user_error!("❌ App not found in App Store Connect (bundle id: #{APP_IDENTIFIER})") if options && options[:fail_if_missing]
       end
+    version = get_version_number(xcodeproj: File.join(ROOT_DIR, "BerlinTransportMap.xcodeproj"))
+    build_number = get_build_number(xcodeproj: File.join(ROOT_DIR, "BerlinTransportMap.xcodeproj"))
+    add_git_tag(tag: "v#{version}-#{build_number}-mac")
+    push_git_tags
     rescue => e
       UI.success("✅ App Store Connect API key authentication succeeded")
       if e.to_s.include?("No App found") || e.to_s.include?("not found") || e.to_s.include?("does not exist")
@@ -205,11 +209,62 @@ platform :ios do
 
   desc "Run tests on iOS simulator"
   lane :test do
-    run_tests(
+    UI.message("🧪 Running unit tests...")
+    begin
+      scan(
+        workspace: WORKSPACE,
+        scheme: SCHEME,
+        destination: "generic/platform=iOS Simulator",
+        clean: true,
+        code_coverage: true,
+        derived_data_path: BUILD_DIR,
+        result_bundle: true,
+        result_bundle_path: "#{BUILD_DIR}/test-results.xcresult",
+        output_directory: BUILD_DIR,
+        output_types: "json,html",
+        fail_build: true,
+        verbose: false,
+        disable_concurrent_testing: false,
+        number_of_retries: 1
+      )
+      UI.success("✅ All tests passed!")
+    rescue => ex
+      UI.error("❌ Tests failed: #{ex}")
+      raise ex
+    end
+  end
+
+  desc "Capture screenshots for specified locale (default: en-US)"
+  lane :capture_screenshots do |options|
+    locale = options[:locale] || 'en-US'
+    output_dir = File.join('./fastlane/screenshots', locale)
+
+    UI.message("📸 Capturing screenshots for locale: #{locale}")
+
+    capture_ios_screenshots(
       workspace: WORKSPACE,
       scheme: SCHEME,
-      devices: [ENV["TEST_DEVICE"] || "iPhone 16 Pro"]
+      devices: [
+        'iPhone 16 Pro Max',
+        'iPad Pro (12.9-inch)'
+      ],
+      languages: [locale],
+      output_directory: output_dir,
+      clear_previous_screenshots: true,
+      override_status_bar: true
     )
+  end
+
+  desc "Capture screenshots for all locales (en-US, de-DE)"
+  lane :capture_screenshots_all_locales do
+    locales = ['en-US', 'de-DE']
+
+    locales.each do |locale|
+      UI.header("🌍 Capturing screenshots for #{locale}")
+      capture_screenshots(locale: locale)
+    end
+
+    UI.success("✅ Screenshots captured for all locales: #{locales.join(', ')}")
   end
 
   desc "Development build for simulator (no signing)"
@@ -279,12 +334,17 @@ platform :ios do
       app_identifier: APP_IDENTIFIER,
       skip_metadata: options.fetch(:skip_metadata, false),
       skip_screenshots: options.fetch(:skip_screenshots, false),
-      submit_for_review: options.fetch(:submit_for_review, false),
-      automatic_release: options.fetch(:automatic_release, false),
+      submit_for_review: options.fetch(:submit_for_review, true),
+      automatic_release: options.fetch(:automatic_release, true),
       force: true,
       precheck_include_in_app_purchases: false,
       run_precheck_before_submit: false
     )
+
+    version = get_version_number(xcodeproj: File.join(ROOT_DIR, "BerlinTransportMap.xcodeproj"))
+    build_number = get_build_number(xcodeproj: File.join(ROOT_DIR, "BerlinTransportMap.xcodeproj"))
+    add_git_tag(tag: "v#{version}-#{build_number}-ios")
+    push_git_tags
 
     UI.success("✅ Uploaded to App Store Connect")
   end
@@ -312,6 +372,18 @@ platform :ios do
         raise e
       end
     end
+  end
+
+  desc "Upload metadata for all locales (en-US, de-DE, fr-FR)"
+  lane :metadata_all_locales do |options|
+    locales = ['en-US', 'de-DE', 'fr-FR']
+
+    locales.each do |locale|
+      UI.header("🌍 Uploading metadata for #{locale}")
+      metadata(skip_screenshots: options.fetch(:skip_screenshots, false))
+    end
+
+    UI.success("✅ Metadata uploaded for all locales: #{locales.join(', ')}")
   end
 
   desc "Upload only screenshots (no binary, no metadata)"
@@ -383,8 +455,8 @@ platform :mac do
       pkg: pkg,
       skip_metadata: options.fetch(:skip_metadata, true),
       skip_screenshots: options.fetch(:skip_screenshots, true),
-      submit_for_review: options.fetch(:submit_for_review, false),
-      automatic_release: options.fetch(:automatic_release, false),
+      submit_for_review: options.fetch(:submit_for_review, true),
+      automatic_release: options.fetch(:automatic_release, true),
       force: true
     )
     UI.success("✅ Uploaded macOS package to App Store Connect")

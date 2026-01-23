@@ -1,0 +1,41 @@
+Suivez les transports en commun de Berlin en temps réel avec Carte des Transports de Berlin!
+
+SUIVI EN DIRECT DES VÉHICULES
+Observez les U-Bahn, S-Bahn, trams et bus en direct sur la carte. Voyez exactement où se trouve votre prochain trajet.
+
+BELLE VUE CARTOGRAPHIQUE
+• Interface cartographique claire et moderne
+• Lignes codées par couleur
+• Marqueurs de véhicules bien lisibles
+• Animations fluides
+
+TOUS LES MODES DE TRANSPORT
+• U-Bahn (métro)
+• S-Bahn (train de banlieue)
+• Tram
+• Bus
+• Trains régionaux
+
+DONNÉES EN TEMPS RÉEL
+• Positions des véhicules en direct
+• Mise à jour continue
+• Basées sur les données officielles de la BVG
+
+CONCEPTION MODERNE
+• Expérience native iOS
+• Optimisée pour tous les iPhone
+• Support du mode sombre
+• Gestes intuitifs
+
+CONFIDENTIALITÉ
+• Aucun compte requis
+• Aucune donnée personnelle collectée
+• Pas de suivi de localisation
+
+Parfait pour :
+• Les navetteurs quotidiens
+• Les touristes à Berlin
+• Les amateurs de transport en commun
+• La planification de trajets
+
+Découvrez le fantastique système de transports en commun de Berlin comme jamais auparavant!

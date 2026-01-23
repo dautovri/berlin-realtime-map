@@ -1,0 +1,41 @@
+/* 
+  Localizable.strings (German)
+  BerlinTransportMap
+*/
+
+/* Main Map View */
+"No Departures" = "Keine Abfahrten";
+"No upcoming departures at this stop" = "Keine bevorstehenden Abfahrten an dieser Haltestelle";
+"Done" = "Fertig";
+
+/* Product Type Display */
+"S-Bahn" = "S-Bahn";
+"U-Bahn" = "U-Bahn";
+"Tram" = "Straßenbahn";
+"Bus" = "Bus";
+"Ferry" = "Fähre";
+"Regional Train" = "Regionalbahn";
+
+/* Departure Status */
+"Cancelled" = "Ausfall";
+
+/* Vehicle Info Sheet */
+"Show Route" = "Route anzeigen";
+
+/* Developer Info */
+"Berlin Transport Map" = "Berlin Transport Map";
+"Live vehicle radar and nearby stops" = "Live-Fahrzeugradarbahn und nahegelegene Haltestellen";
+"by %@" = "von %@";
+"Explore Berlin transit with live vehicles, nearby stops, and clean map controls." = "Erkunden Sie Berlins Verkehrswesen mit Live-Fahrzeugen, nahegelegenen Haltestellen und sauberen Kartensteuerelementen.";
+
+/* Developer Connections */
+"About App" = "Über App";
+"Connect with Developer" = "Mit dem Entwickler verbinden";
+"Follow Ruslan Dautov on social media or get in touch via email." = "Folgen Sie Ruslan Dautov in den sozialen Medien oder treten Sie per E-Mail in Kontakt.";
+"GitHub" = "GitHub";
+"LinkedIn" = "LinkedIn";
+"X (Twitter)" = "X (Twitter)";
+"Email" = "E-Mail";
+"More" = "Weitere";
+"Visit Portfolio" = "Portfolio besuchen";
+"Explore more projects and technical work on the developer's portfolio." = "Erkunden Sie weitere Projekte und technische Arbeiten im Portfolio des Entwicklers.";

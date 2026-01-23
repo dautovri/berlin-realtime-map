@@ -1,22 +1,27 @@
 # Berlin Transport Map 🚇
 
-Real-time public transport tracker for Berlin. See where your train, bus, or tram is right now on a live map.
+**Track Berlin's U-Bahn, S-Bahn, trams, and buses in real-time**
 
 [![App Store](https://img.shields.io/badge/App%20Store-Download-blue?logo=apple)](https://apps.apple.com/de/app/berlin-transport-map/id6757723208?l=en-GB)
+[![Platform](https://img.shields.io/badge/Platform-iOS%2026.0%2B-blue?logo=apple)](https://www.apple.com/ios)
+[![Swift](https://img.shields.io/badge/Swift-6.0-orange?logo=swift)](https://swift.org)
 [![Stars](https://img.shields.io/github/stars/dautovri/berlin-realtime-map?style=flat)](https://github.com/dautovri/berlin-realtime-map/stargazers)
-[![Issues](https://img.shields.io/github/issues/dautovri/berlin-realtime-map?style=flat)](https://github.com/dautovri/berlin-realtime-map/issues)
 [![License](https://img.shields.io/github/license/dautovri/berlin-realtime-map?style=flat)](LICENSE)
-[![Last commit](https://img.shields.io/github/last-commit/dautovri/berlin-realtime-map?style=flat)](https://github.com/dautovri/berlin-realtime-map/commits/main)
+
+See where your train, bus, or tram is right now on a live map. No account required, no tracking—just real-time Berlin transit data on an interactive map.
 
 **Repo topics:** iOS · Swift · SwiftUI · MapKit · Berlin · Public Transport · Realtime · VBB · HAFAS
 
-## Features
+## ✨ Features
 
-- 📍 **Live Vehicle Tracking** - Watch U-Bahn, S-Bahn, trams, and buses move in real-time on the map
-- 🗺️ **Interactive Map** - Pan and zoom around Berlin to find nearby stops
-- ⏱️ **Real-Time Departures** - Tap any stop to see upcoming departures with live delay info
+- 📍 **Live Vehicle Tracking** - Watch U-Bahn, S-Bahn, trams, and buses move in real-time across Berlin
+- 🗺️ **Interactive Map** - Pan and zoom with smooth MapKit performance to find nearby stops
+- ⏱️ **Real-Time Departures** - Tap any stop to see upcoming departures with live delay information
+- 🚏 **Stop Search** - Find stations and stops instantly
+- 🌍 **VBB Network Coverage** - Complete Berlin-Brandenburg public transport network
 - 📱 **Native iOS** - Built with SwiftUI and MapKit for a fast, modern experience
-- 🔒 **Privacy First** - No account required, no tracking, no third-party analytics. Location (if granted) is used to show nearby transit and isn't stored by the app.
+- 🔒 **Privacy First** - No account required, no tracking, no third-party analytics
+- 🌐 **Multi-Language** - Available in English, German, and French
 
 ## Demo video
 
@@ -27,7 +32,7 @@ https://github.com/user-attachments/assets/24c63c55-b6df-4db9-b696-d4b377d96b81
 
 ## Requirements
 
-- iOS 17.0+
+- iOS 26.0+
 - Xcode 16.0+
 
 ## Architecture

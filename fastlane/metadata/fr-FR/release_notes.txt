@@ -1,0 +1,5 @@
+• Version initiale
+• Suivi en temps réel des véhicules pour tous les transports BVG
+• Interface cartographique magnifique
+• Positions en direct de l'U-Bahn, S-Bahn, tram et bus
+• Animations fluides et conception moderne
