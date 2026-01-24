@@ -3,7 +3,9 @@ import Foundation
 /// Configuration for the AboutKit about screen
 struct BerlinTransportMapAboutConfiguration {
     let appName = "BerlinTransportMap"
-    let appID = "1234567890"  // Replace with actual App Store ID
+    /// Set this once the app has an App Store ID (e.g. "1234567890").
+    /// When nil, App Store review/share rows are hidden.
+    let appStoreID: String? = nil
     let developerName = "Ruslan Dautov"
     let developerEmail = "dautovri@outlook.com"
     let websiteURL = URL(string: "https://dautovri.com")
@@ -16,6 +18,24 @@ struct BerlinTransportMapAboutConfiguration {
     let appDescription = "Real-time Berlin public transport map showing live vehicle positions and departures."
     let appVersion = Bundle.main.appVersion
     let appBuild = Bundle.main.appBuild
+
+    var appStorePageURL: URL? {
+        guard let appStoreID else { return nil }
+        return URL(string: "https://apps.apple.com/app/id\(appStoreID)")
+    }
+
+    var writeReviewURL: URL? {
+        guard let appStoreID else { return nil }
+        return URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")
+    }
+
+    var shareURL: URL? {
+        appStorePageURL ?? websiteURL ?? githubURL
+    }
+
+    var issuesURL: URL? {
+        githubURL?.appendingPathComponent("issues")
+    }
 }
 
 extension Bundle {

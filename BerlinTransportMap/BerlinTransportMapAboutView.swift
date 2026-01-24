@@ -37,6 +37,68 @@ struct BerlinTransportMapAboutView: View {
                 } header: {
                     Text("About")
                 }
+
+                // Support Section
+                Section {
+                    if let shareURL = config.shareURL {
+                        ShareLink(item: shareURL) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundStyle(.blue)
+                                Text("Share App")
+                                Spacer()
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+
+                    if let writeReviewURL = config.writeReviewURL {
+                        Link(destination: writeReviewURL) {
+                            HStack {
+                                Image(systemName: "star.fill")
+                                    .foregroundStyle(.yellow)
+                                Text("Rate on the App Store")
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+
+                    if let issuesURL = config.issuesURL {
+                        Link(destination: issuesURL) {
+                            HStack {
+                                Image(systemName: "ladybug.fill")
+                                    .foregroundStyle(.red)
+                                Text("Report a Bug")
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+
+                    if let emailURL = config.developerEmail.mailto {
+                        Link(destination: emailURL) {
+                            HStack {
+                                Image(systemName: "envelope.fill")
+                                    .foregroundStyle(.blue)
+                                Text("Contact Support")
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                } header: {
+                    Text("Support")
+                }
                 
                 // Developer Section
                 Section {
@@ -100,21 +162,6 @@ struct BerlinTransportMapAboutView: View {
                             }
                             .foregroundStyle(.primary)
                         }
-                        
-                        if let emailURL = config.developerEmail.mailto {
-                            Link(destination: emailURL) {
-                                HStack {
-                                    Image(systemName: "envelope.fill")
-                                        .foregroundStyle(.red)
-                                    Text("Email")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .foregroundStyle(.primary)
-                        }
                     }
                 } header: {
                     Text("Developer")
@@ -170,7 +217,7 @@ struct BerlinTransportMapAboutView: View {
                     Text("Acknowledgements")
                 }
             }
-            .navigationTitle("About Berlin Transport Map")
+            .navigationTitle("About")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
