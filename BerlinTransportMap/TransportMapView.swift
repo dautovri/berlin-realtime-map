@@ -37,6 +37,9 @@ struct TransportMapView: View {
     @State private var showingRoutePlanner = false
     @State private var predictionService = PredictionService()
     @State private var favoritesService: FavoritesService?
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var lastLocationUpdate = Date.distantPast
+    @State private var pollingInterval: TimeInterval = 5.0
 
     var body: some View {
         ZStack {
@@ -189,9 +192,32 @@ struct TransportMapView: View {
         }
         .task {
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5))
-                if isLiveUpdating, let region = currentRegion {
-                    await loadVehicles(for: region)
+                pollingInterval = Date().timeIntervalSince(lastLocationUpdate) < 60 ? 3 : 10
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+        .onChange(of: pollingInterval) { _, _ in
+            startPolling()
+        }
+        .onAppear {
+            startPolling()
+        }
+        .onDisappear {
+            pollingTimer?.invalidate()
+        }
+        .onChange(of: locationManager.location) { _, _ in
+            lastLocationUpdate = Date()
+        }
+    }
+
+    @MainActor
+    private func startPolling() {
+        pollingTimer?.invalidate()
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            Task {
+                if self.isLiveUpdating && self.scenePhase == .active, let region = self.currentRegion {
+                    await self.loadVehicles(for: region)
                 }
             }
         }
