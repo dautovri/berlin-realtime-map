@@ -189,6 +189,17 @@ struct BikeStation: Identifiable, Codable, Hashable {
     let availableDocks: Int
 }
 
+// MARK: - Parking
+
+struct ParkingFacility: Identifiable, Codable, Hashable {
+    let id: String
+    let name: String
+    let latitude: Double
+    let longitude: Double
+    let availableSpaces: Int
+    let totalSpaces: Int
+}
+
 enum TransportError: LocalizedError {
     case invalidLocation
     case invalidStation
