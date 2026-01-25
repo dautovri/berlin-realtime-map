@@ -18,6 +18,7 @@ final class LocationManager: NSObject {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        manager.distanceFilter = 50.0 // Update location only when moved 50 meters
         authorizationStatus = manager.authorizationStatus
         
         // Add observers for app lifecycle to optimize battery
@@ -48,10 +49,12 @@ final class LocationManager: NSObject {
     
     @objc private func appWillEnterForeground() {
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        manager.distanceFilter = 50.0
     }
     
     @objc private func appDidEnterBackground() {
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
+        manager.distanceFilter = 500.0
     }
 }
 
