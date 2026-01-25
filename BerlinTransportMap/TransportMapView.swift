@@ -32,11 +32,9 @@ struct TransportMapView: View {
     @State private var lastVehiclesLoadTime: Date?
     @State private var isLoadingVehicles = false
     @State private var isLiveUpdating = true
-    @State private var routeCoordinates: [CLLocationCoordinate2D] = []
-    @State private var routeColor: Color = .blue
-    @State private var showingAbout = false
-    @State private var showingHelp = false
-    @State private var showingSettings = false
+    @State private var routeService = RouteService()
+    @State private var route: Route?
+    @State private var showingRoutePlanner = false
 
     var body: some View {
         ZStack {
@@ -65,12 +63,30 @@ struct TransportMapView: View {
                     .tag(vehicle.id)
                 }
 
-                if !routeCoordinates.isEmpty {
-                    // Route overlay for selected vehicle
-                    MapPolyline(coordinates: routeCoordinates)
-                        .stroke(routeColor, lineWidth: 4)
+                if let route = route {
+                    MapPolyline(coordinates: route.coordinates)
+                        .stroke(.blue, lineWidth: 4)
                 }
-                    )
+            }
+            
+            // Floating route planner button
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button {
+                        showingRoutePlanner = true
+                    } label: {
+                        Image(systemName: "route")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.blue)
+                            .clipShape(Circle())
+                            .shadow(radius: 4)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 20)
                 }
             }
         }
@@ -113,6 +129,15 @@ struct TransportMapView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .sheet(isPresented: $showingRoutePlanner) {
+            RoutePlannerView { startStop, endStop, mode in
+                Task {
+                    await planRoute(start: startStop, end: endStop, mode: mode)
+                }
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
         .sheet(isPresented: $showingAbout) {
             BerlinTransportMapAboutView()
         }
@@ -152,19 +177,27 @@ struct TransportMapView: View {
     }
 
     @MainActor
-    private func loadRoute(for vehicle: Vehicle) async {
+    private func planRoute(start: String, end: String, mode: TransportMode) async {
         do {
-            if let tripRoute = try await radarService.fetchTripRoute(tripId: vehicle.tripId) {
-                let coordinates = tripRoute.routeCoordinates
-                let lineColor = Color(hex: vehicle.line?.color ?? "#007AFF")
-
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    self.routeCoordinates = coordinates
-                    self.routeColor = lineColor
-                }
+            // First, find the stops by name
+            let startStops = try await transportService.searchLocations(query: start, maxLocations: 1)
+            let endStops = try await transportService.searchLocations(query: end, maxLocations: 1)
+            
+            guard let startStop = startStops.first, let endStop = endStops.first else {
+                errorMessage = "Could not find stops for the given names"
+                return
+            }
+            
+            let plannedRoute = try await routeService.planRoute(start: startStop, end: endStop, mode: mode)
+            self.route = plannedRoute
+            showingRoutePlanner = false
+            
+            // Optionally zoom to route
+            if let firstCoord = plannedRoute.coordinates.first {
+                cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
             }
         } catch {
-            errorMessage = "Failed to load route: \(error.localizedDescription)"
+            errorMessage = "Failed to plan route: \(error.localizedDescription)"
         }
     }
 
