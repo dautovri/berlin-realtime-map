@@ -5,7 +5,16 @@ struct RoutePlannerView: View {
     @State private var endStop: String = ""
     @State private var selectedTransportMode: TransportMode = .train
     
+    let initialDestination: String?
     let onPlanRoute: (String, String, TransportMode) -> Void
+    
+    init(initialDestination: String?, onPlanRoute: @escaping (String, String, TransportMode) -> Void) {
+        self.initialDestination = initialDestination
+        self.onPlanRoute = onPlanRoute
+        if let dest = initialDestination {
+            _endStop = State(initialValue: dest)
+        }
+    }
     
     enum TransportMode: String, CaseIterable, Identifiable {
         case train = "Train"

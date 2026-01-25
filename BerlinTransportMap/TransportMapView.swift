@@ -38,8 +38,8 @@ struct TransportMapView: View {
     @State private var isLoadingVehicles = false
     @State private var isLiveUpdating = true
     @State private var routeService = RouteService()
-    @State private var route: Route?
     @State private var showingRoutePlanner = false
+    @State private var initialDestination: String?
     @State private var predictionService = PredictionService()
     @State private var favoritesService: FavoritesService?
     @Environment(\.scenePhase) private var scenePhase
@@ -49,8 +49,10 @@ struct TransportMapView: View {
     @State private var cacheAge: TimeInterval?
     @State private var showingCacheInfo = false
     @StateObject private var networkMonitor = NetworkMonitor()
-    @State private var weather: Weather?
-    @State private var weatherService = WeatherService()
+    @State private var events: [Event] = []
+    @State private var eventsService = EventsService()
+    @State private var selectedEvent: Event?
+    @State private var showingEventDetails = false
 
     var isOffline: Bool { !networkMonitor.isConnected }
 
@@ -226,7 +228,7 @@ struct TransportMapView: View {
             SettingsView()
         }
         .sheet(isPresented: $showingRoutePlanner) {
-            RoutePlannerView { start, end, mode in
+            RoutePlannerView(initialDestination: initialDestination) { start, end, mode in
                 Task {
                     await planRoute(start: start, end: end, mode: mode)
                 }
@@ -946,6 +948,54 @@ private func weatherIconName(for condition: String) -> String {
     case "rain": return "cloud.rain.fill"
     case "snow": return "snowflake"
     default: return "questionmark.circle"
+    }
+}
+
+@MainActor
+private func loadEvents() async {
+    do {
+        self.events = try await eventsService.fetchEvents()
+    } catch {
+        print("Failed to load events: \(error)")
+    }
+}
+
+// MARK: - Event Details Sheet
+
+struct EventDetailsSheet: View {
+    let event: Event
+    @Binding var isPresented: Bool
+    let onPlanRoute: () -> Void
+    
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(event.name)
+                    .font(.title)
+                Text(event.location)
+                    .font(.subheadline)
+                Text(event.date, style: .date)
+                if let desc = event.description {
+                    Text(desc)
+                        .font(.body)
+                }
+                Button("Plan Route to Event") {
+                    onPlanRoute()
+                }
+                .buttonStyle(.borderedProminent)
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Event Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        isPresented = false
+                    }
+                }
+            }
+        }
     }
 }
 
