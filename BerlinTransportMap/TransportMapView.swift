@@ -1,6 +1,11 @@
 import SwiftUI
 import MapKit
 
+enum DataSource {
+    case network
+    case cache
+}
+
 struct TransportMapView: View {
     // Berlin center as fallback
     private static let berlinCenter = CLLocationCoordinate2D(latitude: 52.520008, longitude: 13.404954)
@@ -40,6 +45,9 @@ struct TransportMapView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var lastLocationUpdate = Date.distantPast
     @State private var pollingInterval: TimeInterval = 5.0
+    @State private var dataSource: DataSource = .network
+    @State private var cacheAge: TimeInterval?
+    @State private var showingCacheInfo = false
 
     var body: some View {
         ZStack {
@@ -72,6 +80,54 @@ struct TransportMapView: View {
                     MapPolyline(coordinates: route.coordinates)
                         .stroke(.blue, lineWidth: 4)
                 }
+            }
+            
+            // Cache status overlay
+            VStack {
+                HStack {
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 8) {
+                        // Cache status badge
+                        HStack(spacing: 4) {
+                            Image(systemName: dataSource == .cache ? "clock.arrow.circlepath" : "wifi")
+                                .font(.caption)
+                            Text(dataSource == .cache ? "Cached" : "Live")
+                                .font(.caption.bold())
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9))
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                        
+                        // Cache age if cached
+                        if dataSource == .cache, let age = cacheAge {
+                            Text("Age: \(formattedAge(age))")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Color.gray.opacity(0.8))
+                                .foregroundColor(.white)
+                                .clipShape(Capsule())
+                        }
+                        
+                        // Refresh button
+                        Button {
+                            refreshData()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.title3)
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.blue.opacity(0.8))
+                                .clipShape(Circle())
+                        }
+                    }
+                    .padding(.top, 50)
+                    .padding(.trailing, 20)
+                }
+                Spacer()
             }
             
             // Floating buttons
@@ -313,6 +369,12 @@ struct TransportMapView: View {
             let center = region.center
             let maxDistance = Int(region.span.latitudeDelta * 111_000)
 
+            // Check if data is from cache
+            let cacheKey = "transport_cache_stops_\(String(format: "%.6f", center.latitude))_\(String(format: "%.6f", center.longitude))_\(maxDistance)_100"
+            let cachedAge = transportService.cacheService.age(of: cacheKey)
+            dataSource = cachedAge != nil ? .cache : .network
+            cacheAge = cachedAge
+
             let fetchedStops = try await transportService.queryNearbyStops(
                 latitude: center.latitude,
                 longitude: center.longitude,
@@ -323,19 +385,35 @@ struct TransportMapView: View {
             self.stops = fetchedStops
         } catch {
             errorMessage = error.localizedDescription
+            // Try to load from cache if network fails
+            if let cachedStops = transportService.cacheService.getStops(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000), maxLocations: 100) {
+                self.stops = cachedStops
+                dataSource = .cache
+                cacheAge = transportService.cacheService.age(of: transportService.cacheService.getStopsCacheKey(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000), maxLocations: 100))
+            }
         }
 
         isLoading = false
     }
 
-    @MainActor
-    private func loadDepartures(for stop: TransportStop) async {
-        do {
-            let fetchedDepartures = try await radarService.fetchDepartures(stopId: stop.vbbStopId)
-            self.restDepartures = fetchedDepartures
-        } catch {
-            errorMessage = "Failed to load departures: \(error.localizedDescription)"
-            self.restDepartures = []
+    private func formattedAge(_ age: TimeInterval) -> String {
+        if age < 60 {
+            return "<1m"
+        } else if age < 3600 {
+            return "\(Int(age / 60))m"
+        } else {
+            return "\(Int(age / 3600))h"
+        }
+    }
+    
+    private func refreshData() {
+        // Invalidate cache and reload
+        transportService.cacheService.clear()
+        if let region = currentRegion {
+            Task {
+                await loadStopsForRegion(region)
+                await loadVehicles(for: region)
+            }
         }
     }
 }
