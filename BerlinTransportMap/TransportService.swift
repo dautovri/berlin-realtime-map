@@ -7,6 +7,7 @@ import CoreLocation
 final class TransportService: @unchecked Sendable {
     private let provider: BvgProvider
     private let backgroundQueue = DispatchQueue.global(qos: .background)
+    private let cacheService = CacheService()
 
     // BVG API authorization - these are public keys used by the BVG app
     nonisolated(unsafe) private static let apiAuthorization: [String: Any] = [
@@ -37,6 +38,21 @@ final class TransportService: @unchecked Sendable {
     // MARK: - Query Nearby Stops
 
     func queryNearbyStops(latitude: Double, longitude: Double, maxDistance: Int = 2000, maxLocations: Int = 50) async throws -> [TransportStop] {
+        // Check cache first
+        if let cachedStops = cacheService.getStops(forLocation: latitude, longitude: longitude, maxDistance: maxDistance, maxLocations: maxLocations) {
+            return cachedStops
+        }
+        
+        // Fetch from network
+        let stops = try await fetchNearbyStops(latitude: latitude, longitude: longitude, maxDistance: maxDistance, maxLocations: maxLocations)
+        
+        // Cache the result
+        cacheService.setStops(stops, forLocation: latitude, longitude: longitude, maxDistance: maxDistance, maxLocations: maxLocations)
+        
+        return stops
+    }
+    
+    private func fetchNearbyStops(latitude: Double, longitude: Double, maxDistance: Int, maxLocations: Int) async throws -> [TransportStop] {
         try await withCheckedThrowingContinuation { continuation in
             backgroundQueue.async {
                 Task {
@@ -77,6 +93,21 @@ final class TransportService: @unchecked Sendable {
     // MARK: - Query Departures
 
     func queryDepartures(stationId: String, maxDepartures: Int = 20) async throws -> [TransportDeparture] {
+        // Check cache first
+        if let cachedDepartures = cacheService.getDepartures(forStationId: stationId, maxDepartures: maxDepartures) {
+            return cachedDepartures
+        }
+        
+        // Fetch from network
+        let departures = try await fetchDepartures(stationId: stationId, maxDepartures: maxDepartures)
+        
+        // Cache the result
+        cacheService.setDepartures(departures, forStationId: stationId, maxDepartures: maxDepartures)
+        
+        return departures
+    }
+    
+    private func fetchDepartures(stationId: String, maxDepartures: Int) async throws -> [TransportDeparture] {
         try await withCheckedThrowingContinuation { continuation in
             backgroundQueue.async {
                 Task {
@@ -114,6 +145,21 @@ final class TransportService: @unchecked Sendable {
     // MARK: - Search Locations
 
     func searchLocations(query: String, maxLocations: Int = 20) async throws -> [TransportStop] {
+        // For search, use a simple key
+        let cacheKey = "search_\(query)_\(maxLocations)"
+        if let cachedStops: [TransportStop] = cacheService.get(cacheKey) {
+            return cachedStops
+        }
+        
+        let stops = try await fetchSearchLocations(query: query, maxLocations: maxLocations)
+        
+        // Cache with shorter TTL for search
+        cacheService.set(stops, forKey: cacheKey, ttl: 300) // 5 min
+        
+        return stops
+    }
+    
+    private func fetchSearchLocations(query: String, maxLocations: Int) async throws -> [TransportStop] {
         try await withCheckedThrowingContinuation { continuation in
             backgroundQueue.async {
                 Task {
