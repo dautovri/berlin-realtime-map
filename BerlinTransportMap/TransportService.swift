@@ -6,6 +6,7 @@ import CoreLocation
 @Observable
 final class TransportService: @unchecked Sendable {
     private let provider: BvgProvider
+    private let backgroundQueue = DispatchQueue.global(qos: .background)
 
     // BVG API authorization - these are public keys used by the BVG app
     nonisolated(unsafe) private static let apiAuthorization: [String: Any] = [

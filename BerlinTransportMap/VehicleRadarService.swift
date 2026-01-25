@@ -7,7 +7,7 @@ actor VehicleRadarService {
     private let session: URLSession
 
     init() {
-        let config = URLSessionConfiguration.default
+        let config = URLSessionConfiguration.background(withIdentifier: "com.berlin.transport.vehicle")
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
