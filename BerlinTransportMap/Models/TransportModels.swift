@@ -166,14 +166,16 @@ struct TransportLine: Codable {
     }
 }
 
-// MARK: - Weather
+// MARK: - Events
 
-struct Weather: Codable, Hashable {
-    let temperature: Double // Celsius
-    let condition: String // e.g., "Clear", "Rain"
-    let precipitationProbability: Double // 0.0 to 1.0
-    let icon: String // e.g., "01d"
-    let timestamp: Date
+struct Event: Identifiable, Codable, Hashable {
+    let id: String
+    let name: String
+    let location: String
+    let latitude: Double
+    let longitude: Double
+    let date: Date
+    let description: String?
 }
 
 enum TransportError: LocalizedError {
