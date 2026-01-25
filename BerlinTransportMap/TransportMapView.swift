@@ -50,6 +50,7 @@ struct TransportMapView: View {
     @State private var showingCacheInfo = false
     @StateObject private var networkMonitor = NetworkMonitor()
     @State private var showingOfflineMode = false
+    @State private var predictiveLoader = PredictiveLoader()
 
     var isOffline: Bool { !networkMonitor.isConnected }
 
@@ -270,6 +271,22 @@ struct TransportMapView: View {
                 showingOfflineMode = true
             }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .active:
+                predictiveLoader.startPredictiveLoading()
+            case .inactive, .background:
+                predictiveLoader.stopPredictiveLoading()
+            @unknown default:
+                break
+            }
+        }
+        .onChange(of: locationManager.location) { _, newLocation in
+            if let location = newLocation {
+                lastLocationUpdate = Date()
+                predictiveLoader.handleLocationUpdate(location)
+            }
+        }
     }
 
     @MainActor
@@ -414,12 +431,21 @@ struct TransportMapView: View {
             dataSource = cachedAge != nil ? .cache : .network
             cacheAge = cachedAge
 
-            let fetchedStops = try await transportService.queryNearbyStops(
-                latitude: center.latitude,
-                longitude: center.longitude,
-                maxDistance: min(maxDistance, 5000),
-                maxLocations: 100
-            )
+            // First check for preloaded data
+            var fetchedStops: [TransportStop]
+            if let preloadedStops = predictiveLoader.getPreloadedStops(for: center, maxDistance: maxDistance) {
+                fetchedStops = preloadedStops
+                dataSource = .cache // Mark as cached even though it's predictive
+                cacheAge = 0 // Indicate fresh data
+                print("Using preloaded stops data")
+            } else {
+                fetchedStops = try await transportService.queryNearbyStops(
+                    latitude: center.latitude,
+                    longitude: center.longitude,
+                    maxDistance: min(maxDistance, 5000),
+                    maxLocations: 100
+                )
+            }
 
             self.stops = fetchedStops
         } catch {
