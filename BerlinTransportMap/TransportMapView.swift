@@ -35,6 +35,8 @@ struct TransportMapView: View {
     @State private var routeService = RouteService()
     @State private var route: Route?
     @State private var showingRoutePlanner = false
+    @State private var showingFavorites = false
+    @State private var favoritesService: FavoritesService?
 
     var body: some View {
         ZStack {
@@ -69,11 +71,23 @@ struct TransportMapView: View {
                 }
             }
             
-            // Floating route planner button
+            // Floating buttons
             VStack {
                 Spacer()
-                HStack {
+                HStack(spacing: 16) {
                     Spacer()
+                    Button {
+                        showingFavorites = true
+                    } label: {
+                        Image(systemName: "star")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.yellow)
+                            .clipShape(Circle())
+                            .shadow(radius: 4)
+                    }
+                    
                     Button {
                         showingRoutePlanner = true
                     } label: {
@@ -85,9 +99,9 @@ struct TransportMapView: View {
                             .clipShape(Circle())
                             .shadow(radius: 4)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 20)
                 }
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
             }
         }
         .sheet(isPresented: $showingDepartures) {
@@ -130,10 +144,31 @@ struct TransportMapView: View {
             SettingsView()
         }
         .sheet(isPresented: $showingRoutePlanner) {
-            RoutePlannerView { startStop, endStop, mode in
+            RoutePlannerView { start, end, mode in
                 Task {
-                    await planRoute(start: startStop, end: endStop, mode: mode)
+                    await planRoute(start: start, end: end, mode: mode)
                 }
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingFavorites) {
+            FavoritesView(
+                onSelectStop: { stop in
+                    // Navigate to stop
+                    cameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude), span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)))
+                },
+                onSelectRoute: { route in
+                    self.route = route
+                    if let firstCoord = route.coordinates.first {
+                        cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
+                    }
+                },
+                onClose: {
+                    showingFavorites = false
+                }
+            )
+        }
             }
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
