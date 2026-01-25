@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+
+    - name: Install dependencies
+      run: |
+        # If using CocoaPods or Carthage, install here
+        # For SPM, it's automatic
+
+    - name: Build project
+      run: |
+        xcodebuild -project BerlinTransportMap.xcodeproj -scheme BerlinTransportMap -sdk iphonesimulator -configuration Debug build
+
+    - name: Run tests (if test target exists)
+      run: |
+        # If we add tests later, run them here
+        # xcodebuild -project BerlinTransportMap.xcodeproj -scheme BerlinTransportMap -sdk iphonesimulator -configuration Debug test -enableCodeCoverage YES
+        echo "Tests will be added in future"
+
+    - name: Generate coverage report
+      run: |
+        # If tests exist, generate coverage
+        # xcrun xccov view --report --json build/Logs/Test/*.xcresult > coverage.json
+        echo "Coverage reporting will be added when tests are implemented"
+
+    - name: Archive build (optional)
+      run: |
+        xcodebuild -project BerlinTransportMap.xcodeproj -scheme BerlinTransportMap -sdk iphoneos -configuration Release -archivePath build/BerlinTransportMap.xcarchive archive
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: BerlinTransportMap-archive
+        path: build/BerlinTransportMap.xcarchive
