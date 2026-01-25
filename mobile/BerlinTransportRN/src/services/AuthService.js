@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Firebase configuration
@@ -44,5 +44,15 @@ export const signOut = async () => {
   } catch (error) {
     throw error;
   }
+};
+
+// User state management
+export const getCurrentUser = (): User | null => {
+  return auth.currentUser;
+};
+
+// Listen to auth state changes
+export const onAuthStateChange = (callback: (user: User | null) => void) => {
+  return onAuthStateChanged(auth, callback);
 };</content>
 <parameter name="filePath">mobile/BerlinTransportRN/src/services/AuthService.js
