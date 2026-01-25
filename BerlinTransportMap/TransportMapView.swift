@@ -50,6 +50,26 @@ struct TransportMapView: View {
                     )) {
                         StopAnnotationView(stop: stop, departures: nil)
                     }
+                }
+
+                ForEach(vehicles) { vehicle in
+                    Annotation(
+                        vehicle.line?.displayName ?? "?",
+                        coordinate: CLLocationCoordinate2D(
+                            latitude: vehicle.latitude,
+                            longitude: vehicle.longitude
+                        )
+                    ) {
+                        LiveVehicleMarkerView(vehicle: vehicle, isSelected: vehicle.id == selectedVehicle?.id)
+                    }
+                    .tag(vehicle.id)
+                }
+
+                if !routeCoordinates.isEmpty {
+                    // Route overlay for selected vehicle
+                    MapPolyline(coordinates: routeCoordinates)
+                        .stroke(routeColor, lineWidth: 4)
+                }
                     )
                 }
             }
