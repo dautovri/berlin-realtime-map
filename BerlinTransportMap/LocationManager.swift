@@ -1,5 +1,6 @@
 import Foundation
 import CoreLocation
+import UIKit
 
 /// Observable location manager for tracking user location
 @Observable
@@ -18,6 +19,14 @@ final class LocationManager: NSObject {
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         authorizationStatus = manager.authorizationStatus
+        
+        // Add observers for app lifecycle to optimize battery
+        NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     func requestPermission() {
@@ -35,6 +44,14 @@ final class LocationManager: NSObject {
 
     func stopUpdating() {
         // No-op for one-shot requests.
+    }
+    
+    @objc private func appWillEnterForeground() {
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+    }
+    
+    @objc private func appDidEnterBackground() {
+        manager.desiredAccuracy = kCLLocationAccuracyKilometer
     }
 }
 
