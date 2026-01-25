@@ -48,6 +48,10 @@ struct TransportMapView: View {
     @State private var dataSource: DataSource = .network
     @State private var cacheAge: TimeInterval?
     @State private var showingCacheInfo = false
+    @StateObject private var networkMonitor = NetworkMonitor()
+    @State private var showingOfflineMode = false
+
+    var isOffline: Bool { !networkMonitor.isConnected }
 
     var body: some View {
         ZStack {
@@ -89,14 +93,14 @@ struct TransportMapView: View {
                     VStack(alignment: .trailing, spacing: 8) {
                         // Cache status badge
                         HStack(spacing: 4) {
-                            Image(systemName: dataSource == .cache ? "clock.arrow.circlepath" : "wifi")
+                            Image(systemName: networkMonitor.isConnected ? (dataSource == .cache ? "clock.arrow.circlepath" : "wifi") : "wifi.slash")
                                 .font(.caption)
-                            Text(dataSource == .cache ? "Cached" : "Live")
+                            Text(networkMonitor.isConnected ? (dataSource == .cache ? "Cached" : "Live") : "Offline")
                                 .font(.caption.bold())
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9))
+                        .background(networkMonitor.isConnected ? (dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)) : Color.red.opacity(0.9))
                         .foregroundColor(.white)
                         .clipShape(Capsule())
                         
@@ -261,8 +265,10 @@ struct TransportMapView: View {
         .onDisappear {
             pollingTimer?.invalidate()
         }
-        .onChange(of: locationManager.location) { _, _ in
-            lastLocationUpdate = Date()
+        .onChange(of: networkMonitor.isConnected) { _, isConnected in
+            if !isConnected {
+                showingOfflineMode = true
+            }
         }
     }
 
@@ -335,20 +341,53 @@ struct TransportMapView: View {
         let latDelta = region.span.latitudeDelta / 2
         let lonDelta = region.span.longitudeDelta / 2
 
+        let north = center.latitude + latDelta
+        let west = center.longitude - lonDelta
+        let south = center.latitude - latDelta
+        let east = center.longitude + lonDelta
+
         do {
+            // Check if offline, use cache
+            if !networkMonitor.isConnected {
+                if let cachedVehicles = transportService.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.vehicles = cachedVehicles
+                    }
+                    dataSource = .cache
+                    cacheAge = transportService.cacheService.age(of: transportService.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
+                } else {
+                    // No cached data, show empty
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.vehicles = []
+                    }
+                }
+                return
+            }
+
             let fetchedVehicles = try await radarService.fetchVehicles(
-                north: center.latitude + latDelta,
-                west: center.longitude - lonDelta,
-                south: center.latitude - latDelta,
-                east: center.longitude + lonDelta,
+                north: north,
+                west: west,
+                south: south,
+                east: east,
                 duration: 30
             )
+
+            // Cache the vehicles
+            transportService.cacheService.setVehicles(fetchedVehicles, forBoundingBox: north, west: west, south: south, east: east, duration: 30)
 
             withAnimation(.easeInOut(duration: 0.3)) {
                 self.vehicles = fetchedVehicles
             }
         } catch {
             errorMessage = "Failed to load vehicles: \(error.localizedDescription)"
+            // Try to load from cache if network fails
+            if let cachedVehicles = transportService.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    self.vehicles = cachedVehicles
+                }
+                dataSource = .cache
+                cacheAge = transportService.cacheService.age(of: transportService.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
+            }
         }
     }
 

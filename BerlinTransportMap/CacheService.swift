@@ -1,4 +1,5 @@
 import Foundation
+import TripKit
 
 /// Cache service for storing transport data with TTL support
 final class CacheService {
@@ -99,13 +100,13 @@ final class CacheService {
         return get(key)
     }
     
-    // Vehicles cache (for future use)
-    func setVehicles(_ vehicles: [Any], forParameters params: [String], ttl: TimeInterval = 300) {
-        // Placeholder
+    // Vehicles cache
+    func setVehicles(_ vehicles: [Vehicle], forBoundingBox north: Double, west: Double, south: Double, east: Double, duration: Int, ttl: TimeInterval = 60) { // 1 min for vehicles
+        let key = CacheKey.vehicles.key(for: [String(format: "%.6f", north), String(format: "%.6f", west), String(format: "%.6f", south), String(format: "%.6f", east), "\(duration)"])
+        set(vehicles, forKey: key, ttl: ttl)
     }
     
-    func getVehicles(forParameters params: [String]) -> [Any]? {
-        // Placeholder
-        return nil
+    func getVehiclesCacheKey(forBoundingBox north: Double, west: Double, south: Double, east: Double, duration: Int) -> String {
+        return CacheKey.vehicles.key(for: [String(format: "%.6f", north), String(format: "%.6f", west), String(format: "%.6f", south), String(format: "%.6f", east), "\(duration)"])
     }
 }
