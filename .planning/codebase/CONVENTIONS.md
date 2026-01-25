@@ -5,86 +5,125 @@
 ## Naming Patterns
 
 **Files:**
-- PascalCase for types and protocols (e.g., `TransportService.swift`, `TransportMapView.swift`)
-- Descriptive names that clearly indicate purpose
+- PascalCase for structs and classes: `TransportMapView.swift`, `TransportService.swift`
+- Descriptive names: `VehicleRadarService.swift`, `LocationManager.swift`
 
 **Functions:**
-- camelCase starting with verb (e.g., `queryNearbyStops()`, `loadDepartures()`)
-- Descriptive names explaining what they do
+- camelCase: `loadStopsForRegion()`, `fetchVehicles()`
+- Descriptive with action verbs: `requestPermission()`, `centerOnUserLocation()`
 
-**Variables:**
-- camelCase (e.g., `selectedStop`, `cameraPosition`)
-- Use descriptive names, avoid abbreviations
+**Variables/Properties:**
+- camelCase: `locationManager`, `transportService`
+- Boolean prefixes: `isLoading`, `hasInitializedLocation`
+- Arrays with plural: `stops`, `vehicles`
 
 **Types:**
-- PascalCase for structs, classes, enums (e.g., `TransportStop`, `TransportError`)
-- Use meaningful names that describe the domain concept
+- PascalCase: `TransportStop`, `VehicleError`
+- Protocol conformances in extensions
+
+**Constants:**
+- static let with camelCase: `berlinCenter`, `nearbySpan`
+- UPPER_CASE for file constants: Not detected
 
 ## Code Style
 
 **Formatting:**
-- Not detected - No SwiftFormat or similar tool configured
-- Code appears manually formatted with consistent indentation
+- Xcode default formatting observed
+- Consistent indentation (4 spaces in code)
+- No linting/formatting config detected
 
 **Linting:**
-- Not detected - No SwiftLint configuration found
-- Some linting rules from dependencies found in build directory
+- No linting configuration detected (.swiftlint.yml not found)
+- Manual code review appears consistent
 
 ## Import Organization
 
 **Order:**
-1. System frameworks (SwiftUI, Foundation, CoreLocation, etc.)
-2. External dependencies (TripKit)
-3. Local modules (none currently)
+1. Foundation and system frameworks first: `import Foundation`, `import SwiftUI`
+2. Third-party libraries: `import TripKit`
+3. Alphabetical within groups
 
 **Path Aliases:**
-- Not configured - using relative imports
+- Not detected (Xcode project uses relative paths)
 
 ## Error Handling
 
 **Patterns:**
-- Use Swift's `do/try/catch` for throwing functions
-- Custom error enums with `LocalizedError` conformance (e.g., `TransportError`)
-- Early returns with `guard let` for optionals
-- Task cancellation checks with `try Task.checkCancellation()`
+- Custom error enums with LocalizedError: `TransportError`, `VehicleError`
+- Async throws: `func fetchVehicles(...) async throws -> [Vehicle]`
+- Guard statements for validation
+- Try/catch with specific error types
 
-## Logging
-
-**Framework:** Console logging only (print statements not observed in code)
-
-**Patterns:**
+**Logging:**
+- Print statements for debugging: `print("Location error: \(error.localizedDescription)")`
 - No structured logging framework detected
-- Error messages through `LocalizedError.errorDescription`
 
 ## Comments
 
 **When to Comment:**
-- MARK: comments for code organization sections
-- Brief comments for complex business logic
-- Doc comments not extensively used
+- MARK comments for code organization: `// MARK: - Supporting Views`
+- Doc comments for public APIs: `/// Service for fetching real-time vehicle positions`
+- Inline comments for complex logic
 
-**JSDoc/TSDoc:**
-- Not used - Swift uses /// for documentation comments (not observed)
+**Documentation:**
+- Triple-slash comments for services and key functions
+- No JSDoc/TSDoc equivalent (Swift uses ///)
 
 ## Function Design
 
-**Size:** Functions are reasonably sized, largest observed around 50-60 lines in complex view logic
+**Size:**
+- Main view functions can be large (TransportMapView has 783 lines)
+- Service functions are focused and smaller
+- Private helpers extracted where needed
 
-**Parameters:** 
-- Use descriptive parameter names
-- Default values for optional parameters (e.g., `maxDistance: Int = 2000`)
+**Parameters:**
+- Labelled parameters: `north: Double, west: Double`
+- Default values for optional behavior: `duration: Int = 30`
 
-**Return Values:** 
-- Prefer concrete types over Any
-- Use Result types implicitly through throws
-- Optional returns for failable initializers
+**Return Values:**
+- Optional for fallible operations: `TransportStop?`
+- Arrays for collections: `[TransportStop]`
 
 ## Module Design
 
-**Exports:** All public types and functions are properly scoped
+**Exports:**
+- Public structs and functions
+- Private implementation details
 
-**Barrel Files:** Not applicable (single target)
+**Extensions:**
+- Used for protocol conformances: `extension LocationManager: CLLocationManagerDelegate`
+- Color extensions for hex support
 
----
+## Async Programming
 
-*Convention analysis: 2026-01-25*
+**Patterns:**
+- async/await for network calls
+- Task for UI operations: `Task { await loadDepartures(for: stop) }`
+- Actor isolation for services: `actor VehicleRadarService`
+- @MainActor for UI classes
+
+**Concurrency:**
+- @Observable for reactive state
+- Task cancellation with checkCancellation()
+
+## Architecture Patterns
+
+**MVVM:**
+- Observable view models: `@Observable final class TransportService`
+- Views bind to state: `@State private var transportService = TransportService()`
+
+**Services:**
+- Actor for thread-safe services: `actor VehicleRadarService`
+- Singleton-like initialization with dependency injection
+
+## Code Organization
+
+**File Structure:**
+- One main type per file
+- Supporting types in same file with MARK sections
+- Extensions at file end
+
+**Access Control:**
+- Private for implementation details
+- Internal for module visibility (default)
+- Public for API surfaces

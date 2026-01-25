@@ -5,90 +5,85 @@
 ## Test Framework
 
 **Runner:**
-- Xcode Test (via Fastlane scan command)
-- Configuration: BerlinTransportMap.xctestplan (currently empty)
+- Not detected - No test runner configured
 
 **Assertion Library:**
-- Not configured - Would use Swift Testing framework
+- Not detected - No assertion library configured
 
 **Run Commands:**
 ```bash
-bundle exec fastlane ios test              # Run all tests
-# No watch mode configured
-# No coverage command configured
+# No test commands configured
 ```
 
 ## Test File Organization
 
 **Location:**
-- Not implemented - Tests would go in BerlinTransportMapPackage/Tests/ per project guidelines
+- Not established - No test files found
 
 **Naming:**
-- Not established - Would follow Swift Testing patterns with @Test macros
+- Not established - No test files found
 
 **Structure:**
-- Not established - Would use @Suite for test organization
+- Not established - No test files found
 
 ## Test Structure
 
 **Suite Organization:**
-- Not implemented - Would use @Suite("Feature Tests") for grouping
+- Not implemented - No test files found
 
 **Patterns:**
-- Not implemented - Would use Swift Testing framework patterns
-- Setup would use @Test macro with descriptive strings
-- Teardown would be handled by Swift's test lifecycle
+- Not implemented - No test files found
 
 ## Mocking
 
 **Framework:** Not configured
 
 **Patterns:**
-- Not implemented - Would need dependency injection for mocking
+- Not implemented - No test files found
 
 **What to Mock:**
-- External network calls (TripKit API)
-- Location services
-- File system operations
+- Network calls (VBB REST API, TripKit)
+- Location services (CLLocationManager)
+- External dependencies
 
 **What NOT to Mock:**
-- Pure business logic functions
-- Data transformations
-- UI state calculations
+- Pure data transformations
+- Model parsing
+- Business logic calculations
 
 ## Fixtures and Factories
 
 **Test Data:**
-- Not implemented - Would create factory functions for test data
+- Not implemented - No test files found
 
 **Location:**
-- Not established - Would be in test target
+- Not established - No test files found
 
 ## Coverage
 
-**Requirements:** Enabled in Fastlane config but no tests exist
+**Requirements:** Not configured
 
 **View Coverage:**
-- Not configured - Would use Xcode's built-in coverage viewer
+- Not configured
 
 ## Test Types
 
 **Unit Tests:**
-- Not implemented - Framework supports @Test for unit tests
+- Not implemented - No test files found
 
 **Integration Tests:**
-- Not implemented - Would test service integrations
+- Not implemented - No test files found
 
 **E2E Tests:**
-- Not implemented - Could use UI testing with accessibility identifiers
+- Not implemented - No test files found
 
 ## Common Patterns
 
 **Async Testing:**
-- Not implemented - Would use async throws in @Test functions
+- Not implemented - Would use async/await in test functions
 
 **Error Testing:**
-- Not implemented - Would use #expect(throws:) for error conditions
+- Not implemented - Would test error conditions with do/catch
 
 ---
 

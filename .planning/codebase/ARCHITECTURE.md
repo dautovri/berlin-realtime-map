@@ -1,121 +1,123 @@
 # Architecture
 
-**Analysis Date:** 2025-01-25
+**Analysis Date:** 2026-01-25
 
 ## Pattern Overview
 
-**Overall:** MVVM (Model-View-ViewModel) with service layer
+**Overall:** MVVM with SwiftUI
+- SwiftUI declarative views with @State and @Observable classes
+- Services handle business logic and API communication
+- Clean separation between UI state and data fetching
 
 **Key Characteristics:**
-- SwiftUI-based iOS application with reactive UI updates
-- Service-oriented architecture for data fetching
-- Observable objects for state management
-- Async/await for asynchronous operations
-- Actor-based concurrency for API services
+- Asynchronous data fetching with async/await
+- Actor-based services for thread safety
+- Observable state management
+- MapKit integration for location display
+- REST API integration for real-time data
 
 ## Layers
 
-**UI Layer:**
-- Purpose: Handles user interface and user interactions
+**Presentation Layer:**
+- Purpose: UI rendering and user interaction
 - Location: `BerlinTransportMap/TransportMapView.swift`, `BerlinTransportMap/ContentView.swift`
-- Contains: SwiftUI views, view modifiers, extensions
-- Depends on: Service Layer, Model Layer
-- Used by: Application entry point
+- Contains: SwiftUI views, map annotations, sheets
+- Depends on: Service layer, Location layer
+- Used by: App entry point
 
 **Service Layer:**
-- Purpose: Manages external data sources and business logic
-- Location: `BerlinTransportMap/TransportService.swift`, `BerlinTransportMap/VehicleRadarService.swift`, `BerlinTransportMap/LocationManager.swift`
-- Contains: API clients, location services, data processing
-- Depends on: External APIs (TripKit, VBB REST API), CoreLocation
-- Used by: UI Layer
+- Purpose: Data fetching and business logic
+- Location: `BerlinTransportMap/TransportService.swift`, `BerlinTransportMap/VehicleRadarService.swift`
+- Contains: API clients, data models, error handling
+- Depends on: External APIs (TripKit, VBB REST)
+- Used by: Presentation layer
 
-**Model Layer:**
-- Purpose: Defines data structures and business entities
-- Location: Embedded in service files (TransportStop, Vehicle, etc.)
-- Contains: Structs for transport data, enums for products
-- Depends on: None
-- Used by: Service Layer, UI Layer
+**Location Layer:**
+- Purpose: User location tracking
+- Location: `BerlinTransportMap/LocationManager.swift`
+- Contains: CLLocationManager wrapper
+- Depends on: CoreLocation framework
+- Used by: Presentation layer
 
 ## Data Flow
 
-**Map Interaction Flow:**
+**Stop Loading:**
 
-1. User moves map → `TransportMapView.onMapCameraChange` triggers
-2. Calls `loadStopsForRegion()` → `TransportService.queryNearbyStops()`
-3. Calls `loadVehicles()` → `VehicleRadarService.fetchVehicles()`
-4. Updates `@State` arrays → SwiftUI re-renders map annotations
+1. Map camera changes trigger `loadStopsForRegion()`
+2. TransportService queries TripKit API for nearby stops
+3. Stops displayed as annotations on map
 
-**Stop Details Flow:**
+**Vehicle Loading:**
 
-1. User taps stop marker → sets `selectedStop`
-2. Shows `RESTDeparturesSheet` → calls `loadDepartures()`
-3. `VehicleRadarService.fetchDepartures()` fetches data
-4. Displays departures in sheet
+1. Timer or user action triggers `loadVehicles()`
+2. VehicleRadarService fetches from VBB REST API
+3. Vehicles displayed as moving annotations
 
-**Vehicle Info Flow:**
+**Departure Loading:**
 
-1. User taps vehicle marker → sets `selectedVehicle`
-2. Shows `VehicleInfoSheet` → optional route loading
-3. `VehicleRadarService.fetchTripRoute()` gets polyline
-4. Displays route on map
+1. User taps stop annotation
+2. VehicleRadarService fetches departures from VBB REST API
+3. Departures shown in sheet view
 
 **State Management:**
-- `@State` properties in `TransportMapView` for UI state
-- `@Observable` classes for services
-- Manual state updates with async operations
+- @State for local view state (loading, selected items)
+- @Observable classes for shared services
+- Task-based async operations
 
 ## Key Abstractions
 
-**TransportService:**
-- Purpose: Handles static transport data (stops, departures) via TripKit
-- Examples: `queryNearbyStops()`, `queryDepartures()`
-- Pattern: Observable class with async methods
+**TransportStop:**
+- Purpose: Represents public transport stops
+- Examples: `BerlinTransportMap/TransportService.swift`
+- Pattern: Identifiable, Hashable struct with computed properties
 
-**VehicleRadarService:**
-- Purpose: Fetches real-time vehicle positions and departures via REST API
-- Examples: `fetchVehicles()`, `fetchDepartures()`, `fetchTripRoute()`
-- Pattern: Actor for thread-safe API calls
+**Vehicle:**
+- Purpose: Represents moving public transport vehicles
+- Examples: `BerlinTransportMap/VehicleRadarService.swift`
+- Pattern: Decodable struct with computed location coordinate
 
-**LocationManager:**
-- Purpose: Manages user location permissions and updates
-- Examples: `requestPermission()`, location updates
-- Pattern: Observable NSObject subclass conforming to CLLocationManagerDelegate
+**RESTDeparture:**
+- Purpose: Represents upcoming departures from stops
+- Examples: `BerlinTransportMap/VehicleRadarService.swift`
+- Pattern: Decodable struct with computed display time
 
 ## Entry Points
 
 **BerlinTransportMapApp:**
 - Location: `BerlinTransportMap/BerlinTransportMapApp.swift`
 - Triggers: App launch
-- Responsibilities: Sets up main window with ContentView
+- Responsibilities: Root window setup
 
 **ContentView:**
 - Location: `BerlinTransportMap/ContentView.swift`
 - Triggers: App initialization
-- Responsibilities: Wraps TransportMapView
+- Responsibilities: Main view container
 
 **TransportMapView:**
 - Location: `BerlinTransportMap/TransportMapView.swift`
-- Triggers: User interactions with map
-- Responsibilities: Main view controller, state management, data loading
+- Triggers: ContentView rendering
+- Responsibilities: Map display, data loading, user interaction
 
 ## Error Handling
 
-**Strategy:** Try-catch with user-friendly error messages
+**Strategy:** Async throws with user-friendly error messages
+- Network errors caught and mapped to localized strings
+- UI displays error banners with retry options
+- Cancellation support for task cleanup
 
 **Patterns:**
-- Async methods throw custom errors (TransportError, VehicleError)
-- Errors displayed in UI overlay
-- Retry buttons for network failures
-- Graceful degradation (empty states)
+- `try await` in view methods
+- Error state stored in @State
+- Conditional error UI rendering
 
 ## Cross-Cutting Concerns
 
-**Logging:** Minimal, uses print() for location errors
+**Logging:** Console print statements for location errors
 
-**Validation:** Input validation for API parameters
+**Validation:** Input validation in API parameter construction
 
-**Authentication:** Uses public API keys for TripKit, no user auth
+**Authentication:** None required - public APIs used
 
 ---
 
-*Architecture analysis: 2025-01-25*
+*Architecture analysis: 2026-01-25*

@@ -5,39 +5,37 @@
 ## Languages
 
 **Primary:**
-- Swift 6.0 - iOS application development
+- Swift - iOS application code in `BerlinTransportMap/`
 
 **Secondary:**
-- Not applicable
+- Python 3 - Build automation scripts in `scripts/` and root
 
 ## Runtime
 
 **Environment:**
-- iOS 26.0+ - Native iOS app runtime
+- iOS 17+ / macOS - Swift runtime environment
 
 **Package Manager:**
-- Swift Package Manager - Dependency management via Xcode
-- Lockfile: `BerlinTransportMap.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- Swift Package Manager - Dependency management
+- Lockfile: Not applicable (Xcode managed)
 
 ## Frameworks
 
 **Core:**
-- SwiftUI - User interface framework
-- MapKit - Map rendering and location services
+- SwiftUI - Declarative UI framework for app interface
+- MapKit - Apple Maps integration for transport visualization
+- CoreLocation - GPS and location services
 
 **Testing:**
-- Not detected
+- XCTest - Apple's testing framework (configured but not implemented)
 
 **Build/Dev:**
-- Xcode 16.0+ - IDE and build system
+- Xcode 15+ - IDE and build system
 
 ## Key Dependencies
 
 **Critical:**
 - TripKit 1.17.0 - Public transport client library for Berlin/VBB data
-- SwiftyJSON 5.0.2 - JSON parsing library
-- SWXMLHash 6.0.0 - XML parsing library
-- GzipSwift 5.2.0 - Gzip compression library
 
 **Infrastructure:**
 - Not applicable
@@ -45,20 +43,21 @@
 ## Configuration
 
 **Environment:**
-- Xcode project configuration in `BerlinTransportMap.xcodeproj`
-- Build settings managed within Xcode
+- Environment variables in `.env` for Fastlane/App Store Connect
+- Key configs required: APP_STORE_CONNECT_API_KEY_JSON_PATH, TEAM_ID
 
 **Build:**
-- No separate config files - configuration stored in Xcode project
+- Xcode project file: `BerlinTransportMap.xcodeproj`
+- Test plan: `BerlinTransportMap.xctestplan`
 
 ## Platform Requirements
 
 **Development:**
-- macOS with Xcode 16.0+
-- iOS Simulator or physical iOS device
+- macOS with Xcode 15+
+- iOS Simulator or physical device
 
 **Production:**
-- iOS 26.0+ devices
+- iOS 17.0+ deployment target
 
 ---
 
