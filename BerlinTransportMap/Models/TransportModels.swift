@@ -178,6 +178,17 @@ struct Event: Identifiable, Codable, Hashable {
     let description: String?
 }
 
+// MARK: - Bike Sharing
+
+struct BikeStation: Identifiable, Codable, Hashable {
+    let id: String
+    let name: String
+    let latitude: Double
+    let longitude: Double
+    let availableBikes: Int
+    let availableDocks: Int
+}
+
 enum TransportError: LocalizedError {
     case invalidLocation
     case invalidStation
