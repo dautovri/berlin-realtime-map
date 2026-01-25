@@ -166,9 +166,15 @@ struct TransportLine: Codable {
     }
 }
 
-typealias TransportProduct = Product
+// MARK: - Weather
 
-// MARK: - Errors
+struct Weather: Codable, Hashable {
+    let temperature: Double // Celsius
+    let condition: String // e.g., "Clear", "Rain"
+    let precipitationProbability: Double // 0.0 to 1.0
+    let icon: String // e.g., "01d"
+    let timestamp: Date
+}
 
 enum TransportError: LocalizedError {
     case invalidLocation
