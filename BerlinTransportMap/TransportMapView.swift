@@ -49,8 +49,8 @@ struct TransportMapView: View {
     @State private var cacheAge: TimeInterval?
     @State private var showingCacheInfo = false
     @StateObject private var networkMonitor = NetworkMonitor()
-    @State private var showingOfflineMode = false
-    @State private var predictiveLoader = PredictiveLoader()
+    @State private var weather: Weather?
+    @State private var weatherService = WeatherService()
 
     var isOffline: Bool { !networkMonitor.isConnected }
 
@@ -87,11 +87,28 @@ struct TransportMapView: View {
                 }
             }
             
-            // Cache status overlay
+            // Weather overlay
             VStack {
                 HStack {
+                    if let weather = weather {
+                        HStack(spacing: 4) {
+                            Image(systemName: weatherIconName(for: weather.condition))
+                                .font(.caption)
+                            Text(String(format: "%.1f°C", weather.temperature))
+                                .font(.caption.bold())
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.9))
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                    }
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 8) {
+                }
+                .padding(.top, 50)
+                .padding(.leading, 20)
+                Spacer()
+            }
                         // Cache status badge
                         HStack(spacing: 4) {
                             Image(systemName: networkMonitor.isConnected ? (dataSource == .cache ? "clock.arrow.circlepath" : "wifi") : "wifi.slash")
@@ -285,6 +302,15 @@ struct TransportMapView: View {
             if let location = newLocation {
                 lastLocationUpdate = Date()
                 predictiveLoader.handleLocationUpdate(location)
+                
+                // Fetch weather
+                Task {
+                    do {
+                        self.weather = try await weatherService.fetchWeather(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+                    } catch {
+                        print("Failed to fetch weather: \(error)")
+                    }
+                }
             }
         }
     }
@@ -329,7 +355,7 @@ struct TransportMapView: View {
                 return
             }
             
-            let plannedRoute = try await routeService.planRoute(start: startStop, end: endStop, mode: mode)
+            let plannedRoute = try await routeService.planRoute(start: startStop, end: endStop, mode: mode, weather: weather)
             self.route = plannedRoute
             showingRoutePlanner = false
             
@@ -910,6 +936,16 @@ extension Color {
             green: Double(g) / 255,
             blue: Double(b) / 255
         )
+    }
+}
+
+private func weatherIconName(for condition: String) -> String {
+    switch condition.lowercased() {
+    case "clear": return "sun.max.fill"
+    case "clouds": return "cloud.fill"
+    case "rain": return "cloud.rain.fill"
+    case "snow": return "snowflake"
+    default: return "questionmark.circle"
     }
 }
 

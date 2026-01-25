@@ -7,6 +7,8 @@ import CoreLocation
 final class RouteService: @unchecked Sendable {
     private let provider: BvgProvider
     
+    var lastWeather: Weather?
+    
     // BVG API authorization - same as TransportService
     nonisolated(unsafe) private static let apiAuthorization: [String: Any] = [
         "type": "AID",
@@ -18,11 +20,24 @@ final class RouteService: @unchecked Sendable {
     }
     
     /// Plan a route between two stops with specified transport mode
-    func planRoute(start: TransportStop, end: TransportStop, mode: TransportMode) async throws -> Route {
+    func planRoute(start: TransportStop, end: TransportStop, mode: TransportMode, weather: Weather? = nil) async throws -> Route {
         try Task.checkCancellation()
         
         // Convert TransportMode to TripKit products
         let products = transportModeToProducts(mode)
+        
+        // Adjust optimization based on weather
+        let optimize: Optimize
+        let maxWalkDistance: Int
+        if let weather = weather, weather.temperature > 15, weather.precipitationProbability < 0.1 {
+            // Good weather: prefer walking
+            optimize = .leastWalking
+            maxWalkDistance = 2000
+        } else {
+            // Bad or unknown weather: quick routes
+            optimize = .quick
+            maxWalkDistance = 1000
+        }
         
         // Create TripRequest
         let request = TripRequest(
@@ -32,13 +47,15 @@ final class RouteService: @unchecked Sendable {
             date: Date(),
             departure: true,
             products: products,
-            optimize: .quick,
+            optimize: optimize,
             options: [:],
             accessibility: .neutral,
             maxChanges: -1,
             walkingSpeed: .normal,
-            maxWalkDistance: 1000
+            maxWalkDistance: maxWalkDistance
         )
+        
+        self.lastWeather = weather
         
         let (_, result) = await provider.planTrip(request: request)
         
