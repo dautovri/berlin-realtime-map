@@ -1,5 +1,6 @@
 import Foundation
 import CoreLocation
+import UIKit
 
 /// Service for fetching real-time vehicle positions from VBB REST API (Berlin-Brandenburg region)
 actor VehicleRadarService {
@@ -129,6 +130,95 @@ actor VehicleRadarService {
         let tripResponse = try decoder.decode(TripResponse.self, from: data)
         return tripResponse.trip
     }
+
+    /// Update user location and activity state for adaptive polling
+    func updateUserState(location: CLLocation, nearStop: Bool = false) {
+        if let last = lastUserLocation {
+            let distance = location.distance(from: last)
+            let timeDiff = location.timestamp.timeIntervalSince(last.timestamp)
+            if timeDiff > 0 {
+                let speed = distance / timeDiff
+                isMoving = speed > 0.5 // Consider moving if speed > 0.5 m/s
+            }
+        }
+        lastUserLocation = location
+        self.nearStop = nearStop
+        updatePollingInterval()
+    }
+
+    /// Start adaptive polling for vehicles
+    func startPolling(north: Double, west: Double, south: Double, east: Double, initialInterval: TimeInterval = 30.0) {
+        currentBoundingBox = (north, west, south, east)
+        pollingInterval = initialInterval
+        pollingTimer?.invalidate()
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { [weak self] _ in
+            Task {
+                await self?.performPoll()
+            }
+        }
+        isPolling = true
+    }
+
+    /// Stop polling
+    func stopPolling() {
+        pollingTimer?.invalidate()
+        pollingTimer = nil
+        isPolling = false
+    }
+
+    private func performPoll() async {
+        guard let box = currentBoundingBox else { return }
+        do {
+            let vehicles = try await fetchVehicles(north: box.north, west: box.west, south: box.south, east: box.east)
+            // In a real implementation, this would notify observers or update a published property
+            // For now, just fetch to keep battery optimization
+        } catch {
+            // Handle error silently for battery optimization
+        }
+    }
+
+    private func updatePollingInterval() {
+        if nearStop && isMoving {
+            pollingInterval = 5.0 // Very frequent near stops when moving
+        } else if isMoving {
+            pollingInterval = 10.0 // Frequent when moving
+        } else {
+            pollingInterval = 30.0 // Less frequent when stationary
+        }
+        restartTimerIfNeeded()
+    }
+
+    private func restartTimerIfNeeded() {
+        guard isPolling, let timer = pollingTimer else { return }
+        let currentInterval = timer.timeInterval
+        if abs(currentInterval - pollingInterval) > 0.1 {
+            restartTimer()
+        }
+    }
+
+    private func restartTimer() {
+        pollingTimer?.invalidate()
+        guard let box = currentBoundingBox else { return }
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { [weak self] _ in
+            Task {
+                await self?.performPoll()
+            }
+        }
+    }
+
+    @objc @MainActor private func appDidEnterBackground() {
+        stopPolling()
+    }
+
+    @objc @MainActor private func appWillEnterForeground() {
+        guard let box = currentBoundingBox else { return }
+        startPolling(north: box.north, west: box.west, south: box.south, east: box.east, initialInterval: pollingInterval)
+    }
+}
+
+deinit {
+    pollingTimer?.invalidate()
+    NotificationCenter.default.removeObserver(self)
 }
 
 // MARK: - Trip Route Models
