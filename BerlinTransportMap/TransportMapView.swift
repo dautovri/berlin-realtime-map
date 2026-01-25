@@ -53,6 +53,20 @@ struct TransportMapView: View {
     @State private var eventsService = EventsService()
     @State private var selectedEvent: Event?
     @State private var showingEventDetails = false
+    @State private var bikeStations: [BikeStation] = []
+    @State private var bikeService = BikeService()
+
+    @State private var route: Route?
+    @State private var weather: Weather?
+    @State private var weatherService = WeatherService()
+    @State private var predictiveLoader = PredictiveLoader()
+    @State private var pollingTimer: Timer?
+
+    @State private var showingFavorites = false
+    @State private var showingAbout = false
+    @State private var showingHelp = false
+    @State private var showingSettings = false
+    @State private var showingOfflineMode = false
 
     var isOffline: Bool { !networkMonitor.isConnected }
 
@@ -109,50 +123,46 @@ struct TransportMapView: View {
                 }
                 .padding(.top, 50)
                 .padding(.leading, 20)
-                Spacer()
-            }
-                        // Cache status badge
-                        HStack(spacing: 4) {
-                            Image(systemName: networkMonitor.isConnected ? (dataSource == .cache ? "clock.arrow.circlepath" : "wifi") : "wifi.slash")
-                                .font(.caption)
-                            Text(networkMonitor.isConnected ? (dataSource == .cache ? "Cached" : "Live") : "Offline")
-                                .font(.caption.bold())
-                        }
+                
+                // Cache status badge
+                HStack(spacing: 4) {
+                    Image(systemName: networkMonitor.isConnected ? (dataSource == .cache ? "clock.arrow.circlepath" : "wifi") : "wifi.slash")
+                        .font(.caption)
+                    Text(networkMonitor.isConnected ? (dataSource == .cache ? "Cached" : "Live") : "Offline")
+                        .font(.caption.bold())
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(networkMonitor.isConnected ? (dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)) : Color.red.opacity(0.9))
+                .foregroundColor(.white)
+                .clipShape(Capsule())
+                
+                // Cache age if cached
+                if dataSource == .cache, let age = cacheAge {
+                    Text("Age: \(formattedAge(age))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                         .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(networkMonitor.isConnected ? (dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)) : Color.red.opacity(0.9))
+                        .padding(.vertical, 2)
+                        .background(Color.gray.opacity(0.8))
                         .foregroundColor(.white)
                         .clipShape(Capsule())
-                        
-                        // Cache age if cached
-                        if dataSource == .cache, let age = cacheAge {
-                            Text("Age: \(formattedAge(age))")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 2)
-                                .background(Color.gray.opacity(0.8))
-                                .foregroundColor(.white)
-                                .clipShape(Capsule())
-                        }
-                        
-                        // Refresh button
-                        Button {
-                            refreshData()
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.title3)
-                                .foregroundColor(.white)
-                                .padding(8)
-                                .background(Color.blue.opacity(0.8))
-                                .clipShape(Circle())
-                        }
-                    }
-                    .padding(.top, 50)
-                    .padding(.trailing, 20)
                 }
-                Spacer()
+                
+                // Refresh button
+                Button {
+                    refreshData()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .padding(8)
+                        .background(Color.blue.opacity(0.8))
+                        .clipShape(Circle())
+                }
             }
+            .padding(.top, 50)
+            .padding(.trailing, 20)
             
             // Floating buttons
             VStack {
@@ -198,10 +208,10 @@ struct TransportMapView: View {
                         selectedStop = nil
                     }
                 )
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .sheet(isPresented: $showingVehicleInfo) {
             if let vehicle = selectedVehicle {
                 VehicleInfoSheet(
@@ -228,14 +238,14 @@ struct TransportMapView: View {
             SettingsView()
         }
         .sheet(isPresented: $showingRoutePlanner) {
-            RoutePlannerView(initialDestination: initialDestination) { start, end, mode in
+            RoutePlannerView(initialDestination: initialDestination) { start, end, mode, includeBikes in
                 Task {
-                    await planRoute(start: start, end: end, mode: mode)
+                    await planRoute(start: start, end: end, mode: mode, includeBikes: includeBikes)
                 }
             }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
         }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
         .sheet(isPresented: $showingFavorites) {
             FavoritesView(
                 onSelectStop: { stop in
@@ -252,10 +262,6 @@ struct TransportMapView: View {
                     showingFavorites = false
                 }
             )
-        }
-            }
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingAbout) {
             BerlinTransportMapAboutView()
@@ -346,7 +352,7 @@ struct TransportMapView: View {
     }
 
     @MainActor
-    private func planRoute(start: String, end: String, mode: TransportMode) async {
+    private func planRoute(start: String, end: String, mode: TransportMode, includeBikes: Bool = false) async {
         do {
             // First, find the stops by name
             let startStops = try await transportService.searchLocations(query: start, maxLocations: 1)
@@ -357,7 +363,7 @@ struct TransportMapView: View {
                 return
             }
             
-            let plannedRoute = try await routeService.planRoute(start: startStop, end: endStop, mode: mode, weather: weather)
+            let plannedRoute = try await routeService.planRoute(start: startStop, end: endStop, mode: mode, weather: weather, includeBikes: includeBikes)
             self.route = plannedRoute
             showingRoutePlanner = false
             
@@ -689,17 +695,6 @@ struct RESTDepartureRow: View {
                         .foregroundStyle(.blue)
                 }
             }
-
-                if let delay = departure.delayMinutes, delay > 0 {
-                    Text("+\(delay) min")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                } else if departure.cancelled == true {
-                    Text("Cancelled")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            }
         }
         .opacity(departure.cancelled == true ? 0.5 : 1.0)
     }
@@ -957,6 +952,19 @@ private func loadEvents() async {
         self.events = try await eventsService.fetchEvents()
     } catch {
         print("Failed to load events: \(error)")
+    }
+}
+
+@MainActor
+private func loadBikeStations() async {
+    if let region = currentRegion {
+        let center = region.center
+        let radius = region.span.latitudeDelta * 111_000 / 2 // approximate km
+        do {
+            self.bikeStations = try await bikeService.fetchBikes(latitude: center.latitude, longitude: center.longitude, radius: radius)
+        } catch {
+            print("Failed to load bike stations: \(error)")
+        }
     }
 }
 

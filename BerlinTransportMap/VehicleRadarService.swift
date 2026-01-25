@@ -214,11 +214,11 @@ actor VehicleRadarService {
         guard let box = currentBoundingBox else { return }
         startPolling(north: box.north, west: box.west, south: box.south, east: box.east, initialInterval: pollingInterval)
     }
-}
 
-deinit {
-    pollingTimer?.invalidate()
-    NotificationCenter.default.removeObserver(self)
+    deinit {
+        pollingTimer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
+    }
 }
 
 // MARK: - Trip Route Models

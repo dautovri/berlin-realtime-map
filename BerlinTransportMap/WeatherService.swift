@@ -61,6 +61,16 @@ final class WeatherService: @unchecked Sendable {
     }
 }
 
+// MARK: - Weather Model
+
+struct Weather: Codable, Sendable {
+    let temperature: Double
+    let condition: String
+    let precipitationProbability: Double
+    let icon: String
+    let timestamp: Date
+}
+
 // MARK: - API Response Models
 
 private struct OpenWeatherResponse: Codable {

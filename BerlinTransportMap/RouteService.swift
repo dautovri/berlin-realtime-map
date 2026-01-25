@@ -20,16 +20,20 @@ final class RouteService: @unchecked Sendable {
     }
     
     /// Plan a route between two stops with specified transport mode
-    func planRoute(start: TransportStop, end: TransportStop, mode: TransportMode, weather: Weather? = nil) async throws -> Route {
+    func planRoute(start: TransportStop, end: TransportStop, mode: TransportMode, weather: Weather? = nil, includeBikes: Bool = false) async throws -> Route {
         try Task.checkCancellation()
         
         // Convert TransportMode to TripKit products
         let products = transportModeToProducts(mode)
         
-        // Adjust optimization based on weather
+        // Adjust optimization based on weather and bikes
         let optimize: Optimize
         let maxWalkDistance: Int
-        if let weather = weather, weather.temperature > 15, weather.precipitationProbability < 0.1 {
+        if includeBikes {
+            // Include bikes: prefer walking/biking
+            optimize = .leastWalking
+            maxWalkDistance = 3000
+        } else if let weather = weather, weather.temperature > 15, weather.precipitationProbability < 0.1 {
             // Good weather: prefer walking
             optimize = .leastWalking
             maxWalkDistance = 2000

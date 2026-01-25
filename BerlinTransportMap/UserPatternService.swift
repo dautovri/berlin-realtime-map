@@ -171,5 +171,4 @@ final class UserPatternService {
             locationHistory = []
         }
     }
-}</content>
-<parameter name="filePath">BerlinTransportMap/UserPatternService.swift
+}

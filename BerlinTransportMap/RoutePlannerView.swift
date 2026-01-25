@@ -4,11 +4,12 @@ struct RoutePlannerView: View {
     @State private var startStop: String = ""
     @State private var endStop: String = ""
     @State private var selectedTransportMode: TransportMode = .train
+    @State private var includeBikes = false
     
     let initialDestination: String?
-    let onPlanRoute: (String, String, TransportMode) -> Void
+    let onPlanRoute: (String, String, TransportMode, Bool) -> Void
     
-    init(initialDestination: String?, onPlanRoute: @escaping (String, String, TransportMode) -> Void) {
+    init(initialDestination: String?, onPlanRoute: @escaping (String, String, TransportMode, Bool) -> Void) {
         self.initialDestination = initialDestination
         self.onPlanRoute = onPlanRoute
         if let dest = initialDestination {
@@ -47,8 +48,11 @@ struct RoutePlannerView: View {
             .pickerStyle(SegmentedPickerStyle())
             .padding(.horizontal)
             
+            Toggle("Include Bike-sharing", isOn: $includeBikes)
+                .padding(.horizontal)
+            
             Button(action: {
-                onPlanRoute(startStop, endStop, selectedTransportMode)
+                onPlanRoute(startStop, endStop, selectedTransportMode, includeBikes)
             }) {
                 Text("Plan Route")
                     .frame(maxWidth: .infinity)
