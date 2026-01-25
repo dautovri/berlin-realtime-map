@@ -36,6 +36,7 @@ struct TransportMapView: View {
     @State private var routeColor: Color = .blue
     @State private var showingAbout = false
     @State private var showingHelp = false
+    @State private var showingSettings = false
 
     var body: some View {
         ZStack {
@@ -170,6 +171,9 @@ struct TransportMapView: View {
                         Button(action: { showingHelp = true }) {
                             Label("Help & Support", systemImage: "questionmark.circle")
                         }
+                        Button(action: { showingSettings = true }) {
+                            Label("Settings", systemImage: "gear")
+                        }
                         Button(action: { showingAbout = true }) {
                             Label("About", systemImage: "info.circle")
                         }
@@ -250,6 +254,12 @@ struct TransportMapView: View {
         }
         .sheet(isPresented: $showingHelp) {
             BerlinTransportMapHelpCenterView()
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
+        .sheet(isPresented: $showingAbout) {
+            BerlinTransportMapAboutView()
         }
         .sheet(isPresented: $showingDeveloperInfo) {
             DeveloperInfoSheet()
