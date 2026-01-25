@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import MapView, { PROVIDER_DEFAULT } from 'react-native-maps';
 import { getStops, getVehicles } from '../api/vbb';
+import StopMarker from './StopMarker';
+import VehicleMarker from './VehicleMarker';
 
 const BERLIN_REGION = {
   latitude: 52.5200,
@@ -63,7 +65,12 @@ const MapViewComponent = () => {
         zoomEnabled={true}
         scrollEnabled={true}
       >
-        {/* Stops and vehicles markers will be added in child components */}
+        {stops.map((stop) => (
+          <StopMarker key={stop.id} stop={stop} />
+        ))}
+        {vehicles.map((vehicle) => (
+          <VehicleMarker key={vehicle.id} vehicle={vehicle} />
+        ))}
       </MapView>
     </View>
   );
