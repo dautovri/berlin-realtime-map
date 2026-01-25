@@ -35,7 +35,7 @@ struct TransportMapView: View {
     @State private var routeService = RouteService()
     @State private var route: Route?
     @State private var showingRoutePlanner = false
-    @State private var showingFavorites = false
+    @State private var predictionService = PredictionService()
     @State private var favoritesService: FavoritesService?
 
     var body: some View {
@@ -109,6 +109,7 @@ struct TransportMapView: View {
                 RESTDeparturesSheet(
                     stop: stop,
                     departures: restDepartures,
+                    predictionService: predictionService,
                     onClose: {
                         showingDepartures = false
                         selectedStop = nil
@@ -391,6 +392,7 @@ struct StopMarkerView: View {
 struct RESTDeparturesSheet: View {
     let stop: TransportStop
     let departures: [RESTDeparture]
+    let predictionService: PredictionService
     let onClose: () -> Void
 
     var body: some View {
@@ -404,7 +406,7 @@ struct RESTDeparturesSheet: View {
                     )
                 } else {
                     ForEach(departures) { departure in
-                        RESTDepartureRow(departure: departure)
+                        RESTDepartureRow(departure: departure, predictionService: predictionService, stop: stop)
                     }
                 }
             }
@@ -423,6 +425,19 @@ struct RESTDeparturesSheet: View {
 
 struct RESTDepartureRow: View {
     let departure: RESTDeparture
+    let predictionService: PredictionService
+    let stop: TransportStop
+    
+    var predictedArrivalTime: Date? {
+        // Create a mock vehicle for prediction
+        let mockVehicle = Vehicle(
+            tripId: departure.tripId,
+            line: departure.line,
+            direction: departure.direction,
+            location: nil
+        )
+        return predictionService.predictArrival(for: mockVehicle, at: stop)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -459,6 +474,24 @@ struct RESTDepartureRow: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
                 }
+
+                if let delay = departure.delay, delay > 0 {
+                    Text("+\(delay) min")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                } else if departure.cancelled == true {
+                    Text("Cancelled")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                // Predicted arrival time
+                if let predictedTime = predictedArrivalTime {
+                    Text("Predicted: \(predictedTime, style: .time)")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
+            }
 
                 if let delay = departure.delayMinutes, delay > 0 {
                     Text("+\(delay) min")
