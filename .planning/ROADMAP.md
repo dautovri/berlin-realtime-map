@@ -18,7 +18,7 @@ This roadmap transforms the Berlin Transport Map iOS app into a comprehensive mo
 
 **Requirements:** UI-01, UI-02, UI-03, UI-04, UI-05
 
-**Plans:** 5 plans
+**Plans:** 7 plans
 
 **Success Criteria:**
 1. User can automatically switch to dark mode based on system settings
@@ -33,6 +33,8 @@ Plans:
 - [ ] 01-03-PLAN.md — Accessibility features
 - [ ] 01-04-PLAN.md — Advanced map features
 - [ ] 01-05-PLAN.md — Customizable themes
+- [ ] 01-06-PLAN.md — Fix TransportMapView build errors (gap closure)
+- [ ] 01-07-PLAN.md — Fix UserPatternService build errors (gap closure)
 
 ### Phase 2: Smart Features
 **Goal:** Users can plan and personalize their journeys with intelligent route planning and recommendations.
