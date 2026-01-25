@@ -6,6 +6,8 @@ import SwiftData
 
 @main
 struct BerlinTransportMapApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var body: some Scene {
         WindowGroup {
             ContentView()
