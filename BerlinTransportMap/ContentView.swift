@@ -5,26 +5,28 @@ struct ContentView: View {
     @AppStorage("useSystemTheme") private var useSystemTheme = true
     
     var body: some View {
-        TabView {
-            TransportMapView()
-                .tabItem {
-                    Label("Map", systemImage: "map")
-                }
-            
-            FavoritesView()
-                .tabItem {
-                    Label("Favorites", systemImage: "heart")
-                }
-            
-            HistoryView()
-                .tabItem {
-                    Label("History", systemImage: "clock")
-                }
-            
-            RecommendationsView()
-                .tabItem {
-                    Label("Recommendations", systemImage: "star")
-                }
+        LazyVStack {
+            TabView {
+                TransportMapView()
+                    .tabItem {
+                        Label("Map", systemImage: "map")
+                    }
+                
+                FavoritesView()
+                    .tabItem {
+                        Label("Favorites", systemImage: "heart")
+                    }
+                
+                HistoryView()
+                    .tabItem {
+                        Label("History", systemImage: "clock")
+                    }
+                
+                RecommendationsView()
+                    .tabItem {
+                        Label("Recommendations", systemImage: "star")
+                    }
+            }
         }
         .preferredColorScheme(useSystemTheme ? nil : (darkMode ? .dark : .light))
     }
