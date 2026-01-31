@@ -489,40 +489,57 @@ struct TransportMapView: View {
             let center = region.center
             let maxDistance = Int(region.span.latitudeDelta * 111_000)
 
+            // Check cache first - only fetch from network if cache is expired or missing
             let cacheKey = services.cacheService.getStopsCacheKey(forLocation: center.latitude, longitude: center.longitude, maxDistance: maxDistance)
-            let cachedAge = services.cacheService.age(of: cacheKey)
-            dataSource = cachedAge != nil ? .cache : .network
-            cacheAge = cachedAge
-
-            var fetchedStops: [TransportStop]
+            
+            var fetchedStops: [TransportStop]?
+            
+            // Check for preloaded stops first
             if let preloadedStops = services.predictiveLoader.getPreloadedStops(for: center, maxDistance: maxDistance) {
                 fetchedStops = preloadedStops
                 dataSource = .cache
                 cacheAge = 0
                 print("Using preloaded stops data")
-            } else {
+            } else if let cachedStops = services.cacheService.getStops(forLocation: center.latitude, longitude: center.longitude, maxDistance: maxDistance) {
+                // Cache hit - use cached data
+                fetchedStops = cachedStops
+                dataSource = .cache
+                cacheAge = services.cacheService.age(of: cacheKey)
+                print("Using cached stops (age: \(formattedAge(cacheAge ?? 0)))")
+            }
+            
+            // Only fetch from network if we don't have cached data
+            if fetchedStops == nil {
+                print("Cache miss - fetching stops from network")
+                dataSource = .network
+                cacheAge = nil
+                
                 fetchedStops = try await services.transportService.queryNearbyStops(
                     latitude: center.latitude,
                     longitude: center.longitude,
                     maxDistance: min(maxDistance, 5000),
                     maxLocations: 100
                 )
+                
+                // Save to cache for next time
+                services.cacheService.setStops(
+                    fetchedStops!,
+                    forLocation: center.latitude,
+                    longitude: center.longitude,
+                    maxDistance: min(maxDistance, 5000)
+                )
             }
-
-            services.cacheService.setStops(
-                fetchedStops,
-                forLocation: center.latitude,
-                longitude: center.longitude,
-                maxDistance: min(maxDistance, 5000)
-            )
-
-            self.stops = fetchedStops
+            
+            self.stops = fetchedStops!
         } catch {
             errorMessage = error.localizedDescription
+            // Try to use cache as fallback
             if let cachedStops = services.cacheService.getStops(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000)) {
                 self.stops = cachedStops
                 dataSource = .cache
                 cacheAge = services.cacheService.age(of: services.cacheService.getStopsCacheKey(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000)))
+            } else {
+                self.stops = []
             }
         }
 
