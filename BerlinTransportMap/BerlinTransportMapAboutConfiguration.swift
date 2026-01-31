@@ -2,7 +2,7 @@ import Foundation
 
 /// Configuration for the AboutKit about screen
 struct BerlinTransportMapAboutConfiguration {
-    let appName = "BerlinTransportMap"
+    let appName = AppInfo.current.name
     /// Set this once the app has an App Store ID (e.g. "1234567890").
     /// When nil, App Store review/share rows are hidden.
     let appStoreID: String? = nil
@@ -16,8 +16,8 @@ struct BerlinTransportMapAboutConfiguration {
     let termsOfUseURL = URL(string: "https://dautovri.com/terms")
     
     let appDescription = "Real-time Berlin public transport map showing live vehicle positions and departures."
-    let appVersion = Bundle.main.appVersion
-    let appBuild = Bundle.main.appBuild
+    let appVersion = AppInfo.current.version
+    let appBuild = AppInfo.current.build
 
     var appStorePageURL: URL? {
         guard let appStoreID else { return nil }
@@ -35,15 +35,5 @@ struct BerlinTransportMapAboutConfiguration {
 
     var issuesURL: URL? {
         githubURL?.appendingPathComponent("issues")
-    }
-}
-
-extension Bundle {
-    var appVersion: String {
-        infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-    }
-    
-    var appBuild: String {
-        infoDictionary?["CFBundleVersion"] as? String ?? "1"
     }
 }

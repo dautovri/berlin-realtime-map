@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 /// Events service for fetching event data from Berlin's events API
 @Observable
@@ -8,7 +9,7 @@ final class EventsService: @unchecked Sendable {
     private let cacheService = CacheService()
     private let baseURL = "https://api.berlin.de/events/"
     
-    private init() {}
+    init() {}
     
     // MARK: - Events Fetching
     
@@ -75,10 +76,8 @@ private struct BerlinEvent: Codable {
 // MARK: - Extensions
 
 extension Event {
-    init?(from berlinEvent: BerlinEvent) {
-        guard let id = berlinEvent.id,
-              let name = berlinEvent.name,
-              let locationName = berlinEvent.location?.name,
+    fileprivate init?(from berlinEvent: BerlinEvent) {
+        guard let locationName = berlinEvent.location?.name,
               let lat = berlinEvent.location?.latitude,
               let lon = berlinEvent.location?.longitude,
               let dateString = berlinEvent.date?.start,
@@ -86,8 +85,8 @@ extension Event {
             return nil
         }
         
-        self.id = id
-        self.name = name
+        self.id = berlinEvent.id
+        self.name = berlinEvent.name
         self.location = locationName
         self.latitude = lat
         self.longitude = lon

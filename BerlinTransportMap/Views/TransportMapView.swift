@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import UIKit
 
 enum DataSource {
     case network
@@ -7,11 +8,8 @@ enum DataSource {
 }
 
 struct TransportMapView: View {
-    // Berlin center as fallback
     private static let berlinCenter = CLLocationCoordinate2D(latitude: 52.520008, longitude: 13.404954)
-    // Small radius for initial "nearby" view (about 500m)
     private static let nearbySpan = MKCoordinateSpan(latitudeDelta: 0.008, longitudeDelta: 0.008)
-    // Wider view for when location unavailable
     private static let defaultSpan = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
 
     @State private var cameraPosition: MapCameraPosition = .region(
@@ -20,11 +18,10 @@ struct TransportMapView: View {
 
     @State private var locationManager = LocationManager()
     @State private var hasInitializedLocation = false
-    @State private var transportService = TransportService()
-    @State private var radarService = VehicleRadarService()
     @State private var stops: [TransportStop] = []
     @State private var vehicles: [Vehicle] = []
     @State private var restDepartures: [RESTDeparture] = []
+    @State private var isLoadingDepartures = false
     @State private var selectedStop: TransportStop?
     @State private var selectedVehicle: Vehicle?
     @State private var isLoading = false
@@ -37,29 +34,20 @@ struct TransportMapView: View {
     @State private var lastVehiclesLoadTime: Date?
     @State private var isLoadingVehicles = false
     @State private var isLiveUpdating = true
-    @State private var routeService = RouteService()
-    @State private var showingRoutePlanner = false
-    @State private var initialDestination: String?
-    @State private var predictionService = PredictionService()
     @State private var favoritesService: FavoritesService?
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var lastLocationUpdate = Date.distantPast
     @State private var pollingInterval: TimeInterval = 5.0
     @State private var dataSource: DataSource = .network
     @State private var cacheAge: TimeInterval?
     @State private var showingCacheInfo = false
-    @StateObject private var networkMonitor = NetworkMonitor()
     @State private var events: [Event] = []
-    @State private var eventsService = EventsService()
     @State private var selectedEvent: Event?
     @State private var showingEventDetails = false
-    @State private var bikeStations: [BikeStation] = []
-    @State private var bikeService = BikeService()
 
     @State private var route: Route?
-    @State private var weather: Weather?
-    @State private var weatherService = WeatherService()
-    @State private var predictiveLoader = PredictiveLoader()
+    @State private var routeAccentColor: Color = .blue
     @State private var pollingTimer: Timer?
 
     @State private var showingFavorites = false
@@ -68,269 +56,340 @@ struct TransportMapView: View {
     @State private var showingSettings = false
     @State private var showingOfflineMode = false
 
-    var isOffline: Bool { !networkMonitor.isConnected }
+    private let services = ServiceContainer.shared
+
+    var isOffline: Bool { !services.networkMonitor.isConnected }
+
+    private var isZoomedIn: Bool {
+        guard let region = currentRegion else { return false }
+        return region.span.latitudeDelta <= 0.02
+    }
+
+    @MapContentBuilder
+    private var mapContent: some MapContent {
+        UserAnnotation()
+        stopAnnotations
+        vehicleAnnotations
+        routeOverlay
+    }
+
+    @MapContentBuilder
+    private var stopAnnotations: some MapContent {
+        ForEach(stops) { stop in
+            Annotation("", coordinate: CLLocationCoordinate2D(
+                latitude: stop.latitude,
+                longitude: stop.longitude
+            )) {
+                Button {
+                    openDepartures(for: stop)
+                } label: {
+                    StopAnnotationView(
+                        stop: stop,
+                        departures: nil,
+                        showLabel: isZoomedIn || selectedStop?.id == stop.id
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @MapContentBuilder
+    private var vehicleAnnotations: some MapContent {
+        ForEach(vehicles) { vehicle in
+            vehicleAnnotation(for: vehicle)
+        }
+    }
+
+    @MapContentBuilder
+    private func vehicleAnnotation(for vehicle: Vehicle) -> some MapContent {
+        if let coordinate = vehicle.currentLocation {
+            let title = vehicle.line?.displayName ?? "?"
+            Annotation(title, coordinate: coordinate) {
+                LiveVehicleMarkerView(vehicle: vehicle, isSelected: vehicle.id == selectedVehicle?.id)
+                    .onTapGesture {
+                        selectedVehicle = vehicle
+                        showingVehicleInfo = true
+                    }
+            }
+            .tag(vehicle.id)
+        }
+    }
+
+    @MapContentBuilder
+    private var routeOverlay: some MapContent {
+        if let route = route {
+            MapPolyline(coordinates: route.coordinates)
+                .stroke(.black.opacity(0.35), lineWidth: 8)
+            MapPolyline(coordinates: route.coordinates)
+                .stroke(routeAccentColor, lineWidth: 4)
+        }
+    }
+
+    private var cacheStatusIconName: String {
+        if !services.networkMonitor.isConnected {
+            return "wifi.slash"
+        }
+        return dataSource == .cache ? "clock.arrow.circlepath" : "wifi"
+    }
+
+    private var cacheStatusText: String {
+        if !services.networkMonitor.isConnected {
+            return "Offline"
+        }
+        return dataSource == .cache ? "Cached" : "Live"
+    }
+
+    private var cacheBadgeColor: Color {
+        if !services.networkMonitor.isConnected {
+            return Color.red.opacity(0.9)
+        }
+        return dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)
+    }
 
     var body: some View {
-        ZStack {
+        contentWithSheets
+            .task {
+                if let region = currentRegion {
+                    await loadStopsForRegion(region)
+                    await loadVehicles(for: region)
+                }
+            }
+            .task {
+                while !Task.isCancelled {
+                    pollingInterval = Date().timeIntervalSince(lastLocationUpdate) < 60 ? 3 : 10
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
+            .onChange(of: pollingInterval) { _, _ in
+                startPolling()
+            }
+            .onAppear {
+                startPolling()
+            }
+            .onDisappear {
+                pollingTimer?.invalidate()
+            }
+            .onChange(of: services.networkMonitor.isConnected) { _, isConnected in
+                if !isConnected {
+                    showingOfflineMode = true
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .active:
+                    services.predictiveLoader.startPredictiveLoading()
+                case .inactive, .background:
+                    services.predictiveLoader.stopPredictiveLoading()
+                @unknown default:
+                    break
+                }
+            }
+            .onChange(of: locationManager.location) { _, newLocation in
+                if let location = newLocation {
+                    lastLocationUpdate = Date()
+                    services.predictiveLoader.handleLocationUpdate(location)
+                }
+            }
+    }
+
+    private var mainContent: some View {
+        NavigationStack {
             Map(position: $cameraPosition) {
-                UserAnnotation()
-
-                ForEach(stops) { stop in
-                    Annotation(coordinate: CLLocationCoordinate2D(
-                        latitude: stop.latitude,
-                        longitude: stop.longitude
-                    )) {
-                        StopAnnotationView(stop: stop, departures: nil)
-                    }
-                }
-
-                ForEach(vehicles) { vehicle in
-                    Annotation(
-                        vehicle.line?.displayName ?? "?",
-                        coordinate: CLLocationCoordinate2D(
-                            latitude: vehicle.latitude,
-                            longitude: vehicle.longitude
-                        )
-                    ) {
-                        LiveVehicleMarkerView(vehicle: vehicle, isSelected: vehicle.id == selectedVehicle?.id)
-                    }
-                    .tag(vehicle.id)
-                }
-
-                if let route = route {
-                    MapPolyline(coordinates: route.coordinates)
-                        .stroke(.blue, lineWidth: 4)
-                }
+                mapContent
             }
-            
-            // Weather overlay
-            VStack {
-                HStack {
-                    if let weather = weather {
-                        HStack(spacing: 4) {
-                            Image(systemName: weatherIconName(for: weather.condition))
-                                .font(.caption)
-                            Text(String(format: "%.1f°C", weather.temperature))
-                                .font(.caption.bold())
+            .mapControls {
+                MapCompass()
+                MapUserLocationButton()
+                MapScaleView()
+            }
+            .onMapCameraChange(frequency: .continuous) { context in
+                let newRegion = context.region
+                let oldRegion = currentRegion
+
+                currentRegion = newRegion
+
+                if let old = oldRegion {
+                    let centerChanged = abs(newRegion.center.latitude - old.center.latitude) > 0.01 ||
+                                         abs(newRegion.center.longitude - old.center.longitude) > 0.01
+                    let spanChanged = abs(newRegion.span.latitudeDelta - old.span.latitudeDelta) > 0.005
+
+                    if centerChanged || spanChanged {
+                        Task {
+                            await loadStopsForRegion(newRegion)
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.9))
-                        .foregroundColor(.white)
-                        .clipShape(Capsule())
                     }
-                    Spacer()
-                }
-                .padding(.top, 50)
-                .padding(.leading, 20)
-                
-                // Cache status badge
-                HStack(spacing: 4) {
-                    Image(systemName: networkMonitor.isConnected ? (dataSource == .cache ? "clock.arrow.circlepath" : "wifi") : "wifi.slash")
-                        .font(.caption)
-                    Text(networkMonitor.isConnected ? (dataSource == .cache ? "Cached" : "Live") : "Offline")
-                        .font(.caption.bold())
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(networkMonitor.isConnected ? (dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)) : Color.red.opacity(0.9))
-                .foregroundColor(.white)
-                .clipShape(Capsule())
-                
-                // Cache age if cached
-                if dataSource == .cache, let age = cacheAge {
-                    Text("Age: \(formattedAge(age))")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(Color.gray.opacity(0.8))
-                        .foregroundColor(.white)
-                        .clipShape(Capsule())
-                }
-                
-                // Refresh button
-                Button {
-                    refreshData()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.title3)
-                        .foregroundColor(.white)
-                        .padding(8)
-                        .background(Color.blue.opacity(0.8))
-                        .clipShape(Circle())
+                } else {
+                    Task {
+                        await loadStopsForRegion(newRegion)
+                    }
                 }
             }
-            .padding(.top, 50)
-            .padding(.trailing, 20)
-            
-            // Floating buttons
-            VStack {
-                Spacer()
-                HStack(spacing: 16) {
-                    Spacer()
+            .navigationTitle("Berlin Transport")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItemGroup(placement: .bottomBar) {
                     Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        print("TransportMapView: Opening favorites sheet")
                         showingFavorites = true
                     } label: {
-                        Image(systemName: "star")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.yellow)
-                            .clipShape(Circle())
-                            .shadow(radius: 4)
+                        Label("Favorites", systemImage: "star")
                     }
-                    
-                    Button {
-                        showingRoutePlanner = true
-                    } label: {
-                        Image(systemName: "route")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.blue)
-                            .clipShape(Circle())
-                            .shadow(radius: 4)
-                    }
-                }
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
-            }
-        }
-        .sheet(isPresented: $showingDepartures) {
-            if let stop = selectedStop {
-                RESTDeparturesSheet(
-                    stop: stop,
-                    departures: restDepartures,
-                    predictionService: predictionService,
-                    onClose: {
-                        showingDepartures = false
-                        selectedStop = nil
-                    }
-                )
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .sheet(isPresented: $showingVehicleInfo) {
-            if let vehicle = selectedVehicle {
-                VehicleInfoSheet(
-                    vehicle: vehicle,
-                    onClose: {
-                        showingVehicleInfo = false
-                        selectedVehicle = nil
-                    },
-                    onShowRoute: {
-                        Task {
-                            await loadRoute(for: vehicle)
+                    Spacer()
+                    Menu {
+                        Button {
+                            showingSettings = true
+                        } label: {
+                            Label("Settings", systemImage: "gear")
                         }
+                        Button {
+                            showingHelp = true
+                        } label: {
+                            Label("Help", systemImage: "questionmark.circle")
+                        }
+                        Button {
+                            showingAbout = true
+                        } label: {
+                            Label("About", systemImage: "info.circle")
+                        }
+                    } label: {
+                        Label("More", systemImage: "ellipsis.circle")
                     }
-                )
-            }
-        }
-        .sheet(isPresented: $showingAbout) {
-            BerlinTransportMapAboutView()
-        }
-        .sheet(isPresented: $showingHelp) {
-            BerlinTransportMapHelpCenterView()
-        }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-        }
-        .sheet(isPresented: $showingRoutePlanner) {
-            RoutePlannerView(initialDestination: initialDestination) { start, end, mode, includeBikes in
-                Task {
-                    await planRoute(start: start, end: end, mode: mode, includeBikes: includeBikes)
                 }
             }
+            .toolbarBackground(.visible, for: .bottomBar)
         }
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
-        .sheet(isPresented: $showingFavorites) {
-            FavoritesView(
-                onSelectStop: { stop in
-                    // Navigate to stop
-                    cameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude), span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)))
-                },
-                onSelectRoute: { route in
-                    self.route = route
-                    if let firstCoord = route.coordinates.first {
-                        cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
-                    }
-                },
+    }
+
+    private var contentWithSheets: some View {
+        mainContent
+            .sheet(isPresented: $showingDepartures) {
+                departuresSheet
+            }
+            .sheet(isPresented: $showingVehicleInfo) {
+                vehicleInfoSheet
+            }
+            .sheet(isPresented: $showingAbout) {
+                BerlinTransportMapAboutView()
+            }
+            .sheet(isPresented: $showingHelp) {
+                BerlinTransportMapHelpCenterView()
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+            }
+            .sheet(isPresented: $showingFavorites) {
+                favoritesSheet
+            }
+            .sheet(isPresented: $showingDeveloperInfo) {
+                DeveloperInfoSheet()
+                    .presentationDetents([.medium])
+            }
+    }
+
+    @ViewBuilder
+    private var departuresSheet: some View {
+        if let stop = selectedStop {
+            RESTDeparturesSheet(
+                stop: stop,
+                departures: restDepartures,
+                isLoading: isLoadingDepartures,
+                predictionService: services.predictionService,
                 onClose: {
-                    showingFavorites = false
+                    showingDepartures = false
+                    selectedStop = nil
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    @ViewBuilder
+    private var vehicleInfoSheet: some View {
+        if let vehicle = selectedVehicle {
+            VehicleInfoSheet(
+                vehicle: vehicle,
+                onClose: {
+                    showingVehicleInfo = false
+                    selectedVehicle = nil
+                },
+                onShowRoute: {
+                    Task {
+                        await loadRoute(for: vehicle)
+                    }
                 }
             )
         }
-        .sheet(isPresented: $showingAbout) {
-            BerlinTransportMapAboutView()
-        }
-        .sheet(isPresented: $showingDeveloperInfo) {
-            DeveloperInfoSheet()
-                .presentationDetents([.medium])
-        }
-        .task {
-            if let region = currentRegion {
-                await loadStopsForRegion(region)
-                await loadVehicles(for: region)
-            }
-        }
-        .task {
-            while !Task.isCancelled {
-                pollingInterval = Date().timeIntervalSince(lastLocationUpdate) < 60 ? 3 : 10
-                try? await Task.sleep(for: .seconds(1))
-            }
-        }
-        .onChange(of: pollingInterval) { _, _ in
-            startPolling()
-        }
-        .onAppear {
-            startPolling()
-        }
-        .onDisappear {
-            pollingTimer?.invalidate()
-        }
-        .onChange(of: networkMonitor.isConnected) { _, isConnected in
-            if !isConnected {
-                showingOfflineMode = true
-            }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            switch newPhase {
-            case .active:
-                predictiveLoader.startPredictiveLoading()
-            case .inactive, .background:
-                predictiveLoader.stopPredictiveLoading()
-            @unknown default:
-                break
-            }
-        }
-        .onChange(of: locationManager.location) { _, newLocation in
-            if let location = newLocation {
-                lastLocationUpdate = Date()
-                predictiveLoader.handleLocationUpdate(location)
-                
-                // Fetch weather
-                Task {
-                    do {
-                        self.weather = try await weatherService.fetchWeather(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
-                    } catch {
-                        print("Failed to fetch weather: \(error)")
-                    }
+    }
+
+    private var favoritesSheet: some View {
+        FavoritesView(
+            onSelectStop: { stop in
+                // Navigate to stop
+                cameraPosition = .region(MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude), span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)))
+            },
+            onSelectRoute: { route in
+                self.route = route
+                if let firstCoord = route.coordinates.first {
+                    cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
                 }
+            },
+            onClose: {
+                showingFavorites = false
             }
+        )
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: cacheStatusIconName)
+                .font(.caption)
+            Text(cacheStatusText)
+                .font(.caption.bold())
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(cacheBadgeColor)
+        .foregroundColor(.white)
+        .clipShape(Capsule())
+    }
+
+
+
+    @MainActor
+    private func openDepartures(for stop: TransportStop) {
+        selectedStop = stop
+        showingDepartures = true
+        restDepartures = []
+        isLoadingDepartures = true
+
+        Task {
+            await loadDepartures(for: stop)
+        }
+    }
+
+    @MainActor
+    private func loadDepartures(for stop: TransportStop) async {
+        do {
+            let departures = try await services.vehicleRadarService.fetchDepartures(stopId: stop.vbbStopId)
+            restDepartures = departures
+        } catch {
+            errorMessage = "Failed to load departures: \(error.localizedDescription)"
+            restDepartures = []
+        }
+        isLoadingDepartures = false
     }
 
     @MainActor
     private func startPolling() {
         pollingTimer?.invalidate()
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            Task {
-                if self.isLiveUpdating && self.scenePhase == .active, let region = self.currentRegion {
-                    await self.loadVehicles(for: region)
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { _ in
+            Task { @MainActor in
+                if isLiveUpdating && scenePhase == .active, let region = currentRegion {
+                    await loadVehicles(for: region)
                 }
             }
         }
@@ -348,31 +407,6 @@ struct TransportMapView: View {
             }
         } else {
             locationManager.requestPermission()
-        }
-    }
-
-    @MainActor
-    private func planRoute(start: String, end: String, mode: TransportMode, includeBikes: Bool = false) async {
-        do {
-            // First, find the stops by name
-            let startStops = try await transportService.searchLocations(query: start, maxLocations: 1)
-            let endStops = try await transportService.searchLocations(query: end, maxLocations: 1)
-            
-            guard let startStop = startStops.first, let endStop = endStops.first else {
-                errorMessage = "Could not find stops for the given names"
-                return
-            }
-            
-            let plannedRoute = try await routeService.planRoute(start: startStop, end: endStop, mode: mode, weather: weather, includeBikes: includeBikes)
-            self.route = plannedRoute
-            showingRoutePlanner = false
-            
-            // Optionally zoom to route
-            if let firstCoord = plannedRoute.coordinates.first {
-                cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
-            }
-        } catch {
-            errorMessage = "Failed to plan route: \(error.localizedDescription)"
         }
     }
 
@@ -398,16 +432,14 @@ struct TransportMapView: View {
         let east = center.longitude + lonDelta
 
         do {
-            // Check if offline, use cache
-            if !networkMonitor.isConnected {
-                if let cachedVehicles = transportService.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
+            if !services.networkMonitor.isConnected {
+                if let cachedVehicles = services.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         self.vehicles = cachedVehicles
                     }
                     dataSource = .cache
-                    cacheAge = transportService.cacheService.age(of: transportService.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
+                    cacheAge = services.cacheService.age(of: services.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
                 } else {
-                    // No cached data, show empty
                     withAnimation(.easeInOut(duration: 0.3)) {
                         self.vehicles = []
                     }
@@ -415,7 +447,7 @@ struct TransportMapView: View {
                 return
             }
 
-            let fetchedVehicles = try await radarService.fetchVehicles(
+            let fetchedVehicles = try await services.vehicleRadarService.fetchVehicles(
                 north: north,
                 west: west,
                 south: south,
@@ -423,21 +455,19 @@ struct TransportMapView: View {
                 duration: 30
             )
 
-            // Cache the vehicles
-            transportService.cacheService.setVehicles(fetchedVehicles, forBoundingBox: north, west: west, south: south, east: east, duration: 30)
+            services.cacheService.setVehicles(fetchedVehicles, forBoundingBox: north, west: west, south: south, east: east, duration: 30)
 
             withAnimation(.easeInOut(duration: 0.3)) {
                 self.vehicles = fetchedVehicles
             }
         } catch {
             errorMessage = "Failed to load vehicles: \(error.localizedDescription)"
-            // Try to load from cache if network fails
-            if let cachedVehicles = transportService.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
+            if let cachedVehicles = services.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     self.vehicles = cachedVehicles
                 }
                 dataSource = .cache
-                cacheAge = transportService.cacheService.age(of: transportService.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
+                cacheAge = services.cacheService.age(of: services.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
             }
         }
     }
@@ -459,21 +489,19 @@ struct TransportMapView: View {
             let center = region.center
             let maxDistance = Int(region.span.latitudeDelta * 111_000)
 
-            // Check if data is from cache
-            let cacheKey = "transport_cache_stops_\(String(format: "%.6f", center.latitude))_\(String(format: "%.6f", center.longitude))_\(maxDistance)_100"
-            let cachedAge = transportService.cacheService.age(of: cacheKey)
+            let cacheKey = services.cacheService.getStopsCacheKey(forLocation: center.latitude, longitude: center.longitude, maxDistance: maxDistance)
+            let cachedAge = services.cacheService.age(of: cacheKey)
             dataSource = cachedAge != nil ? .cache : .network
             cacheAge = cachedAge
 
-            // First check for preloaded data
             var fetchedStops: [TransportStop]
-            if let preloadedStops = predictiveLoader.getPreloadedStops(for: center, maxDistance: maxDistance) {
+            if let preloadedStops = services.predictiveLoader.getPreloadedStops(for: center, maxDistance: maxDistance) {
                 fetchedStops = preloadedStops
-                dataSource = .cache // Mark as cached even though it's predictive
-                cacheAge = 0 // Indicate fresh data
+                dataSource = .cache
+                cacheAge = 0
                 print("Using preloaded stops data")
             } else {
-                fetchedStops = try await transportService.queryNearbyStops(
+                fetchedStops = try await services.transportService.queryNearbyStops(
                     latitude: center.latitude,
                     longitude: center.longitude,
                     maxDistance: min(maxDistance, 5000),
@@ -481,14 +509,20 @@ struct TransportMapView: View {
                 )
             }
 
+            services.cacheService.setStops(
+                fetchedStops,
+                forLocation: center.latitude,
+                longitude: center.longitude,
+                maxDistance: min(maxDistance, 5000)
+            )
+
             self.stops = fetchedStops
         } catch {
             errorMessage = error.localizedDescription
-            // Try to load from cache if network fails
-            if let cachedStops = transportService.cacheService.getStops(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000), maxLocations: 100) {
+            if let cachedStops = services.cacheService.getStops(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000)) {
                 self.stops = cachedStops
                 dataSource = .cache
-                cacheAge = transportService.cacheService.age(of: transportService.cacheService.getStopsCacheKey(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000), maxLocations: 100))
+                cacheAge = services.cacheService.age(of: services.cacheService.getStopsCacheKey(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000)))
             }
         }
 
@@ -506,13 +540,44 @@ struct TransportMapView: View {
     }
     
     private func refreshData() {
-        // Invalidate cache and reload
-        transportService.cacheService.clear()
+        services.cacheService.clear()
         if let region = currentRegion {
             Task {
                 await loadStopsForRegion(region)
                 await loadVehicles(for: region)
             }
+        }
+    }
+
+    @MainActor
+    private func loadRoute(for vehicle: Vehicle) async {
+        do {
+            if let tripRoute = try await services.vehicleRadarService.fetchTripRoute(tripId: vehicle.tripId) {
+                let leg = RouteLeg(type: "publicTransport", departureTime: nil, arrivalTime: nil, coordinates: tripRoute.routeCoordinates)
+                let newRoute = Route(
+                    id: tripRoute.id ?? vehicle.tripId,
+                    legs: [leg],
+                    totalDuration: 0,
+                    departureTime: Date(),
+                    arrivalTime: Date()
+                )
+                route = newRoute
+                routeAccentColor = Color(hex: vehicle.line?.color ?? "#007AFF")
+                if let firstCoord = leg.coordinates.first {
+                    cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
+                }
+            }
+        } catch {
+            errorMessage = "Failed to load route: \(error.localizedDescription)"
+        }
+    }
+
+    @MainActor
+    private func loadEvents() async {
+        do {
+            events = try await services.eventsService.fetchEvents()
+        } catch {
+            print("Failed to load events: \(error)")
         }
     }
 }
@@ -595,13 +660,23 @@ struct StopMarkerView: View {
 struct RESTDeparturesSheet: View {
     let stop: TransportStop
     let departures: [RESTDeparture]
+    let isLoading: Bool
     let predictionService: PredictionService
     let onClose: () -> Void
+    @Environment(\.modelContext) private var modelContext
+    @State private var favoriteMessage: String?
+    @State private var showingFavoriteAlert = false
 
     var body: some View {
         NavigationStack {
             List {
-                if departures.isEmpty {
+                if isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading departures...")
+                        Spacer()
+                    }
+                } else if departures.isEmpty {
                     ContentUnavailableView(
                         "No Departures",
                         systemImage: "tram",
@@ -616,13 +691,34 @@ struct RESTDeparturesSheet: View {
             .navigationTitle(stop.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        addFavorite()
+                    } label: {
+                        Label("Add Favorite", systemImage: "star")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
                         onClose()
                     }
                 }
             }
+            .alert(favoriteMessage ?? "", isPresented: $showingFavoriteAlert) {
+                Button("OK", role: .cancel) { }
+            }
         }
+    }
+
+    private func addFavorite() {
+        do {
+            let service = FavoritesService(modelContext: modelContext)
+            try service.saveStopFavorite(name: stop.name, stop: stop)
+            favoriteMessage = "Added to Favorites"
+        } catch {
+            favoriteMessage = "Failed to add favorite: \(error.localizedDescription)"
+        }
+        showingFavoriteAlert = true
     }
 }
 
@@ -637,7 +733,8 @@ struct RESTDepartureRow: View {
             tripId: departure.tripId,
             line: departure.line,
             direction: departure.direction,
-            location: nil
+            location: nil,
+            when: nil
         )
         return predictionService.predictArrival(for: mockVehicle, at: stop)
     }
@@ -708,7 +805,7 @@ struct VehicleInfoSheet: View {
     let onShowRoute: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             HStack(spacing: 12) {
                 Text(vehicle.line?.displayName ?? "?")
                     .font(.title2.bold())
@@ -728,6 +825,11 @@ struct VehicleInfoSheet: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
+                    if let tripId = vehicle.line?.fahrtNr, !tripId.isEmpty {
+                        Text("Trip: \(tripId)")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
 
                 Spacer()
@@ -743,6 +845,42 @@ struct VehicleInfoSheet: View {
 
             Divider()
 
+            HStack(spacing: 20) {
+                if let coord = vehicle.currentLocation {
+                    VStack(spacing: 2) {
+                        Text("Lat")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(String(format: "%.5f", coord.latitude))
+                            .font(.caption.monospaced())
+                    }
+                    VStack(spacing: 2) {
+                        Text("Lon")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(String(format: "%.5f", coord.longitude))
+                            .font(.caption.monospaced())
+                    }
+                }
+
+                Spacer()
+
+                VStack(spacing: 2) {
+                    Text("Speed")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let speed = vehicle.speedKPH, speed > 0 {
+                        Text(String(format: "%.0f km/h", speed))
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.green)
+                    } else {
+                        Text("---")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.orange)
+                    }
+                }
+            }
+
             Button {
                 onShowRoute()
                 onClose()
@@ -757,7 +895,7 @@ struct VehicleInfoSheet: View {
             }
         }
         .padding()
-        .presentationDetents([.height(180)])
+        .presentationDetents([.height(200)])
         .presentationDragIndicator(.visible)
     }
 
@@ -912,61 +1050,6 @@ struct DeveloperInfoSheet: View {
 }
 
 // MARK: - Color Extension
-
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let r, g, b: UInt64
-        switch hex.count {
-        case 3:
-            (r, g, b) = ((int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6:
-            (r, g, b) = (int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (r, g, b) = (128, 128, 128)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255
-        )
-    }
-}
-
-private func weatherIconName(for condition: String) -> String {
-    switch condition.lowercased() {
-    case "clear": return "sun.max.fill"
-    case "clouds": return "cloud.fill"
-    case "rain": return "cloud.rain.fill"
-    case "snow": return "snowflake"
-    default: return "questionmark.circle"
-    }
-}
-
-@MainActor
-private func loadEvents() async {
-    do {
-        self.events = try await eventsService.fetchEvents()
-    } catch {
-        print("Failed to load events: \(error)")
-    }
-}
-
-@MainActor
-private func loadBikeStations() async {
-    if let region = currentRegion {
-        let center = region.center
-        let radius = region.span.latitudeDelta * 111_000 / 2 // approximate km
-        do {
-            self.bikeStations = try await bikeService.fetchBikes(latitude: center.latitude, longitude: center.longitude, radius: radius)
-        } catch {
-            print("Failed to load bike stations: \(error)")
-        }
-    }
-}
 
 // MARK: - Event Details Sheet
 

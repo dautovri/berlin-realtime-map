@@ -15,13 +15,14 @@ final class FavoritesService {
     }
     
     func saveStopFavorite(name: String, stop: TransportStop) throws {
-        let favorite = Favorite(name: name, type: .stop, stopId: stop.id)
+        let favorite = Favorite(name: name, type: .stop, stopId: stop.id, latitude: stop.latitude, longitude: stop.longitude)
         try saveFavorite(favorite)
     }
     
     func saveRouteFavorite(name: String, route: Route) throws {
-        let favorite = Favorite(name: name, type: .route)
-        favorite.setRoute(route)
+        let routeName = route.legs.compactMap { $0.line?.label }.joined(separator: " → ")
+        let coordinatesData = try JSONEncoder().encode(route.coordinates.map { ["lat": $0.latitude, "lon": $0.longitude] })
+        let favorite = Favorite(name: name, type: .route, routeName: routeName, routeCoordinates: coordinatesData)
         try saveFavorite(favorite)
     }
     

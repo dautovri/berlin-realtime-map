@@ -1,12 +1,14 @@
 import Network
+import Observation
 import SwiftUI
 
-class NetworkMonitor: ObservableObject {
+@Observable
+final class NetworkMonitor {
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")
 
-    @Published var isConnected: Bool = true
-    @Published var connectionType: ConnectionType = .unknown
+    var isConnected: Bool = true
+    var connectionType: ConnectionType = .unknown
 
     enum ConnectionType {
         case wifi

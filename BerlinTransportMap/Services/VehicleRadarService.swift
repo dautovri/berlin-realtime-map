@@ -1,6 +1,5 @@
 import Foundation
 import CoreLocation
-import UIKit
 
 /// Service for fetching real-time vehicle positions from VBB REST API (Berlin-Brandenburg region)
 actor VehicleRadarService {
@@ -8,13 +7,12 @@ actor VehicleRadarService {
     private let session: URLSession
 
     init() {
-        let config = URLSessionConfiguration.background(withIdentifier: "com.berlin.transport.vehicle")
+        let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
     }
 
-    /// Fetch vehicles in a geographic bounding box
     func fetchVehicles(
         north: Double,
         west: Double,
@@ -35,14 +33,14 @@ actor VehicleRadarService {
         ]
 
         guard let url = components.url else {
-            throw VehicleError.invalidURL
+            throw TransportError.invalidURL
         }
 
         let (data, response) = try await session.data(from: url)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
-            throw VehicleError.networkError("Invalid response")
+            throw TransportError.networkError("Invalid response")
         }
 
         let decoder = JSONDecoder()
@@ -65,13 +63,19 @@ actor VehicleRadarService {
         }
 
         let radarResponse = try decoder.decode(RadarResponse.self, from: data)
-        return radarResponse.movements
+
+        var vehicles = radarResponse.movements
+
+        for i in vehicles.indices {
+            await vehicles[i].updateSpeed()
+        }
+
+        return vehicles
     }
 
-    /// Fetch departures for a specific stop using VBB REST API
     func fetchDepartures(stopId: String, duration: Int = 60) async throws -> [RESTDeparture] {
         guard let encodedStopId = stopId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
-            throw VehicleError.invalidURL
+            throw TransportError.invalidURL
         }
 
         var components = URLComponents(string: "\(baseURL)/stops/\(encodedStopId)/departures")!
@@ -83,17 +87,17 @@ actor VehicleRadarService {
         ]
 
         guard let url = components.url else {
-            throw VehicleError.invalidURL
+            throw TransportError.invalidURL
         }
 
         let (data, response) = try await session.data(from: url)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw VehicleError.networkError("Invalid response type")
+            throw TransportError.networkError("Invalid response type")
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            throw VehicleError.networkError("HTTP \(httpResponse.statusCode)")
+            throw TransportError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
         let decoder = JSONDecoder()
@@ -103,10 +107,9 @@ actor VehicleRadarService {
         return departuresResponse.departures
     }
 
-    /// Fetch trip route with polyline for a specific trip
     func fetchTripRoute(tripId: String) async throws -> TripRoute? {
         guard let encodedTripId = tripId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
-            throw VehicleError.invalidURL
+            throw TransportError.invalidURL
         }
 
         var components = URLComponents(string: "\(baseURL)/trips/\(encodedTripId)")!
@@ -116,7 +119,7 @@ actor VehicleRadarService {
         ]
 
         guard let url = components.url else {
-            throw VehicleError.invalidURL
+            throw TransportError.invalidURL
         }
 
         let (data, response) = try await session.data(from: url)
@@ -129,95 +132,6 @@ actor VehicleRadarService {
         let decoder = JSONDecoder()
         let tripResponse = try decoder.decode(TripResponse.self, from: data)
         return tripResponse.trip
-    }
-
-    /// Update user location and activity state for adaptive polling
-    func updateUserState(location: CLLocation, nearStop: Bool = false) {
-        if let last = lastUserLocation {
-            let distance = location.distance(from: last)
-            let timeDiff = location.timestamp.timeIntervalSince(last.timestamp)
-            if timeDiff > 0 {
-                let speed = distance / timeDiff
-                isMoving = speed > 0.5 // Consider moving if speed > 0.5 m/s
-            }
-        }
-        lastUserLocation = location
-        self.nearStop = nearStop
-        updatePollingInterval()
-    }
-
-    /// Start adaptive polling for vehicles
-    func startPolling(north: Double, west: Double, south: Double, east: Double, initialInterval: TimeInterval = 30.0) {
-        currentBoundingBox = (north, west, south, east)
-        pollingInterval = initialInterval
-        pollingTimer?.invalidate()
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { [weak self] _ in
-            Task {
-                await self?.performPoll()
-            }
-        }
-        isPolling = true
-    }
-
-    /// Stop polling
-    func stopPolling() {
-        pollingTimer?.invalidate()
-        pollingTimer = nil
-        isPolling = false
-    }
-
-    private func performPoll() async {
-        guard let box = currentBoundingBox else { return }
-        do {
-            let vehicles = try await fetchVehicles(north: box.north, west: box.west, south: box.south, east: box.east)
-            // In a real implementation, this would notify observers or update a published property
-            // For now, just fetch to keep battery optimization
-        } catch {
-            // Handle error silently for battery optimization
-        }
-    }
-
-    private func updatePollingInterval() {
-        if nearStop && isMoving {
-            pollingInterval = 5.0 // Very frequent near stops when moving
-        } else if isMoving {
-            pollingInterval = 10.0 // Frequent when moving
-        } else {
-            pollingInterval = 30.0 // Less frequent when stationary
-        }
-        restartTimerIfNeeded()
-    }
-
-    private func restartTimerIfNeeded() {
-        guard isPolling, let timer = pollingTimer else { return }
-        let currentInterval = timer.timeInterval
-        if abs(currentInterval - pollingInterval) > 0.1 {
-            restartTimer()
-        }
-    }
-
-    private func restartTimer() {
-        pollingTimer?.invalidate()
-        guard let box = currentBoundingBox else { return }
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { [weak self] _ in
-            Task {
-                await self?.performPoll()
-            }
-        }
-    }
-
-    @objc @MainActor private func appDidEnterBackground() {
-        stopPolling()
-    }
-
-    @objc @MainActor private func appWillEnterForeground() {
-        guard let box = currentBoundingBox else { return }
-        startPolling(north: box.north, west: box.west, south: box.south, east: box.east, initialInterval: pollingInterval)
-    }
-
-    deinit {
-        pollingTimer?.invalidate()
-        NotificationCenter.default.removeObserver(self)
     }
 }
 
@@ -316,11 +230,12 @@ struct RESTStop: Decodable {
     let name: String?
 }
 
-struct Vehicle: Identifiable, Decodable {
+struct Vehicle: Identifiable, Codable {
     let tripId: String
     let line: VehicleLine?
     let direction: String?
     let location: VehicleLocation?
+    let when: String?
 
     var id: String { tripId }
 
@@ -328,14 +243,31 @@ struct Vehicle: Identifiable, Decodable {
         guard let loc = location else { return nil }
         return CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude)
     }
+
+    var speedKPH: Double? {
+        cachedSpeeds[tripId]
+    }
+
+    mutating func updateSpeed() async {
+        guard let whenStr = when else { return }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let timestamp = formatter.date(from: whenStr) {
+            if let speed = await positionTracker.updatePosition(for: self, timestamp: timestamp) {
+                cachedSpeeds[tripId] = speed
+            }
+        }
+    }
 }
 
-struct LineColor: Decodable {
+private var cachedSpeeds: [String: Double] = [:]
+
+struct LineColor: Codable {
     let fg: String?
     let bg: String?
 }
 
-struct VehicleLine: Decodable {
+struct VehicleLine: Codable {
     let id: String?
     let name: String?
     let mode: String?
@@ -390,13 +322,47 @@ enum VehicleProduct: String {
     case suburbanTrain, subway, tram, bus, ferry, regionalTrain
 }
 
-struct VehicleLocation: Decodable {
+struct VehicleLocation: Codable {
     let latitude: Double
     let longitude: Double
 }
 
-enum VehicleError: Error {
-    case invalidURL
-    case networkError(String)
-    case decodingError(String)
+// MARK: - Speed Tracking
+
+actor VehiclePositionTracker {
+    private var lastPositions: [String: (coordinate: CLLocationCoordinate2D, timestamp: Date, speed: Double)] = [:]
+    private let maxAge: TimeInterval = 60
+
+    func updatePosition(for vehicle: Vehicle, timestamp: Date) -> Double? {
+        guard let coordinate = vehicle.currentLocation else { return nil }
+        let now = timestamp
+
+        if let last = lastPositions[vehicle.id] {
+            let age = now.timeIntervalSince(last.timestamp)
+            if age > 0 && age < maxAge {
+                let oldLocation = CLLocation(latitude: last.coordinate.latitude, longitude: last.coordinate.longitude)
+                let newLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+                let distance = newLocation.distance(from: oldLocation)
+                let speedMPS = distance / age
+                let speedKPH = speedMPS * 3.6
+
+                lastPositions[vehicle.id] = (coordinate, now, speedKPH)
+                return speedKPH
+            }
+        }
+
+        lastPositions[vehicle.id] = (coordinate, now, 0)
+        return nil
+    }
+
+    func getSpeed(for vehicleId: String) -> Double? {
+        return lastPositions[vehicleId]?.speed
+    }
+
+    func cleanup() {
+        let now = Date()
+        lastPositions = lastPositions.filter { now.timeIntervalSince($0.value.timestamp) < maxAge }
+    }
 }
+
+let positionTracker = VehiclePositionTracker()

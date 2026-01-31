@@ -3,6 +3,12 @@ import SwiftUI
 struct BerlinTransportMapAboutView: View {
     @Environment(\.dismiss) var dismiss
     private let config = BerlinTransportMapAboutConfiguration()
+    private let highlights = [
+        "Real-time BVG/VBB departures",
+        "Map-first view of nearby stops",
+        "Lightweight, fast, and focused"
+    ]
+    @State private var showingTipJar = false
     
     var body: some View {
         NavigationStack {
@@ -38,8 +44,37 @@ struct BerlinTransportMapAboutView: View {
                     Text("About")
                 }
 
+                // Highlights Section
+                Section {
+                    ForEach(highlights, id: \.self) { item in
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                            Text(item)
+                            Spacer()
+                        }
+                    }
+                } header: {
+                    Text("Highlights")
+                }
+
                 // Support Section
                 Section {
+                    Button {
+                        showingTipJar = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "heart.fill")
+                                .foregroundStyle(.pink)
+                            Text("Support Development")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
+
                     if let shareURL = config.shareURL {
                         ShareLink(item: shareURL) {
                             HStack {
@@ -66,7 +101,12 @@ struct BerlinTransportMapAboutView: View {
                         }
                         .foregroundStyle(.primary)
                     }
+                } header: {
+                    Text("Support")
+                }
 
+                // Feedback Section
+                Section {
                     if let issuesURL = config.issuesURL {
                         Link(destination: issuesURL) {
                             HStack {
@@ -97,7 +137,7 @@ struct BerlinTransportMapAboutView: View {
                         .foregroundStyle(.primary)
                     }
                 } header: {
-                    Text("Support")
+                    Text("Feedback")
                 }
                 
                 // Developer Section
@@ -106,7 +146,7 @@ struct BerlinTransportMapAboutView: View {
                         if let githubURL = config.githubURL {
                             Link(destination: githubURL) {
                                 HStack {
-                                    Image(systemName: "square.and.arrow.up.right.fill")
+                                    Image(systemName: "square.and.arrow.up")
                                         .foregroundStyle(.gray)
                                     Text("GitHub")
                                     Spacer()
@@ -121,7 +161,7 @@ struct BerlinTransportMapAboutView: View {
                         if let linkedInURL = config.linkedInURL {
                             Link(destination: linkedInURL) {
                                 HStack {
-                                    Image(systemName: "square.and.arrow.up.right.fill")
+                                    Image(systemName: "square.and.arrow.up")
                                         .foregroundStyle(.blue)
                                     Text("LinkedIn")
                                     Spacer()
@@ -136,7 +176,7 @@ struct BerlinTransportMapAboutView: View {
                         if let twitterURL = config.twitterURL {
                             Link(destination: twitterURL) {
                                 HStack {
-                                    Image(systemName: "square.and.arrow.up.right.fill")
+                                    Image(systemName: "square.and.arrow.up")
                                         .foregroundStyle(.black)
                                     Text("Twitter/X")
                                     Spacer()
@@ -225,6 +265,9 @@ struct BerlinTransportMapAboutView: View {
                         dismiss()
                     }
                 }
+            }
+            .sheet(isPresented: $showingTipJar) {
+                TipJarView()
             }
         }
     }

@@ -4,26 +4,29 @@ import CoreLocation
 /// Service for predictive loading of transport data based on user patterns
 @Observable
 final class PredictiveLoader {
-    private let transportService = TransportService()
+    private let transportService: TransportService
+    private let vehicleRadarService: VehicleRadarService
+    private let cacheService: CacheService
+    private let networkMonitor: NetworkMonitor
     private let userPatternService = UserPatternService()
     private let backgroundQueue = DispatchQueue.global(qos: .background)
     
-    // Configuration
-    private let preloadDistanceThreshold = 800.0 // meters
-    private let preloadTimeThreshold = 300.0 // 5 minutes
+    private let preloadDistanceThreshold = 800.0
+    private let preloadTimeThreshold = 300.0
     private let maxConcurrentPreloads = 3
     
-    // State
-    private var activePreloads: Set<String> = [] // Prevent duplicate preloads
+    private var activePreloads: Set<String> = []
     private var lastPreloadLocation: CLLocation?
     private var isActive = false
     
-    // Preloaded data cache (temporary, not persisted)
-    private var preloadedStops: [String: [TransportStop]] = [:] // key: location hash
-    private var preloadedDepartures: [String: [TransportDeparture]] = [:] // key: stopId
+    private var preloadedStops: [String: [TransportStop]] = [:]
+    private var preloadedDepartures: [String: [TransportDeparture]] = [:]
     
-    init() {
-        // Background tasks setup would go here for iOS
+    init(transportService: TransportService, vehicleRadarService: VehicleRadarService, cacheService: CacheService, networkMonitor: NetworkMonitor) {
+        self.transportService = transportService
+        self.vehicleRadarService = vehicleRadarService
+        self.cacheService = cacheService
+        self.networkMonitor = networkMonitor
     }
     
     /// Start predictive loading

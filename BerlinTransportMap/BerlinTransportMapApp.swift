@@ -1,17 +1,28 @@
 import SwiftUI
 import SwiftData
 
-// Baseline launch time: 3.2 seconds (measured with Xcode Instruments Time Profiler)
-// Target: reduce to <1.6 seconds (50% improvement)
-
 @main
 struct BerlinTransportMapApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            Favorite.self
+        ])
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .modelContainer(for: Favorite.self)
         }
+        .modelContainer(sharedModelContainer)
     }
 }

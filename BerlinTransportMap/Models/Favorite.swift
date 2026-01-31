@@ -7,15 +7,21 @@ final class Favorite {
     var name: String
     var type: FavoriteType
     var stopId: String?
-    var routeData: Data?
+    var latitude: Double?
+    var longitude: Double?
+    var routeName: String?
+    var routeCoordinates: Data?
     var createdAt: Date
     
-    init(name: String, type: FavoriteType, stopId: String? = nil, routeData: Data? = nil) {
+    init(name: String, type: FavoriteType, stopId: String? = nil, latitude: Double? = nil, longitude: Double? = nil, routeName: String? = nil, routeCoordinates: Data? = nil) {
         self.id = UUID()
         self.name = name
         self.type = type
         self.stopId = stopId
-        self.routeData = routeData
+        self.latitude = latitude
+        self.longitude = longitude
+        self.routeName = routeName
+        self.routeCoordinates = routeCoordinates
         self.createdAt = Date()
     }
 }
@@ -23,18 +29,4 @@ final class Favorite {
 enum FavoriteType: String, Codable {
     case stop
     case route
-}
-
-// For encoding/decoding Route data
-extension Favorite {
-    func getRoute() -> Route? {
-        guard let data = routeData else { return nil }
-        let decoder = JSONDecoder()
-        return try? decoder.decode(Route.self, from: data)
-    }
-    
-    func setRoute(_ route: Route) {
-        let encoder = JSONEncoder()
-        routeData = try? encoder.encode(route)
-    }
 }

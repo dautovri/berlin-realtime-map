@@ -1,7 +1,6 @@
 import Foundation
-import TripKit
 
-// MARK: - Models
+// MARK: - Transport Models
 
 struct TransportStop: Identifiable, Hashable, Codable {
     let id: String
@@ -14,7 +13,7 @@ struct TransportStop: Identifiable, Hashable, Codable {
     init(
         id: String,
         name: String,
-        place: String?,
+        place: String? = nil,
         latitude: Double,
         longitude: Double,
         products: [TransportProduct] = []
@@ -27,12 +26,7 @@ struct TransportStop: Identifiable, Hashable, Codable {
         self.products = products
     }
 
-    /// The VBB REST API compatible stop ID (IBNR format like 900110011)
     var vbbStopId: String {
-        // TripKit returns IDs in HAFAS format like:
-        // "A=1@O=Station Name@X=13404953@Y=52520008@U=86@L=900100003@"
-        // We need to extract the IBNR from "L=900100003"
-
         if let lRange = id.range(of: "L=") {
             let startIndex = lRange.upperBound
             let remaining = id[startIndex...]
@@ -43,35 +37,51 @@ struct TransportStop: Identifiable, Hashable, Codable {
             }
         }
 
-        // Fallback: if format is "de:11000:900140016" -> extract "900140016"
         if id.contains(":") {
             return id.components(separatedBy: ":").last ?? id
         }
 
-        // Fallback: return as-is
         return id
     }
 
-    init?(from location: Location) {
-        guard let id = location.id,
-              let coord = location.coord else {
-            return nil
-        }
-
-        self.id = id
-        self.name = location.name ?? "Unknown"
-        self.place = location.place
-        self.latitude = Double(coord.lat) / 1_000_000
-        self.longitude = Double(coord.lon) / 1_000_000
-        self.products = location.products ?? []
+    init(from vbbLocation: VBBSimpleLocation) {
+        self.id = vbbLocation.id ?? UUID().uuidString
+        self.name = vbbLocation.name ?? "Unknown"
+        self.place = nil
+        self.latitude = vbbLocation.location?.latitude ?? 0
+        self.longitude = vbbLocation.location?.longitude ?? 0
+        self.products = []
     }
 
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case place
+        case latitude
+        case longitude
+        case products
     }
 
-    static func == (lhs: TransportStop, rhs: TransportStop) -> Bool {
-        lhs.id == rhs.id
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        place = try container.decodeIfPresent(String.self, forKey: .place)
+        latitude = try container.decode(Double.self, forKey: .latitude)
+        longitude = try container.decode(Double.self, forKey: .longitude)
+        let productStrings = try container.decodeIfPresent([String].self, forKey: .products) ?? []
+        products = productStrings.map { TransportProductCoding.decode($0) }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(place, forKey: .place)
+        try container.encode(latitude, forKey: .latitude)
+        try container.encode(longitude, forKey: .longitude)
+        let productStrings = products.map { TransportProductCoding.encode($0) }
+        try container.encode(productStrings, forKey: .products)
     }
 }
 
@@ -98,28 +108,45 @@ struct TransportDeparture: Identifiable, Codable {
         return Int(delay / 60)
     }
 
-    init?(from departure: Departure, stop: Location) {
-        guard let coord = stop.coord else {
-            return nil
+    init(from vbbDeparture: VBBDeparture) {
+        self.id = vbbDeparture.tripId ?? UUID().uuidString
+        self.line = TransportLine(from: vbbDeparture.line)
+        self.destination = vbbDeparture.direction ?? "Unknown"
+        self.stopId = vbbDeparture.stop?.id ?? ""
+        self.stopName = vbbDeparture.stop?.name ?? "Unknown"
+        self.stopLatitude = 0
+        self.stopLongitude = 0
+
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+        if let whenString = vbbDeparture.when {
+            self.plannedTime = formatter.date(from: whenString)
+        } else if let plannedString = vbbDeparture.plannedWhen {
+            self.plannedTime = formatter.date(from: plannedString)
+        } else {
+            self.plannedTime = nil
         }
 
-        let line = departure.line
+        self.predictedTime = nil
+        self.delay = nil
+        self.platform = vbbDeparture.platform
+        self.isCancelled = false
+    }
 
-        let uniqueId = "\(departure.plannedTime.timeIntervalSince1970)_\(line.label ?? "")_\(stop.id ?? "")"
-        self.id = uniqueId
-        self.line = TransportLine(from: line)
-        self.destination = departure.destination?.name ?? departure.destination?.place ?? "Unknown"
-        self.plannedTime = departure.plannedTime
-        self.predictedTime = departure.predictedTime
-        self.delay = departure.predictedTime != nil
-            ? departure.predictedTime!.timeIntervalSince(departure.plannedTime)
-            : nil
-        self.platform = departure.predictedPlatform ?? departure.plannedPlatform
-        self.isCancelled = departure.cancelled
-        self.stopId = stop.id ?? ""
-        self.stopName = stop.name ?? "Unknown"
-        self.stopLatitude = Double(coord.lat) / 1_000_000
-        self.stopLongitude = Double(coord.lon) / 1_000_000
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case line
+        case destination
+        case plannedTime
+        case predictedTime
+        case delay
+        case platform
+        case isCancelled
+        case stopId
+        case stopName
+        case stopLatitude
+        case stopLongitude
     }
 }
 
@@ -128,41 +155,105 @@ struct TransportLine: Codable {
     let label: String
     let name: String?
     let product: TransportProduct
-    let style: LineStyle?
+    let color: String?
+    let foregroundColor: String?
 
     var displayName: String {
         label
     }
 
-    var color: String {
-        if let style = style, let bg = style.backgroundColor {
-            return String(format: "#%06X", bg & 0xFFFFFF)
-        }
+    init(from vbbLine: VBBDeparture.VBBLine?) {
+        self.id = vbbLine?.id
+        self.label = vbbLine?.publicCode ?? vbbLine?.name ?? "?"
+        self.name = vbbLine?.name
+        self.product = TransportProductCoding.decode(vbbLine?.product ?? "")
+        self.color = nil
+        self.foregroundColor = nil
+    }
 
-        switch product {
+    init(vbbLineId: String?, vbbLineName: String?, vbbLinePublicCode: String?, vbbLineProduct: String?) {
+        self.id = vbbLineId
+        self.label = vbbLinePublicCode ?? vbbLineName ?? "?"
+        self.name = vbbLineName
+        self.product = TransportProductCoding.decode(vbbLineProduct ?? "")
+        self.color = nil
+        self.foregroundColor = nil
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case label
+        case name
+        case product
+        case color
+        case foregroundColor
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        label = try container.decode(String.self, forKey: .label)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        let productString = try container.decodeIfPresent(String.self, forKey: .product) ?? ""
+        product = TransportProductCoding.decode(productString)
+        color = try container.decodeIfPresent(String.self, forKey: .color)
+        foregroundColor = try container.decodeIfPresent(String.self, forKey: .foregroundColor)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(id, forKey: .id)
+        try container.encode(label, forKey: .label)
+        try container.encodeIfPresent(name, forKey: .name)
+        try container.encode(TransportProductCoding.encode(product), forKey: .product)
+        try container.encodeIfPresent(color, forKey: .color)
+        try container.encodeIfPresent(foregroundColor, forKey: .foregroundColor)
+    }
+}
+
+enum TransportProduct: String, Codable {
+    case suburbanTrain = "suburban"
+    case subway = "subway"
+    case tram = "tram"
+    case bus = "bus"
+    case ferry = "ferry"
+    case regionalTrain = "regional"
+    case highSpeedTrain = "express"
+    case unknown
+
+    var displayName: String {
+        switch self {
+        case .suburbanTrain: return "S-Bahn"
+        case .subway: return "U-Bahn"
+        case .tram: return "Tram"
+        case .bus: return "Bus"
+        case .ferry: return "Fähre"
+        case .regionalTrain: return "RE/RB"
+        case .highSpeedTrain: return "ICE/IC"
+        case .unknown: return "Other"
+        }
+    }
+
+    var color: String {
+        switch self {
         case .suburbanTrain: return "#008C3C"
         case .subway: return "#0066CC"
-        case .tram: return "#CC0000"
+        case .tram: return "#D8232A"
         case .bus: return "#993399"
         case .ferry: return "#0099CC"
         case .regionalTrain, .highSpeedTrain: return "#EC192E"
-        default: return "#666666"
+        case .unknown: return "#666666"
         }
     }
+}
 
-    var foregroundColor: String {
-        if let style = style, let fg = style.foregroundColor {
-            return String(format: "#%06X", fg & 0xFFFFFF)
-        }
-        return "#FFFFFF"
+private enum TransportProductCoding {
+    static func encode(_ product: TransportProduct) -> String {
+        return product.rawValue
     }
 
-    init(from line: Line) {
-        self.id = line.id
-        self.label = line.label ?? line.name ?? "?"
-        self.name = line.name
-        self.product = line.product ?? .bus
-        self.style = line.style
+    static func decode(_ raw: String) -> TransportProduct {
+        return TransportProduct(rawValue: raw.lowercased()) ?? .unknown
     }
 }
 
@@ -178,17 +269,6 @@ struct Event: Identifiable, Codable, Hashable {
     let description: String?
 }
 
-// MARK: - Bike Sharing
-
-struct BikeStation: Identifiable, Codable, Hashable {
-    let id: String
-    let name: String
-    let latitude: Double
-    let longitude: Double
-    let availableBikes: Int
-    let availableDocks: Int
-}
-
 // MARK: - Parking
 
 struct ParkingFacility: Identifiable, Codable, Hashable {
@@ -200,22 +280,121 @@ struct ParkingFacility: Identifiable, Codable, Hashable {
     let totalSpaces: Int
 }
 
+// MARK: - Transport Error
+
 enum TransportError: LocalizedError {
     case invalidLocation
     case invalidStation
+    case invalidURL
     case networkError(String)
+    case decodingError(String)
+    case apiError(String)
+    case cancelled
     case noData
+    case unknown(Error)
 
     var errorDescription: String? {
         switch self {
         case .invalidLocation:
-            return "Invalid location"
+            return "Invalid location coordinates"
         case .invalidStation:
-            return "Invalid station"
+            return "Station not found"
+        case .invalidURL:
+            return "Invalid URL"
         case .networkError(let message):
             return "Network error: \(message)"
+        case .decodingError(let message):
+            return "Failed to parse response: \(message)"
+        case .apiError(let message):
+            return "API error: \(message)"
+        case .cancelled:
+            return "Request was cancelled"
         case .noData:
             return "No data available"
+        case .unknown(let error):
+            return "Unknown error: \(error.localizedDescription)"
         }
+    }
+
+    var recoverySuggestion: String? {
+        switch self {
+        case .networkError:
+            return "Check your internet connection and try again"
+        case .invalidLocation, .invalidStation:
+            return "Try searching for a different location"
+        default:
+            return nil
+        }
+    }
+}
+
+extension TransportError {
+    static func from(_ error: Error) -> TransportError {
+        if let transportError = error as? TransportError {
+            return transportError
+        }
+
+        if error is CancellationError {
+            return .cancelled
+        }
+
+        if let urlError = error as? URLError {
+            return .networkError(urlError.localizedDescription)
+        }
+
+        return .unknown(error)
+    }
+}
+
+// MARK: - VBB API Types (for TransportService)
+
+struct VBBSimpleLocation: Decodable {
+    let id: String?
+    let name: String?
+    let location: VBBLocation?
+
+    struct VBBLocation: Decodable {
+        let latitude: Double
+        let longitude: Double
+    }
+}
+
+struct VBBLocation: Decodable {
+    let latitude: Double
+    let longitude: Double
+}
+
+struct VBBDeparture: Decodable {
+    let tripId: String?
+    let line: VBBLine?
+    let direction: String?
+    let plannedWhen: String?
+    let when: String?
+    let platform: String?
+    let stop: VBBStop?
+    let delay: Int?
+    let remarks: [VBBCustomValue]?
+
+    struct VBBLine: Decodable {
+        let id: String?
+        let name: String?
+        let publicCode: String?
+        let product: String?
+        let operatorCode: String?
+        let type: String?
+        let mode: String?
+    }
+
+    struct VBBStop: Decodable {
+        let id: String?
+        let name: String?
+        let location: VBBLocation?
+    }
+
+    struct VBBCustomValue: Decodable {
+        let id: String?
+        let type: String?
+        let summary: String?
+        let content: String?
     }
 }
