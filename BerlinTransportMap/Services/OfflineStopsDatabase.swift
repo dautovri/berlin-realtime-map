@@ -1,19 +1,25 @@
 import Foundation
 
 /// Offline database of all Berlin transport stops
-/// Downloads once on first launch, then loads from local storage
+/// Loads from app bundle on first launch, then caches to Documents
 final class OfflineStopsDatabase {
     static let shared = OfflineStopsDatabase()
     
     private let fileManager = FileManager.default
-    private let stopsFileName = "berlin_all_stops.json"
+    private let bundledFileName = "berlin_all_stops"
+    private let bundledExtension = "json"
+    private let stopsFileName = "berlin_all_stops_cached.json"
     private let metadataFileName = "berlin_stops_metadata.json"
     private let cacheTTL: TimeInterval = 604800 // 7 days
     
     private var allStops: [TransportStop] = []
     private var isLoaded = false
     
-    private var stopsFileURL: URL {
+    private var bundledURL: URL {
+        Bundle.main.url(forResource: bundledFileName, withExtension: bundledExtension) ?? Bundle.main.url(forResource: bundledFileName, withExtension: nil)!
+    }
+    
+    private var cachedFileURL: URL {
         documentsDirectory.appendingPathComponent(stopsFileName)
     }
     
@@ -29,18 +35,24 @@ final class OfflineStopsDatabase {
     
     // MARK: - Public API
     
-    /// Load all stops from local storage or fetch if needed
+    /// Load all stops - from bundle or cached file
     func loadIfNeeded() async {
         guard !isLoaded else { return }
         
-        if loadFromLocal() {
-            print("OfflineStopsDatabase: Loaded \(allStops.count) stops from local storage")
+        if loadFromBundle() {
+            print("OfflineStopsDatabase: Loaded \(allStops.count) stops from app bundle")
             isLoaded = true
             return
         }
         
-        // Download on first launch
-        await downloadAndSave()
+        if loadFromCache() {
+            print("OfflineStopsDatabase: Loaded \(allStops.count) stops from cache")
+            isLoaded = true
+            return
+        }
+        
+        // Download and cache on first launch
+        await downloadAndCache()
         isLoaded = true
     }
     
@@ -73,43 +85,99 @@ final class OfflineStopsDatabase {
     
     /// Force refresh from network
     func refresh() async {
-        await downloadAndSave()
+        await downloadAndCache()
     }
     
     // MARK: - Private Methods
     
-    private func loadFromLocal() -> Bool {
-        guard fileManager.fileExists(atPath: stopsFileURL.path) else {
+    private func loadFromBundle() -> Bool {
+        guard fileManager.fileExists(atPath: bundledURL.path) else {
             return false
         }
         
         do {
-            let data = try Data(contentsOf: stopsFileURL)
+            let data = try Data(contentsOf: bundledURL)
+            
+            // Try parsing as array of VBB API format first
+            struct VBBStop: Decodable {
+                let id: String?
+                let name: String?
+                let location: VBBLocation?
+            }
+            
+            struct VBBLocation: Decodable {
+                let latitude: Double?
+                let longitude: Double?
+            }
+            
+            let decoder = JSONDecoder()
+            if let vbbStops = try? decoder.decode([VBBStop].self, from: data) {
+                allStops = vbbStops.compactMap { vbbStop -> TransportStop? in
+                    guard let id = vbbStop.id, let name = vbbStop.name else { return nil }
+                    return TransportStop(
+                        id: id,
+                        name: name,
+                        latitude: vbbStop.location?.latitude ?? 0,
+                        longitude: vbbStop.location?.longitude ?? 0
+                    )
+                }
+            } else if let transportStops = try? decoder.decode([TransportStop].self, from: data) {
+                allStops = transportStops
+            } else {
+                print("OfflineStopsDatabase: Unknown JSON format in bundled stops")
+                return false
+            }
+            
+            // Copy to cache for future use
+            try? saveToCache()
+            
+            return true
+        } catch {
+            print("OfflineStopsDatabase: Failed to load bundled stops: \(error)")
+            return false
+        }
+    }
+    
+    private func loadFromCache() -> Bool {
+        guard fileManager.fileExists(atPath: cachedFileURL.path) else {
+            return false
+        }
+        
+        do {
+            let data = try Data(contentsOf: cachedFileURL)
             allStops = try JSONDecoder().decode([TransportStop].self, from: data)
             
-            // Check if data is expired
+            // Check if cache is expired
             if let metadataData = try? Data(contentsOf: metadataFileURL),
                let metadata = try? JSONDecoder().decode(Metadata.self, from: metadataData) {
                 let age = Date().timeIntervalSince(metadata.lastUpdated)
                 if age > cacheTTL {
                     print("OfflineStopsDatabase: Cache expired (\(Int(age / 86400)) days old), will refresh")
-                    return true // Still return true to use existing data while refreshing
+                    // Still return true to use existing data while refreshing in background
                 }
             }
             
             return true
         } catch {
-            print("OfflineStopsDatabase: Failed to load local stops: \(error)")
+            print("OfflineStopsDatabase: Failed to load cached stops: \(error)")
             return false
         }
     }
     
-    private func downloadAndSave() async {
+    private func saveToCache() throws {
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(allStops)
+        try data.write(to: cachedFileURL)
+        
+        let metadata = Metadata(lastUpdated: Date(), stopCount: allStops.count)
+        let metadataData = try encoder.encode(metadata)
+        try metadataData.write(to: metadataFileURL)
+    }
+    
+    private func downloadAndCache() async {
         print("OfflineStopsDatabase: Downloading all Berlin stops...")
         
         do {
-            // VBB API - get all stops in Berlin area
-            // Berlin bbox: 52.34 to 52.68 lat, 13.08 to 13.76 lon
             var allStopsFetched: [TransportStop] = []
             
             // Fetch stops in a grid pattern to cover Berlin
@@ -137,10 +205,10 @@ final class OfflineStopsDatabase {
                 return true
             }
             
-            // Save to local storage
-            try saveToLocal()
+            // Save to cache
+            try saveToCache()
             
-            print("OfflineStopsDatabase: Saved \(allStops.count) unique stops")
+            print("OfflineStopsDatabase: Saved \(allStops.count) unique stops to cache")
         } catch {
             print("OfflineStopsDatabase: Failed to download stops: \(error)")
         }
@@ -194,18 +262,6 @@ final class OfflineStopsDatabase {
                 longitude: resp.location?.longitude ?? 0
             )
         }
-    }
-    
-    private func saveToLocal() throws {
-        // Save stops
-        let encoder = JSONEncoder()
-        let stopsData = try encoder.encode(allStops)
-        try stopsData.write(to: stopsFileURL)
-        
-        // Save metadata
-        let metadata = Metadata(lastUpdated: Date(), stopCount: allStops.count)
-        let metadataData = try encoder.encode(metadata)
-        try metadataData.write(to: metadataFileURL)
     }
     
     private func calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
