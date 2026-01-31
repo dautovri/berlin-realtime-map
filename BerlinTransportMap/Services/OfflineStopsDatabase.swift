@@ -1,13 +1,15 @@
 import Foundation
 
 /// Offline database of all Berlin transport stops
-/// Loads from app bundle on first launch, then caches to Documents
+/// Loads from app bundle on first launch, then caches to Application Support
+/// Follows iOS 18+ best practices for file storage
 final class OfflineStopsDatabase {
     static let shared = OfflineStopsDatabase()
     
     private let fileManager = FileManager.default
     private let bundledFileName = "berlin_all_stops"
     private let bundledExtension = "json"
+    private let cacheDirectoryName = "TransportStops"
     private let stopsFileName = "berlin_all_stops_cached.json"
     private let metadataFileName = "berlin_stops_metadata.json"
     private let cacheTTL: TimeInterval = 604800 // 7 days
@@ -19,16 +21,20 @@ final class OfflineStopsDatabase {
         Bundle.main.url(forResource: bundledFileName, withExtension: bundledExtension) ?? Bundle.main.url(forResource: bundledFileName, withExtension: nil)!
     }
     
+    private var cacheDirectoryURL: URL {
+        applicationSupportDirectory.appendingPathComponent(cacheDirectoryName, isDirectory: true)
+    }
+    
     private var cachedFileURL: URL {
-        documentsDirectory.appendingPathComponent(stopsFileName)
+        cacheDirectoryURL.appendingPathComponent(stopsFileName)
     }
     
     private var metadataFileURL: URL {
-        documentsDirectory.appendingPathComponent(metadataFileName)
+        cacheDirectoryURL.appendingPathComponent(metadataFileName)
     }
     
-    private var documentsDirectory: URL {
-        fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    private var applicationSupportDirectory: URL {
+        fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
     }
     
     private init() {}
@@ -38,6 +44,9 @@ final class OfflineStopsDatabase {
     /// Load all stops - from bundle or cached file
     func loadIfNeeded() async {
         guard !isLoaded else { return }
+        
+        // Ensure cache directory exists
+        try? fileManager.createDirectory(at: cacheDirectoryURL, withIntermediateDirectories: true)
         
         if loadFromBundle() {
             print("OfflineStopsDatabase: Loaded \(allStops.count) stops from app bundle")
@@ -168,10 +177,20 @@ final class OfflineStopsDatabase {
         let encoder = JSONEncoder()
         let data = try encoder.encode(allStops)
         try data.write(to: cachedFileURL)
+        try excludeFromBackup(url: cachedFileURL)
         
         let metadata = Metadata(lastUpdated: Date(), stopCount: allStops.count)
         let metadataData = try encoder.encode(metadata)
         try metadataData.write(to: metadataFileURL)
+        try excludeFromBackup(url: metadataFileURL)
+    }
+    
+    /// Mark file as excluded from iCloud backup (required by Apple guidelines)
+    private func excludeFromBackup(url: URL) throws {
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = true
+        var mutableURL = url
+        try mutableURL.setResourceValues(resourceValues)
     }
     
     private func downloadAndCache() async {
