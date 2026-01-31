@@ -7,7 +7,8 @@ import Observation
 final class TransportService: @unchecked Sendable {
     private let baseURL = "https://v6.vbb.transport.rest"
     private let session: URLSession
-
+    private let offlineDatabase = OfflineStopsDatabase.shared
+    
     init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
@@ -84,6 +85,15 @@ final class TransportService: @unchecked Sendable {
     func searchLocations(query: String, maxLocations: Int = 20) async throws -> [TransportStop] {
         try Task.checkCancellation()
 
+        // Try offline database first for instant results
+        await offlineDatabase.loadIfNeeded()
+        let offlineResults = offlineDatabase.searchStops(query: query)
+        
+        if !offlineResults.isEmpty {
+            return Array(offlineResults.prefix(maxLocations))
+        }
+
+        // Fallback to API if offline DB has no results
         var components = URLComponents(string: "\(baseURL)/locations")!
         components.queryItems = [
             URLQueryItem(name: "query", value: query),

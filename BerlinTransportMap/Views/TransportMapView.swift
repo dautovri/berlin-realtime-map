@@ -57,7 +57,8 @@ struct TransportMapView: View {
     @State private var showingOfflineMode = false
 
     private let services = ServiceContainer.shared
-
+    private let offlineDatabase = OfflineStopsDatabase.shared
+    
     var isOffline: Bool { !services.networkMonitor.isConnected }
 
     private var isZoomedIn: Bool {
@@ -485,60 +486,38 @@ struct TransportMapView: View {
         isLoading = true
         errorMessage = nil
 
-        do {
-            let center = region.center
-            let maxDistance = Int(region.span.latitudeDelta * 111_000)
+        let center = region.center
+        let maxDistance = Int(region.span.latitudeDelta * 111_000)
 
-            // Check cache first - only fetch from network if cache is expired or missing
-            let cacheKey = services.cacheService.getStopsCacheKey(forLocation: center.latitude, longitude: center.longitude, maxDistance: maxDistance)
-            
-            var fetchedStops: [TransportStop]?
-            
-            // Check for preloaded stops first
-            if let preloadedStops = services.predictiveLoader.getPreloadedStops(for: center, maxDistance: maxDistance) {
-                fetchedStops = preloadedStops
-                dataSource = .cache
-                cacheAge = 0
-                print("Using preloaded stops data")
-            } else if let cachedStops = services.cacheService.getStops(forLocation: center.latitude, longitude: center.longitude, maxDistance: maxDistance) {
-                // Cache hit - use cached data
-                fetchedStops = cachedStops
-                dataSource = .cache
-                cacheAge = services.cacheService.age(of: cacheKey)
-                print("Using cached stops (age: \(formattedAge(cacheAge ?? 0)))")
-            }
-            
-            // Only fetch from network if we don't have cached data
-            if fetchedStops == nil {
-                print("Cache miss - fetching stops from network")
-                dataSource = .network
-                cacheAge = nil
-                
-                fetchedStops = try await services.transportService.queryNearbyStops(
+        // Use offline database first - it's always available and fast
+        await offlineDatabase.loadIfNeeded()
+        
+        let nearbyStops = offlineDatabase.findStops(
+            latitude: center.latitude,
+            longitude: center.longitude,
+            maxDistance: maxDistance
+        )
+        
+        if !nearbyStops.isEmpty {
+            self.stops = nearbyStops
+            dataSource = .cache
+            cacheAge = nil // We don't track age for offline DB
+            print("OfflineDB: Found \(nearbyStops.count) stops within \(maxDistance)m")
+        } else {
+            // Fallback to API if offline DB has no data (first launch)
+            do {
+                let fetchedStops = try await services.transportService.queryNearbyStops(
                     latitude: center.latitude,
                     longitude: center.longitude,
                     maxDistance: min(maxDistance, 5000),
                     maxLocations: 100
                 )
-                
-                // Save to cache for next time
-                services.cacheService.setStops(
-                    fetchedStops!,
-                    forLocation: center.latitude,
-                    longitude: center.longitude,
-                    maxDistance: min(maxDistance, 5000)
-                )
-            }
-            
-            self.stops = fetchedStops!
-        } catch {
-            errorMessage = error.localizedDescription
-            // Try to use cache as fallback
-            if let cachedStops = services.cacheService.getStops(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000)) {
-                self.stops = cachedStops
-                dataSource = .cache
-                cacheAge = services.cacheService.age(of: services.cacheService.getStopsCacheKey(forLocation: region.center.latitude, longitude: region.center.longitude, maxDistance: Int(region.span.latitudeDelta * 111_000)))
-            } else {
+                self.stops = fetchedStops
+                dataSource = .network
+                cacheAge = nil
+                print("API: Fetched \(fetchedStops.count) stops from network")
+            } catch {
+                errorMessage = error.localizedDescription
                 self.stops = []
             }
         }
