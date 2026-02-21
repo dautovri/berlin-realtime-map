@@ -1,0 +1,18 @@
+{
+  "key_id": "",
+  "issuer_id": "",
+  "private_key_path": "",
+  "default_key_name": "Ruslan",
+  "app_id": "6757723208",
+  "vendor_number": "",
+  "analytics_vendor_number": "",
+  "timeout": "",
+  "timeout_seconds": "",
+  "upload_timeout": "",
+  "upload_timeout_seconds": "",
+  "max_retries": "",
+  "base_delay": "",
+  "max_delay": "",
+  "retry_log": "",
+  "debug": ""
+}

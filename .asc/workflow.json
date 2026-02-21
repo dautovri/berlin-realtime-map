@@ -1,0 +1,70 @@
+{
+  // asc workflow file (JSONC)
+  // Docs: https://github.com/rudrankriyam/App-Store-Connect-CLI/blob/main/docs/WORKFLOWS.md
+  "env": {
+    "APP_ID": "6757723208",
+
+    "IPA": "./build/export/BerlinTransportMap.ipa",
+    "GROUP": "Internal",
+    "VERSION": "",
+    "SUBMIT": "",
+
+    "FASTLANE_DIR": "./fastlane",
+
+    // Set CONFIRM=1 to apply metadata imports (otherwise use the dry-run workflow)
+    "CONFIRM": ""
+  },
+  "before_all": "asc auth status",
+  "workflows": {
+    "status": {
+      "description": "Show auth status and app summary",
+      "steps": [
+        { "name": "auth", "run": "asc auth status --verbose" },
+        { "name": "app", "run": "asc apps get --id $APP_ID" }
+      ]
+    },
+
+    "testflight": {
+      "description": "Upload an IPA and distribute it to a TestFlight group",
+      "steps": [
+        { "name": "upload_and_distribute", "run": "asc publish testflight --app $APP_ID --ipa $IPA --group $GROUP --wait --notify" }
+      ]
+    },
+
+    "appstore_upload": {
+      "description": "Upload an IPA to App Store Connect (no submission)",
+      "steps": [
+        { "name": "upload", "run": "asc publish appstore --app $APP_ID --ipa $IPA --version $VERSION --wait" }
+      ]
+    },
+
+    "appstore_submit": {
+      "description": "Upload an IPA and submit for review",
+      "steps": [
+        { "name": "upload_and_submit", "run": "asc publish appstore --app $APP_ID --ipa $IPA --version $VERSION --submit --confirm --wait" }
+      ]
+    },
+
+    "metadata_validate": {
+      "description": "Validate fastlane metadata locally (offline)",
+      "steps": [
+        { "name": "validate", "run": "asc migrate validate --fastlane-dir $FASTLANE_DIR" }
+      ]
+    },
+
+    "metadata_import_dry": {
+      "description": "Dry-run: import Deliver-style metadata/screenshots into ASC (no changes)",
+      "steps": [
+        { "name": "import", "run": "asc migrate import --fastlane-dir $FASTLANE_DIR --dry-run" }
+      ]
+    },
+
+    "metadata_import": {
+      "description": "Import Deliver-style metadata/screenshots into ASC (requires CONFIRM=1)",
+      "steps": [
+        { "name": "guard", "run": "echo 'Set CONFIRM=1 to run this workflow (or use metadata_import_dry).'; true" },
+        { "name": "import", "if": "CONFIRM", "run": "asc migrate import --fastlane-dir $FASTLANE_DIR" }
+      ]
+    }
+  }
+}
