@@ -1,9 +1,11 @@
 import SwiftData
 import Foundation
 
+@MainActor
 @Observable
 final class FavoritesService {
     private let modelContext: ModelContext
+    private let encoder = JSONEncoder()
     
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -21,7 +23,7 @@ final class FavoritesService {
     
     func saveRouteFavorite(name: String, route: Route) throws {
         let routeName = route.legs.compactMap { $0.line?.label }.joined(separator: " → ")
-        let coordinatesData = try JSONEncoder().encode(route.coordinates.map { ["lat": $0.latitude, "lon": $0.longitude] })
+        let coordinatesData = try encoder.encode(route.coordinates.map { ["lat": $0.latitude, "lon": $0.longitude] })
         let favorite = Favorite(name: name, type: .route, routeName: routeName, routeCoordinates: coordinatesData)
         try saveFavorite(favorite)
     }

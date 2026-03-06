@@ -1,1 +1,1 @@
-Watch Berlin's U-Bahn, S-Bahn, trams & buses move live across the city!
+Track Berlin public transport in real time with live vehicle positions, stop departures, and delay updates.

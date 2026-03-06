@@ -1,5 +1,4 @@
-• Initial release
-• Real-time vehicle tracking for all BVG transit
-• Beautiful map interface
-• Live U-Bahn, S-Bahn, tram, and bus positions
-• Smooth animations and modern design
+• Improved live update stability and map performance
+• Better stop detail readability and delay visibility
+• Refined vehicle rendering and interaction polish
+• General reliability improvements

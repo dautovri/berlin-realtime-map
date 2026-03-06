@@ -6,11 +6,57 @@ actor VehicleRadarService {
     private let baseURL = "https://v6.vbb.transport.rest"
     private let session: URLSession
 
+    nonisolated(unsafe) private static let dateFormatterFull: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    nonisolated(unsafe) private static let dateFormatterBasic: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    // Stored once each; avoids rebuilding decoders on every fetch.
+    private let isoDecoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
+
+    private let tripDecoder = JSONDecoder()
+
+    private let vehicleDecoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            if let date = VehicleRadarService.dateFormatterFull.date(from: dateString) {
+                return date
+            }
+            if let date = VehicleRadarService.dateFormatterBasic.date(from: dateString) {
+                return date
+            }
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Cannot decode date: \(dateString)"
+            )
+        }
+        return d
+    }()
+
     init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
+    }
+
+    static func parseISO8601(_ string: String) -> Date? {
+        if let d = dateFormatterFull.date(from: string) { return d }
+        if let d = dateFormatterBasic.date(from: string) { return d }
+        return nil
     }
 
     func fetchVehicles(
@@ -27,7 +73,7 @@ actor VehicleRadarService {
             URLQueryItem(name: "south", value: String(south)),
             URLQueryItem(name: "east", value: String(east)),
             URLQueryItem(name: "duration", value: String(duration)),
-            URLQueryItem(name: "results", value: "500"),
+            URLQueryItem(name: "results", value: "256"),
             URLQueryItem(name: "frames", value: "1"),
             URLQueryItem(name: "polylines", value: "false")
         ]
@@ -43,34 +89,9 @@ actor VehicleRadarService {
             throw TransportError.networkError("Invalid response")
         }
 
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let dateString = try container.decode(String.self)
+        let radarResponse = try vehicleDecoder.decode(RadarResponse.self, from: data)
 
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-
-            formatter.formatOptions = [.withInternetDateTime]
-            if let date = formatter.date(from: dateString) {
-                return date
-            }
-
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date")
-        }
-
-        let radarResponse = try decoder.decode(RadarResponse.self, from: data)
-
-        var vehicles = radarResponse.movements
-
-        for i in vehicles.indices {
-            await vehicles[i].updateSpeed()
-        }
-
-        return vehicles
+        return radarResponse.movements
     }
 
     func fetchDepartures(stopId: String, duration: Int = 60) async throws -> [RESTDeparture] {
@@ -100,10 +121,7 @@ actor VehicleRadarService {
             throw TransportError.networkError("HTTP \(httpResponse.statusCode)")
         }
 
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        let departuresResponse = try decoder.decode(DeparturesResponse.self, from: data)
+        let departuresResponse = try isoDecoder.decode(DeparturesResponse.self, from: data)
         return departuresResponse.departures
     }
 
@@ -129,8 +147,7 @@ actor VehicleRadarService {
             return nil
         }
 
-        let decoder = JSONDecoder()
-        let tripResponse = try decoder.decode(TripResponse.self, from: data)
+        let tripResponse = try tripDecoder.decode(TripResponse.self, from: data)
         return tripResponse.trip
     }
 }
@@ -207,13 +224,10 @@ struct RESTDeparture: Identifiable, Decodable {
     var id: String { tripId }
 
     var displayTime: Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-
-        if let whenStr = when, let date = formatter.date(from: whenStr) {
+        if let whenStr = when, let date = VehicleRadarService.parseISO8601(whenStr) {
             return date
         }
-        if let plannedStr = plannedWhen, let date = formatter.date(from: plannedStr) {
+        if let plannedStr = plannedWhen, let date = VehicleRadarService.parseISO8601(plannedStr) {
             return date
         }
         return nil
@@ -230,12 +244,41 @@ struct RESTStop: Decodable {
     let name: String?
 }
 
+struct VehicleStopInfo: Codable {
+    let id: String?
+    let name: String?
+    let location: VehicleLocation?
+}
+
+struct VehicleStopoverEntry: Codable {
+    let stop: VehicleStopInfo?
+    let arrival: String?
+    let plannedArrival: String?
+    let departure: String?
+    let plannedDeparture: String?
+
+    /// Parsed arrival time (real-time if available, else scheduled).
+    var arrivalDate: Date? {
+        let s = arrival ?? plannedArrival
+        guard let str = s else { return nil }
+        return VehicleRadarService.parseISO8601(str)
+    }
+
+    /// Parsed departure time.
+    var departureDate: Date? {
+        let s = departure ?? plannedDeparture
+        guard let str = s else { return nil }
+        return VehicleRadarService.parseISO8601(str)
+    }
+}
+
 struct Vehicle: Identifiable, Codable {
     let tripId: String
     let line: VehicleLine?
     let direction: String?
     let location: VehicleLocation?
     let when: String?
+    let nextStopovers: [VehicleStopoverEntry]?
 
     var id: String { tripId }
 
@@ -244,23 +287,16 @@ struct Vehicle: Identifiable, Codable {
         return CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude)
     }
 
-    var speedKPH: Double? {
-        cachedSpeeds[tripId]
+    /// The next stop the vehicle is heading toward, with its arrival time and coordinates.
+    var nextStopCoordinate: CLLocationCoordinate2D? {
+        guard let stop = nextStopovers?.first(where: { $0.stop?.location != nil })?.stop?.location else { return nil }
+        return CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude)
     }
 
-    mutating func updateSpeed() async {
-        guard let whenStr = when else { return }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let timestamp = formatter.date(from: whenStr) {
-            if let speed = await positionTracker.updatePosition(for: self, timestamp: timestamp) {
-                cachedSpeeds[tripId] = speed
-            }
-        }
+    var nextStopArrival: Date? {
+        nextStopovers?.first(where: { $0.stop?.location != nil })?.arrivalDate
     }
 }
-
-private var cachedSpeeds: [String: Double] = [:]
 
 struct LineColor: Codable {
     let fg: String?
@@ -326,43 +362,3 @@ struct VehicleLocation: Codable {
     let latitude: Double
     let longitude: Double
 }
-
-// MARK: - Speed Tracking
-
-actor VehiclePositionTracker {
-    private var lastPositions: [String: (coordinate: CLLocationCoordinate2D, timestamp: Date, speed: Double)] = [:]
-    private let maxAge: TimeInterval = 60
-
-    func updatePosition(for vehicle: Vehicle, timestamp: Date) -> Double? {
-        guard let coordinate = vehicle.currentLocation else { return nil }
-        let now = timestamp
-
-        if let last = lastPositions[vehicle.id] {
-            let age = now.timeIntervalSince(last.timestamp)
-            if age > 0 && age < maxAge {
-                let oldLocation = CLLocation(latitude: last.coordinate.latitude, longitude: last.coordinate.longitude)
-                let newLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
-                let distance = newLocation.distance(from: oldLocation)
-                let speedMPS = distance / age
-                let speedKPH = speedMPS * 3.6
-
-                lastPositions[vehicle.id] = (coordinate, now, speedKPH)
-                return speedKPH
-            }
-        }
-
-        lastPositions[vehicle.id] = (coordinate, now, 0)
-        return nil
-    }
-
-    func getSpeed(for vehicleId: String) -> Double? {
-        return lastPositions[vehicleId]?.speed
-    }
-
-    func cleanup() {
-        let now = Date()
-        lastPositions = lastPositions.filter { now.timeIntervalSince($0.value.timestamp) < maxAge }
-    }
-}
-
-let positionTracker = VehiclePositionTracker()

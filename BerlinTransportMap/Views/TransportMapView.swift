@@ -3,8 +3,29 @@ import MapKit
 import UIKit
 
 enum DataSource {
-    case network
-    case cache
+    case network  // just successfully fetched
+    case stale    // last in-memory positions; next fetch in progress or errored
+}
+
+private struct VehicleTrailPoint {
+    let coordinate: CLLocationCoordinate2D
+    let timestamp: Date
+}
+
+/// Projects a vehicle's position `seconds` into the future using schedule data.
+private func projectCoordinate(
+    from current: CLLocationCoordinate2D,
+    nextStop: CLLocationCoordinate2D,
+    arrivalDate: Date,
+    seconds: TimeInterval
+) -> CLLocationCoordinate2D {
+    let total = arrivalDate.timeIntervalSince(Date())
+    guard total > 1 else { return nextStop }
+    let progress = min(seconds / total, 1.0)
+    return CLLocationCoordinate2D(
+        latitude:  current.latitude  + progress * (nextStop.latitude  - current.latitude),
+        longitude: current.longitude + progress * (nextStop.longitude - current.longitude)
+    )
 }
 
 struct TransportMapView: View {
@@ -34,13 +55,16 @@ struct TransportMapView: View {
     @State private var lastVehiclesLoadTime: Date?
     @State private var isLoadingVehicles = false
     @State private var isLiveUpdating = true
+    @State private var vehicleHeadings: [String: Double] = [:]
+    @State private var vehicleTrails: [String: [VehicleTrailPoint]] = [:]
+    /// Projected end-of-interval positions. Set once per poll; MapKit animates to them smoothly.
+    @State private var vehicleProjectedPositions: [String: CLLocationCoordinate2D] = [:]
     @State private var favoritesService: FavoritesService?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var lastLocationUpdate = Date.distantPast
     @State private var pollingInterval: TimeInterval = 5.0
     @State private var dataSource: DataSource = .network
-    @State private var cacheAge: TimeInterval?
     @State private var showingCacheInfo = false
     @State private var events: [Event] = []
     @State private var selectedEvent: Event?
@@ -48,7 +72,9 @@ struct TransportMapView: View {
 
     @State private var route: Route?
     @State private var routeAccentColor: Color = .blue
-    @State private var pollingTimer: Timer?
+    @State private var stopsLoadTask: Task<Void, Never>?
+
+    private static let impactFeedback = UIImpactFeedbackGenerator(style: .light)
 
     @State private var showingFavorites = false
     @State private var showingAbout = false
@@ -66,12 +92,54 @@ struct TransportMapView: View {
         return region.span.latitudeDelta <= 0.02
     }
 
+    private var shouldRenderTrails: Bool {
+        isZoomedIn && vehicles.count <= 180
+    }
+
+    private var shouldAnimateVehiclePulse: Bool {
+        isZoomedIn && vehicles.count <= 120
+    }
+
+    private var vehiclesToRender: [Vehicle] {
+        guard let region = currentRegion else {
+            return Array(vehicles.prefix(180))
+        }
+
+        let zoom = region.span.latitudeDelta
+        let limit: Int
+        switch zoom {
+        case ...0.02:
+            limit = 500
+        case ...0.05:
+            limit = 260
+        case ...0.10:
+            limit = 150
+        default:
+            limit = 90
+        }
+
+        return Array(vehicles.prefix(limit))
+    }
+
     @MapContentBuilder
     private var mapContent: some MapContent {
         UserAnnotation()
         stopAnnotations
+        trailOverlay
         vehicleAnnotations
         routeOverlay
+    }
+
+    @MapContentBuilder
+    private var trailOverlay: some MapContent {
+        if shouldRenderTrails {
+            ForEach(vehiclesToRender.prefix(120)) { vehicle in
+                if let trail = vehicleTrails[vehicle.id], trail.count >= 2 {
+                    MapPolyline(coordinates: trail.map(\.coordinate))
+                        .stroke(Color(hex: vehicle.line?.color ?? "#007AFF").opacity(0.35), lineWidth: 2)
+                }
+            }
+        }
     }
 
     @MapContentBuilder
@@ -97,21 +165,31 @@ struct TransportMapView: View {
 
     @MapContentBuilder
     private var vehicleAnnotations: some MapContent {
-        ForEach(vehicles) { vehicle in
+        ForEach(vehiclesToRender) { vehicle in
             vehicleAnnotation(for: vehicle)
         }
     }
 
     @MapContentBuilder
     private func vehicleAnnotation(for vehicle: Vehicle) -> some MapContent {
-        if let coordinate = vehicle.currentLocation {
+        // Use the projected (animated) position when available so the vehicle
+        // glides smoothly toward its next stop over the polling interval.
+        if let coordinate = vehicleProjectedPositions[vehicle.id] ?? vehicle.currentLocation {
             let title = vehicle.line?.displayName ?? "?"
             Annotation(title, coordinate: coordinate) {
-                LiveVehicleMarkerView(vehicle: vehicle, isSelected: vehicle.id == selectedVehicle?.id)
-                    .onTapGesture {
-                        selectedVehicle = vehicle
-                        showingVehicleInfo = true
-                    }
+                Button {
+                    selectedVehicle = vehicle
+                    showingVehicleInfo = true
+                } label: {
+                    LiveVehicleMarkerView(
+                        vehicle: vehicle,
+                        headingDegrees: vehicleHeadings[vehicle.id],
+                        isMoving: true,
+                        isPulseEnabled: shouldAnimateVehiclePulse,
+                        isSelected: vehicle.id == selectedVehicle?.id
+                    )
+                }
+                .buttonStyle(.plain)
             }
             .tag(vehicle.id)
         }
@@ -131,21 +209,31 @@ struct TransportMapView: View {
         if !services.networkMonitor.isConnected {
             return "wifi.slash"
         }
-        return dataSource == .cache ? "clock.arrow.circlepath" : "wifi"
+        return dataSource == .stale ? "clock.arrow.circlepath" : "wifi"
     }
 
     private var cacheStatusText: String {
         if !services.networkMonitor.isConnected {
             return "Offline"
         }
-        return dataSource == .cache ? "Cached" : "Live"
+        return dataSource == .stale ? "Stale" : "Live"
     }
 
     private var cacheBadgeColor: Color {
         if !services.networkMonitor.isConnected {
             return Color.red.opacity(0.9)
         }
-        return dataSource == .cache ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)
+        return dataSource == .stale ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)
+    }
+
+    private var cacheInfoText: String {
+        if !services.networkMonitor.isConnected {
+            return "You're currently offline. Showing last known vehicle positions."
+        }
+        if dataSource == .stale {
+            return "Last known positions shown. Waiting for next update."
+        }
+        return "Showing live data from the network."
     }
 
     var body: some View {
@@ -157,19 +245,22 @@ struct TransportMapView: View {
                 }
             }
             .task {
+                // Adaptive polling loop.
+                // VBB positions update server-side every ~30s; projecting to
+                // end-of-interval and animating with withAnimation gives smooth
+                // movement without per-second state thrashing.
                 while !Task.isCancelled {
-                    pollingInterval = Date().timeIntervalSince(lastLocationUpdate) < 60 ? 3 : 10
-                    try? await Task.sleep(for: .seconds(1))
+                    let interval: TimeInterval = Date().timeIntervalSince(lastLocationUpdate) < 60 ? 15 : 30
+                    pollingInterval = interval
+                    try? await Task.sleep(for: .seconds(interval))
+                    guard !Task.isCancelled else { break }
+                    if isLiveUpdating && scenePhase == .active, let region = currentRegion {
+                        await loadVehicles(for: region)
+                    }
                 }
             }
-            .onChange(of: pollingInterval) { _, _ in
-                startPolling()
-            }
-            .onAppear {
-                startPolling()
-            }
             .onDisappear {
-                pollingTimer?.invalidate()
+                stopsLoadTask?.cancel()
             }
             .onChange(of: services.networkMonitor.isConnected) { _, isConnected in
                 if !isConnected {
@@ -216,23 +307,34 @@ struct TransportMapView: View {
                     let spanChanged = abs(newRegion.span.latitudeDelta - old.span.latitudeDelta) > 0.005
 
                     if centerChanged || spanChanged {
-                        Task {
-                            await loadStopsForRegion(newRegion)
-                        }
+                        scheduleStopsLoad(for: newRegion)
                     }
                 } else {
-                    Task {
-                        await loadStopsForRegion(newRegion)
-                    }
+                    // First camera event — map has rendered its initial position.
+                    // Kick off both stops and vehicles immediately rather than
+                    // waiting up to 20s for the first polling tick.
+                    scheduleStopsLoad(for: newRegion)
+                    Task { await loadVehicles(for: newRegion) }
                 }
             }
             .navigationTitle("Berlin Transport")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingCacheInfo = true
+                    } label: {
+                        statusBadge
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Data source")
+                    .accessibilityValue(cacheStatusText)
+                    .accessibilityHint("Shows whether the app is using live or cached data")
+                }
+
                 ToolbarItemGroup(placement: .bottomBar) {
                     Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        print("TransportMapView: Opening favorites sheet")
+                        Self.impactFeedback.impactOccurred()
                         showingFavorites = true
                     } label: {
                         Label("Favorites", systemImage: "star")
@@ -260,6 +362,12 @@ struct TransportMapView: View {
                 }
             }
             .toolbarBackground(.visible, for: .bottomBar)
+            .toolbarBackground(.ultraThinMaterial, for: .bottomBar)
+            .alert("Data Source", isPresented: $showingCacheInfo) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(cacheInfoText)
+            }
         }
     }
 
@@ -354,7 +462,7 @@ struct TransportMapView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(cacheBadgeColor)
-        .foregroundColor(.white)
+        .foregroundStyle(.white)
         .clipShape(Capsule())
     }
 
@@ -384,17 +492,7 @@ struct TransportMapView: View {
         isLoadingDepartures = false
     }
 
-    @MainActor
-    private func startPolling() {
-        pollingTimer?.invalidate()
-        pollingTimer = Timer.scheduledTimer(withTimeInterval: pollingInterval, repeats: true) { _ in
-            Task { @MainActor in
-                if isLiveUpdating && scenePhase == .active, let region = currentRegion {
-                    await loadVehicles(for: region)
-                }
-            }
-        }
-    }
+
 
     private func centerOnUserLocation() {
         if locationManager.isAuthorized, let location = locationManager.location {
@@ -433,18 +531,11 @@ struct TransportMapView: View {
         let east = center.longitude + lonDelta
 
         do {
-            if !services.networkMonitor.isConnected {
-                if let cachedVehicles = services.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.vehicles = cachedVehicles
-                    }
-                    dataSource = .cache
-                    cacheAge = services.cacheService.age(of: services.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
-                } else {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.vehicles = []
-                    }
-                }
+            // Vehicles are real-time — never read from or write to disk cache.
+            // If offline or errored, the existing in-memory `vehicles` state
+            // already holds the last known positions; just mark as stale.
+            guard services.networkMonitor.isConnected else {
+                dataSource = .stale
                 return
             }
 
@@ -456,21 +547,138 @@ struct TransportMapView: View {
                 duration: 30
             )
 
-            services.cacheService.setVehicles(fetchedVehicles, forBoundingBox: north, west: west, south: south, east: east, duration: 30)
-
-            withAnimation(.easeInOut(duration: 0.3)) {
-                self.vehicles = fetchedVehicles
-            }
+            updateVehiclesWithAnimation(fetchedVehicles)
+            dataSource = .network
+            let anchored = fetchedVehicles.filter { $0.nextStopCoordinate != nil && $0.nextStopArrival != nil }.count
+            print("VehicleRadar: Fetched \(fetchedVehicles.count) vehicles, \(anchored) with next-stop anchors ✓")
         } catch {
+            // Keep the existing in-memory positions — do not overwrite with stale disk data.
             errorMessage = "Failed to load vehicles: \(error.localizedDescription)"
-            if let cachedVehicles = services.cacheService.getVehicles(forBoundingBox: north, west: west, south: south, east: east, duration: 30) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    self.vehicles = cachedVehicles
+            dataSource = .stale
+            print("VehicleRadar: Fetch error — \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    private func updateVehiclesWithAnimation(_ incoming: [Vehicle]) {
+        let previousCoordinates: [String: CLLocationCoordinate2D] = vehicles.reduce(into: [:]) { result, vehicle in
+            guard let coordinate = vehicle.currentLocation else { return }
+            result[vehicle.id] = coordinate
+        }
+
+        let now = Date()
+        let cutoff = now.addingTimeInterval(-45)
+        let shouldTrackTrails = shouldRenderTrails || selectedVehicle != nil
+        let activeVehicleIDs = Set(incoming.map(\.id))
+
+        var updatedHeadings = vehicleHeadings
+        updatedHeadings = updatedHeadings.filter { activeVehicleIDs.contains($0.key) }
+
+        var updatedTrails = vehicleTrails
+        updatedTrails = updatedTrails.filter { activeVehicleIDs.contains($0.key) }
+
+        if !shouldTrackTrails {
+            updatedTrails.removeAll(keepingCapacity: true)
+        }
+
+        for vehicle in incoming {
+            guard
+                let newCoordinate = vehicle.currentLocation,
+                let oldCoordinate = previousCoordinates[vehicle.id]
+            else {
+                if shouldTrackTrails, let newCoordinate = vehicle.currentLocation {
+                    var trail = updatedTrails[vehicle.id] ?? []
+                    trail.append(VehicleTrailPoint(coordinate: newCoordinate, timestamp: now))
+                    updatedTrails[vehicle.id] = Array(trail.suffix(12))
                 }
-                dataSource = .cache
-                cacheAge = services.cacheService.age(of: services.cacheService.getVehiclesCacheKey(forBoundingBox: north, west: west, south: south, east: east, duration: 30))
+                continue
+            }
+
+            let distance = approximateDistanceMeters(from: oldCoordinate, to: newCoordinate)
+
+            // Ignore tiny jitter to avoid noisy heading changes.
+            if distance > 8 {
+                updatedHeadings[vehicle.id] = bearing(from: oldCoordinate, to: newCoordinate)
+            }
+
+            if shouldTrackTrails {
+                var trail = updatedTrails[vehicle.id] ?? []
+                if trail.last.map({ approximateDistanceMeters(from: $0.coordinate, to: newCoordinate) > 4 }) ?? true {
+                    trail.append(VehicleTrailPoint(coordinate: newCoordinate, timestamp: now))
+                }
+
+                trail = trail.filter { $0.timestamp >= cutoff }
+                updatedTrails[vehicle.id] = Array(trail.suffix(12))
             }
         }
+
+        vehicleTrails = updatedTrails
+
+        // For each vehicle, compute where it should be at the END of the next
+        // polling interval using schedule/stop data. We then animate from the
+        // current screen position to that projected position over the full
+        // polling interval with ONE withAnimation call — no per-second state
+        // thrashing, no annotation rebuilds between polls.
+        let now2 = Date()
+        var projected: [String: CLLocationCoordinate2D] = [:]
+        for vehicle in incoming {
+            guard let from = vehicle.currentLocation else { continue }
+
+            if let to = vehicle.nextStopCoordinate,
+               let arrival = vehicle.nextStopArrival,
+               arrival > now2 {
+                // Project to where this vehicle will be at end of next interval.
+                projected[vehicle.id] = projectCoordinate(
+                    from: from,
+                    nextStop: to,
+                    arrivalDate: arrival,
+                    seconds: pollingInterval
+                )
+                updatedHeadings[vehicle.id] = bearing(from: from, to: to)
+            } else {
+                // No schedule data — annotation stays at current position.
+                projected[vehicle.id] = from
+            }
+        }
+
+        // Single write — covers both trail-based and projection-based headings.
+        vehicleHeadings = updatedHeadings
+        vehicles = incoming
+
+        // Animate all annotations to their projected end-of-interval positions.
+        // This runs once per poll (every 15-30s), NOT every second.
+        let animDuration = max(pollingInterval - 1.0, 1.0)
+        withAnimation(.linear(duration: animDuration)) {
+            vehicleProjectedPositions = projected
+        }
+    }
+
+    private func approximateDistanceMeters(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
+        // Fast equirectangular approximation; accurate enough for short map deltas.
+        let lat1 = from.latitude * .pi / 180
+        let lat2 = to.latitude * .pi / 180
+        let lon1 = from.longitude * .pi / 180
+        let lon2 = to.longitude * .pi / 180
+        let x = (lon2 - lon1) * cos((lat1 + lat2) / 2)
+        let y = lat2 - lat1
+        return sqrt(x * x + y * y) * 6_371_000
+    }
+
+    private func bearing(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
+        let lat1 = from.latitude * .pi / 180
+        let lon1 = from.longitude * .pi / 180
+        let lat2 = to.latitude * .pi / 180
+        let lon2 = to.longitude * .pi / 180
+
+        let deltaLon = lon2 - lon1
+        let y = sin(deltaLon) * cos(lat2)
+        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLon)
+        let radians = atan2(y, x)
+        var degrees = radians * 180 / .pi
+        if degrees < 0 {
+            degrees += 360
+        }
+        return degrees
     }
 
     @MainActor
@@ -500,8 +708,8 @@ struct TransportMapView: View {
         
         if !nearbyStops.isEmpty {
             self.stops = nearbyStops
-            dataSource = .cache
-            cacheAge = nil // We don't track age for offline DB
+            // Stop locations are static data — loading from offline DB is normal
+            // operation, not a degraded state. Don't change the vehicle dataSource.
             print("OfflineDB: Found \(nearbyStops.count) stops within \(maxDistance)m")
         } else {
             // Fallback to API if offline DB has no data (first launch)
@@ -513,8 +721,6 @@ struct TransportMapView: View {
                     maxLocations: 100
                 )
                 self.stops = fetchedStops
-                dataSource = .network
-                cacheAge = nil
                 print("API: Fetched \(fetchedStops.count) stops from network")
             } catch {
                 errorMessage = error.localizedDescription
@@ -523,6 +729,16 @@ struct TransportMapView: View {
         }
 
         isLoading = false
+    }
+
+    @MainActor
+    private func scheduleStopsLoad(for region: MKCoordinateRegion) {
+        stopsLoadTask?.cancel()
+        stopsLoadTask = Task {
+            try? await Task.sleep(for: .milliseconds(280))
+            guard !Task.isCancelled else { return }
+            await loadStopsForRegion(region)
+        }
     }
 
     private func formattedAge(_ age: TimeInterval) -> String {
@@ -582,10 +798,28 @@ struct TransportMapView: View {
 
 struct LiveVehicleMarkerView: View {
     let vehicle: Vehicle
+    let headingDegrees: Double?
+    let isMoving: Bool
+    let isPulseEnabled: Bool
     let isSelected: Bool
+    @State private var pulse = false
 
     var body: some View {
         ZStack {
+            if isMoving && isPulseEnabled {
+                Circle()
+                    .stroke(vehicleColor.opacity(0.45), lineWidth: 2)
+                    .frame(width: isSelected ? 50 : 44, height: isSelected ? 50 : 44)
+                    .scaleEffect(pulse ? 1.4 : 1.0)
+                    .opacity(pulse ? 0.0 : 0.65)
+            }
+
+            Image(systemName: "location.north.fill")
+                .font(.system(size: isSelected ? 11 : 10, weight: .bold))
+                .foregroundStyle(vehicleColor.opacity(0.95))
+                .rotationEffect(.degrees(headingDegrees ?? 0))
+                .offset(y: isSelected ? -22 : -19)
+
             Circle()
                 .stroke(vehicleColor.opacity(0.3), lineWidth: isSelected ? 4 : 3)
                 .frame(width: isSelected ? 42 : 36, height: isSelected ? 42 : 36)
@@ -601,6 +835,23 @@ struct LiveVehicleMarkerView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
         }
+            .animation(.easeInOut(duration: 0.45), value: headingDegrees)
+        .onAppear {
+            guard isMoving, isPulseEnabled else { return }
+            pulse = true
+        }
+        .onChange(of: isMoving) { _, moving in
+            pulse = moving && isPulseEnabled
+        }
+        .onChange(of: isPulseEnabled) { _, enabled in
+            pulse = enabled && isMoving
+        }
+        .animation(
+            (isMoving && isPulseEnabled)
+                ? .easeOut(duration: 1.4).repeatForever(autoreverses: false)
+                : .default,
+            value: pulse
+        )
     }
 
     var vehicleColor: Color {
@@ -730,7 +981,8 @@ struct RESTDepartureRow: View {
             line: departure.line,
             direction: departure.direction,
             location: nil,
-            when: nil
+            when: nil,
+            nextStopovers: nil
         )
         return predictionService.predictArrival(for: mockVehicle, at: stop)
     }
@@ -847,34 +1099,19 @@ struct VehicleInfoSheet: View {
                         Text("Lat")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(String(format: "%.5f", coord.latitude))
+                        Text(coord.latitude.formatted(.number.precision(.fractionLength(5))))
                             .font(.caption.monospaced())
                     }
                     VStack(spacing: 2) {
                         Text("Lon")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(String(format: "%.5f", coord.longitude))
+                        Text(coord.longitude.formatted(.number.precision(.fractionLength(5))))
                             .font(.caption.monospaced())
                     }
                 }
 
-                Spacer()
 
-                VStack(spacing: 2) {
-                    Text("Speed")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if let speed = vehicle.speedKPH, speed > 0 {
-                        Text(String(format: "%.0f km/h", speed))
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.green)
-                    } else {
-                        Text("---")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.orange)
-                    }
-                }
             }
 
             Button {
@@ -924,17 +1161,17 @@ struct DeveloperInfoSheet: View {
                     VStack(alignment: .center, spacing: 12) {
                         Image(systemName: "person.circle.fill")
                             .font(.system(size: 48))
-                            .foregroundColor(.blue)
+                            .foregroundStyle(.blue)
 
                         VStack(alignment: .center, spacing: 4) {
                             Text("Berlin Transport Map")
                                 .font(.headline)
                             Text("Live vehicle radar and nearby stops")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                             Text("by \(developerName)")
                                 .font(.caption2)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -951,64 +1188,64 @@ struct DeveloperInfoSheet: View {
                             Link(destination: githubURL) {
                                 HStack {
                                     Image(systemName: "arrow.up.right.square.fill")
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                     Text("GitHub")
                                     Spacer()
                                     Image(systemName: "arrow.up.right")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                                 .padding(.vertical, 8)
                             }
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         }
 
                         if let linkedInURL {
                             Link(destination: linkedInURL) {
                                 HStack {
                                     Image(systemName: "arrow.up.right.square.fill")
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                     Text("LinkedIn")
                                     Spacer()
                                     Image(systemName: "arrow.up.right")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                                 .padding(.vertical, 8)
                             }
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         }
 
                         if let twitterURL {
                             Link(destination: twitterURL) {
                                 HStack {
                                     Image(systemName: "arrow.up.right.square.fill")
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                     Text("X (Twitter)")
                                     Spacer()
                                     Image(systemName: "arrow.up.right")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                                 .padding(.vertical, 8)
                             }
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         }
 
                         if let emailURL {
                             Link(destination: emailURL) {
                                 HStack {
                                     Image(systemName: "arrow.up.right.square.fill")
-                                        .foregroundColor(.primary)
+                                        .foregroundStyle(.primary)
                                     Text("Email")
                                     Spacer()
                                     Image(systemName: "arrow.up.right")
                                         .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .foregroundStyle(.secondary)
                                 }
                                 .padding(.vertical, 8)
                             }
-                            .foregroundColor(.primary)
+                            .foregroundStyle(.primary)
                         }
                     }
                 } header: {
@@ -1022,16 +1259,16 @@ struct DeveloperInfoSheet: View {
                         Link(destination: websiteURL) {
                             HStack {
                                 Image(systemName: "globe")
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(.blue)
                                 Text("Visit Portfolio")
                                 Spacer()
                                 Image(systemName: "arrow.up.right")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundStyle(.secondary)
                             }
                             .padding(.vertical, 8)
                         }
-                        .foregroundColor(.primary)
+                        .foregroundStyle(.primary)
                     }
                 } header: {
                     Text("More")

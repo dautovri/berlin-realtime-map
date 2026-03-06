@@ -117,13 +117,10 @@ struct TransportDeparture: Identifiable, Codable {
         self.stopLatitude = 0
         self.stopLongitude = 0
 
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
         if let whenString = vbbDeparture.when {
-            self.plannedTime = formatter.date(from: whenString)
+            self.plannedTime = VehicleRadarService.parseISO8601(whenString)
         } else if let plannedString = vbbDeparture.plannedWhen {
-            self.plannedTime = formatter.date(from: plannedString)
+            self.plannedTime = VehicleRadarService.parseISO8601(plannedString)
         } else {
             self.plannedTime = nil
         }

@@ -7,22 +7,78 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		14DA0AF43D838C1E01605EAE /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC1FC51390C7A591880A694 /* TransportErrorTests.swift */; };
+		2212D64ECE55BFD3A40EFB3A /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */; };
+		2730672A7ACF5C0EA1754D02 /* ConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7778AD79403ECE20067F38 /* ConfigTests.swift */; };
+		4832E1A8D31B41745E5C4D58 /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */; };
+		6E27A6CECB9A2FC404338D12 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */; };
+		720F1631A753713FE3DCCCF6 /* ServiceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9417CA4A80E9CEAB2DE87D60 /* ServiceContainerTests.swift */; };
+		773801C74768494CCB185641 /* ServiceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */; };
+		852A43A86BAA8F63E8A9A474 /* ThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9E31AE6D7249912A137C5E /* ThemeTests.swift */; };
 		8B41F6852DEDD25C001A66F9 /* TripKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* TripKit */; };
+		8E13C156FF23F5628ADA0A8B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */; };
+		92301B7FD12954661243D56C /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC9253024FB9504BBC11323 /* WeatherServiceTests.swift */; };
+		C4DBEDE269B9E9A8F5CA269A /* ThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6B7D741FA9A7257A7F4230A /* ThemeTests.swift */; };
+		C5D6C34BEF236E7ED60F4ECB /* PredictiveLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946402C6B8924A87D17F257B /* PredictiveLoaderTests.swift */; };
+		F5DCC86239DD831595DE6734 /* ConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3075E41C04F8DCF7EECB037D /* ConfigTests.swift */; };
+		F5F5F1D0E352A8898ABA4A9C /* PredictiveLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D465407D8B3F7FB2439B44AE /* PredictiveLoaderTests.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		179F412413E29E06F2503F75 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B41F63D2DEDD0D5001A66F9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B41F6442DEDD0D5001A66F9;
+			remoteInfo = BerlinTransportMap;
+		};
+		FEB97CDC19FDDA91149C0098 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B41F63D2DEDD0D5001A66F9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B41F6442DEDD0D5001A66F9;
+			remoteInfo = BerlinTransportMap;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		3075E41C04F8DCF7EECB037D /* ConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ConfigTests.swift; sourceTree = SOURCE_ROOT; };
+		576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ServiceContainerTests.swift; sourceTree = SOURCE_ROOT; };
+		6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/WeatherServiceTests.swift; sourceTree = SOURCE_ROOT; };
+		6ECEDC7EE9C39E3BFCF25BB6 /* BerlinTransportMapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BerlinTransportMapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D7778AD79403ECE20067F38 /* ConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ConfigTests.swift; sourceTree = SOURCE_ROOT; };
 		8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BerlinTransportMap.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9417CA4A80E9CEAB2DE87D60 /* ServiceContainerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ServiceContainerTests.swift; sourceTree = SOURCE_ROOT; };
+		946402C6B8924A87D17F257B /* PredictiveLoaderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/PredictiveLoaderTests.swift; sourceTree = SOURCE_ROOT; };
+		A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/TransportErrorTests.swift; sourceTree = SOURCE_ROOT; };
+		B6B7D741FA9A7257A7F4230A /* ThemeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ThemeTests.swift; sourceTree = SOURCE_ROOT; };
+		BD9E31AE6D7249912A137C5E /* ThemeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ThemeTests.swift; sourceTree = SOURCE_ROOT; };
+		CAC9253024FB9504BBC11323 /* WeatherServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/WeatherServiceTests.swift; sourceTree = SOURCE_ROOT; };
+		CBC1FC51390C7A591880A694 /* TransportErrorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/TransportErrorTests.swift; sourceTree = SOURCE_ROOT; };
+		D465407D8B3F7FB2439B44AE /* PredictiveLoaderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/PredictiveLoaderTests.swift; sourceTree = SOURCE_ROOT; };
+		E5F7B9C2F1EA953C1F2769C7 /* BerlinTransportMapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BerlinTransportMapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8B41F6472DEDD0D5001A66F9 /* BerlinTransportMap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = BerlinTransportMap;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		82CAA2B102F0E8C7400CA54D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6E27A6CECB9A2FC404338D12 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8B41F6422DEDD0D5001A66F9 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,12 +90,41 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0358A27CF83A96BEF6073B8E /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				7D7778AD79403ECE20067F38 /* ConfigTests.swift */,
+				D465407D8B3F7FB2439B44AE /* PredictiveLoaderTests.swift */,
+				9417CA4A80E9CEAB2DE87D60 /* ServiceContainerTests.swift */,
+				BD9E31AE6D7249912A137C5E /* ThemeTests.swift */,
+				CBC1FC51390C7A591880A694 /* TransportErrorTests.swift */,
+				6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */,
+				3075E41C04F8DCF7EECB037D /* ConfigTests.swift */,
+				946402C6B8924A87D17F257B /* PredictiveLoaderTests.swift */,
+				576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */,
+				B6B7D741FA9A7257A7F4230A /* ThemeTests.swift */,
+				A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */,
+				CAC9253024FB9504BBC11323 /* WeatherServiceTests.swift */,
+			);
+			name = Tests;
+			path = Tests;
+			sourceTree = SOURCE_ROOT;
+		};
+		74A0867C3D2452B39EAD498E /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		8B41F63C2DEDD0D5001A66F9 = {
 			isa = PBXGroup;
 			children = (
 				8B41F6472DEDD0D5001A66F9 /* BerlinTransportMap */,
 				8B41F6812DEDD23B001A66F9 /* Frameworks */,
 				8B41F6462DEDD0D5001A66F9 /* Products */,
+				0358A27CF83A96BEF6073B8E /* Tests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -47,6 +132,8 @@
 			isa = PBXGroup;
 			children = (
 				8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */,
+				6ECEDC7EE9C39E3BFCF25BB6 /* BerlinTransportMapTests.xctest */,
+				E5F7B9C2F1EA953C1F2769C7 /* BerlinTransportMapTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -54,6 +141,7 @@
 		8B41F6812DEDD23B001A66F9 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				74A0867C3D2452B39EAD498E /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -84,6 +172,24 @@
 			productReference = 8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */;
 			productType = "com.apple.product-type.application";
 		};
+		FF717E24F98FF676AE193423 /* BerlinTransportMapTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 15BA2465B02D452ADA5DF3D7 /* Build configuration list for PBXNativeTarget "BerlinTransportMapTests" */;
+			buildPhases = (
+				8A4B681EECF60C795AB35060 /* Sources */,
+				82CAA2B102F0E8C7400CA54D /* Frameworks */,
+				154B06650D36B304E6479C16 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C65D84CAB4A0C09F9314D401 /* PBXTargetDependency */,
+			);
+			name = BerlinTransportMapTests;
+			productName = BerlinTransportMapTests;
+			productReference = E5F7B9C2F1EA953C1F2769C7 /* BerlinTransportMapTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -105,6 +211,7 @@
 			knownRegions = (
 				en,
 				Base,
+				de,
 			);
 			mainGroup = 8B41F63C2DEDD0D5001A66F9;
 			minimizedProjectReferenceProxies = 1;
@@ -117,11 +224,19 @@
 			projectRoot = "";
 			targets = (
 				8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */,
+				FF717E24F98FF676AE193423 /* BerlinTransportMapTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		154B06650D36B304E6479C16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8B41F6432DEDD0D5001A66F9 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -132,6 +247,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8A4B681EECF60C795AB35060 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F5DCC86239DD831595DE6734 /* ConfigTests.swift in Sources */,
+				C5D6C34BEF236E7ED60F4ECB /* PredictiveLoaderTests.swift in Sources */,
+				773801C74768494CCB185641 /* ServiceContainerTests.swift in Sources */,
+				C4DBEDE269B9E9A8F5CA269A /* ThemeTests.swift in Sources */,
+				2212D64ECE55BFD3A40EFB3A /* TransportErrorTests.swift in Sources */,
+				92301B7FD12954661243D56C /* WeatherServiceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8B41F6412DEDD0D5001A66F9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -141,7 +269,66 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		C65D84CAB4A0C09F9314D401 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = BerlinTransportMap;
+			target = 8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */;
+			targetProxy = FEB97CDC19FDDA91149C0098 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		04080A2E0C17F9FE2BB4CF3E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3276908419A562612FF1A9D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		848F9B370481B10D6CCA2564 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
+			};
+			name = Debug;
+		};
 		8B41F6642DEDD0D6001A66F9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -203,7 +390,7 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -260,7 +447,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -293,7 +480,7 @@
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -326,14 +513,39 @@
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
+		E05A478A0143C5EBE009BAC2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		15BA2465B02D452ADA5DF3D7 /* Build configuration list for PBXNativeTarget "BerlinTransportMapTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3276908419A562612FF1A9D7 /* Release */,
+				848F9B370481B10D6CCA2564 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		8B41F6402DEDD0D5001A66F9 /* Build configuration list for PBXProject "BerlinTransportMap" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -2,13 +2,43 @@ import SwiftUI
 
 struct BerlinTransportMapAboutView: View {
     @Environment(\.dismiss) var dismiss
-    private let config = BerlinTransportMapAboutConfiguration()
+    private let appName = AppInfo.current.name
+    private let developerName = "Ruslan Dautov"
+    private let developerEmail = "dautovri@outlook.com"
+    private let websiteURL = URL(string: "https://dautovri.com")
+    private let githubURL = URL(string: "https://github.com/dautovri/berlin-realtime-map")
+    private let linkedInURL = URL(string: "https://linkedin.com/in/dautovri")
+    private let twitterURL = URL(string: "https://x.com/dautovri")
+    private let privacyPolicyURL = URL(string: "https://dautovri.com/privacy")
+    private let termsOfUseURL = URL(string: "https://dautovri.com/terms")
+    private let appDescription = "Real-time Berlin public transport map showing live vehicle positions and departures."
+    private let appVersion = AppInfo.current.version
+    private let appBuild = AppInfo.current.build
+    private let appStoreID: String? = "6757723208"
     private let highlights = [
         "Real-time BVG/VBB departures",
         "Map-first view of nearby stops",
         "Lightweight, fast, and focused"
     ]
     @State private var showingTipJar = false
+
+    private var appStorePageURL: URL? {
+        guard let appStoreID else { return nil }
+        return URL(string: "https://apps.apple.com/app/id\(appStoreID)")
+    }
+
+    private var writeReviewURL: URL? {
+        guard let appStoreID else { return nil }
+        return URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")
+    }
+
+    private var shareURL: URL? {
+        appStorePageURL ?? websiteURL ?? githubURL
+    }
+
+    private var issuesURL: URL? {
+        githubURL?.appendingPathComponent("issues")
+    }
     
     var body: some View {
         NavigationStack {
@@ -21,19 +51,19 @@ struct BerlinTransportMapAboutView: View {
                             .foregroundStyle(.blue)
                         
                         VStack(alignment: .center, spacing: 4) {
-                            Text(config.appName)
+                            Text(appName)
                                 .font(.headline)
-                            Text(config.appDescription)
+                            Text(appDescription)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
-                            Text("by \(config.developerName)")
+                            Text("by \(developerName)")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                         
                         VStack(spacing: 8) {
-                            Text("Version \(config.appVersion) (Build \(config.appBuild))")
+                            Text("Version \(appVersion) (Build \(appBuild))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -74,8 +104,9 @@ struct BerlinTransportMapAboutView: View {
                         }
                     }
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier("support_development_button")
 
-                    if let shareURL = config.shareURL {
+                    if let shareURL {
                         ShareLink(item: shareURL) {
                             HStack {
                                 Image(systemName: "square.and.arrow.up")
@@ -87,7 +118,7 @@ struct BerlinTransportMapAboutView: View {
                         .foregroundStyle(.primary)
                     }
 
-                    if let writeReviewURL = config.writeReviewURL {
+                    if let writeReviewURL {
                         Link(destination: writeReviewURL) {
                             HStack {
                                 Image(systemName: "star.fill")
@@ -107,7 +138,7 @@ struct BerlinTransportMapAboutView: View {
 
                 // Feedback Section
                 Section {
-                    if let issuesURL = config.issuesURL {
+                    if let issuesURL {
                         Link(destination: issuesURL) {
                             HStack {
                                 Image(systemName: "ladybug.fill")
@@ -122,7 +153,7 @@ struct BerlinTransportMapAboutView: View {
                         .foregroundStyle(.primary)
                     }
 
-                    if let emailURL = config.developerEmail.mailto {
+                    if let emailURL = developerEmail.mailto {
                         Link(destination: emailURL) {
                             HStack {
                                 Image(systemName: "envelope.fill")
@@ -143,7 +174,7 @@ struct BerlinTransportMapAboutView: View {
                 // Developer Section
                 Section {
                     VStack(spacing: 12) {
-                        if let githubURL = config.githubURL {
+                        if let githubURL {
                             Link(destination: githubURL) {
                                 HStack {
                                     Image(systemName: "square.and.arrow.up")
@@ -158,7 +189,7 @@ struct BerlinTransportMapAboutView: View {
                             .foregroundStyle(.primary)
                         }
                         
-                        if let linkedInURL = config.linkedInURL {
+                        if let linkedInURL {
                             Link(destination: linkedInURL) {
                                 HStack {
                                     Image(systemName: "square.and.arrow.up")
@@ -173,7 +204,7 @@ struct BerlinTransportMapAboutView: View {
                             .foregroundStyle(.primary)
                         }
                         
-                        if let twitterURL = config.twitterURL {
+                        if let twitterURL {
                             Link(destination: twitterURL) {
                                 HStack {
                                     Image(systemName: "square.and.arrow.up")
@@ -188,7 +219,7 @@ struct BerlinTransportMapAboutView: View {
                             .foregroundStyle(.primary)
                         }
                         
-                        if let websiteURL = config.websiteURL {
+                        if let websiteURL {
                             Link(destination: websiteURL) {
                                 HStack {
                                     Image(systemName: "globe")
@@ -209,7 +240,7 @@ struct BerlinTransportMapAboutView: View {
                 
                 // Links Section
                 Section {
-                    if let privacyURL = config.privacyPolicyURL {
+                    if let privacyURL = privacyPolicyURL {
                         Link(destination: privacyURL) {
                             HStack {
                                 Text("Privacy Policy")
@@ -221,7 +252,7 @@ struct BerlinTransportMapAboutView: View {
                         }
                     }
                     
-                    if let termsURL = config.termsOfUseURL {
+                    if let termsURL = termsOfUseURL {
                         Link(destination: termsURL) {
                             HStack {
                                 Text("Terms of Use")

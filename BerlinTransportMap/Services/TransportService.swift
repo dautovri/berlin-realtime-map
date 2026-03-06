@@ -3,11 +3,18 @@ import Foundation
 import Observation
 
 /// Transport service using VBB REST API (https://v6.vbb.transport.rest)
+@MainActor
 @Observable
 final class TransportService: @unchecked Sendable {
     private let baseURL = "https://v6.vbb.transport.rest"
     private let session: URLSession
     private let offlineDatabase = OfflineStopsDatabase.shared
+    private let decoder = JSONDecoder()
+    private let isoDecoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
     
     init() {
         let config = URLSessionConfiguration.default
@@ -41,7 +48,6 @@ final class TransportService: @unchecked Sendable {
 
         try Task.checkCancellation()
 
-        let decoder = JSONDecoder()
         let locations = try decoder.decode([VBBSimpleLocation].self, from: data)
         return locations.map { TransportStop(from: $0) }
     }
@@ -76,9 +82,7 @@ final class TransportService: @unchecked Sendable {
 
         try Task.checkCancellation()
 
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let departures = try decoder.decode([VBBDeparture].self, from: data)
+        let departures = try isoDecoder.decode([VBBDeparture].self, from: data)
         return departures.map { TransportDeparture(from: $0) }
     }
 
@@ -117,7 +121,6 @@ final class TransportService: @unchecked Sendable {
 
         try Task.checkCancellation()
 
-        let decoder = JSONDecoder()
         let locations = try decoder.decode([VBBSimpleLocation].self, from: data)
         return locations.map { TransportStop(from: $0) }
     }

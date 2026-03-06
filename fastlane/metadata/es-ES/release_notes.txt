@@ -1,0 +1,4 @@
+• Mejor estabilidad de actualizaciones en vivo y rendimiento del mapa
+• Mejor lectura de detalles de paradas y retrasos
+• Pulido visual de vehículos e interacción
+• Mejoras generales de fiabilidad

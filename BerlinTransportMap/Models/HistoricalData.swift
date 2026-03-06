@@ -44,39 +44,93 @@ struct HistoricalData: Codable, Identifiable {
     }
 }
 
-// Storage manager for historical data
+// Storage manager for historical data — keeps an in-memory cache so that
+// repeated reads don't re-decode the full JSON from disk every time.
 class HistoricalDataStorage {
-    private let userDefaultsKey = "historicalTransportData"
-    private let maxEntries = 10000 // Limit storage size
-    
+    private let maxEntries = 2000 // Reduced from 10k — older entries are low-value
+
+    // MARK: - File-backed storage (avoids UserDefaults plist overhead)
+
+    private static let fileURL: URL = {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appending(path: "historicalTransportData.json")
+    }()
+
+    // In-memory cache — loaded lazily once, then kept in sync.
+    private var cache: [HistoricalData]?
+    private var pendingWrites = 0
+    private let writeBatchThreshold = 5 // Flush to disk every N saves
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+
+    // MARK: - Migrate old UserDefaults data (one-time)
+
+    private let migrationKey = "historicalData_migrated_v1"
+
+    private func migrateFromUserDefaultsIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+        UserDefaults.standard.set(true, forKey: migrationKey)
+
+        guard let data = UserDefaults.standard.data(forKey: "historicalTransportData"),
+              let decoded = try? decoder.decode([HistoricalData].self, from: data) else { return }
+
+        cache = Array(decoded.suffix(maxEntries))
+        flushToDisk()
+        UserDefaults.standard.removeObject(forKey: "historicalTransportData")
+    }
+
+    // MARK: - Public API
+
     func save(_ data: HistoricalData) {
-        var existing = load()
-        existing.append(data)
-        
-        // Keep only recent entries
-        if existing.count > maxEntries {
-            existing = Array(existing.suffix(maxEntries))
+        loadCacheIfNeeded()
+        cache?.append(data)
+
+        // Trim if over limit
+        if let count = cache?.count, count > maxEntries {
+            cache = Array(cache!.suffix(maxEntries))
         }
-        
-        if let encoded = try? JSONEncoder().encode(existing) {
-            UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
+
+        pendingWrites += 1
+        if pendingWrites >= writeBatchThreshold {
+            flushToDisk()
         }
     }
-    
+
     func load() -> [HistoricalData] {
-        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey),
-              let decoded = try? JSONDecoder().decode([HistoricalData].self, from: data) else {
-            return []
-        }
-        return decoded
+        loadCacheIfNeeded()
+        return cache ?? []
     }
-    
+
     func load(for stopId: String, lineName: String, dayOfWeek: Int, hourOfDay: Int) -> [HistoricalData] {
-        return load().filter {
+        loadCacheIfNeeded()
+        return (cache ?? []).filter {
             $0.stopId == stopId &&
             $0.lineName == lineName &&
             $0.dayOfWeek == dayOfWeek &&
-            abs($0.hourOfDay - hourOfDay) <= 1 // Within 1 hour
+            abs($0.hourOfDay - hourOfDay) <= 1
         }
+    }
+
+    // MARK: - Private
+
+    private func loadCacheIfNeeded() {
+        guard cache == nil else { return }
+        migrateFromUserDefaultsIfNeeded()
+        guard cache == nil else { return } // migration may have populated it
+
+        guard let data = try? Data(contentsOf: Self.fileURL),
+              let decoded = try? decoder.decode([HistoricalData].self, from: data) else {
+            cache = []
+            return
+        }
+        cache = decoded
+    }
+
+    private func flushToDisk() {
+        pendingWrites = 0
+        guard let cache else { return }
+        guard let encoded = try? encoder.encode(cache) else { return }
+        try? encoded.write(to: Self.fileURL, options: .atomic)
     }
 }

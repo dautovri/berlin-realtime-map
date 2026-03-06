@@ -1,0 +1,29 @@
+import XCTest
+@testable import BerlinTransportMap
+
+final class ConfigTests: XCTestCase {
+
+    func testApiAuthorizationUsesEnvironmentVariable() {
+        let apiAuth = Config.apiAuthorization
+
+        XCTAssertEqual(apiAuth["type"] as? String, "AID")
+        XCTAssertNotNil(apiAuth["aid"] as? String)
+    }
+
+    func testApiAuthorizationFormat() {
+        let apiAuth = Config.apiAuthorization
+
+        guard let aid = apiAuth["aid"] as? String else {
+            XCTFail("API AID should be a string")
+            return
+        }
+
+        XCTAssertFalse(aid.isEmpty, "API AID should not be empty")
+        XCTAssertTrue(aid.hasPrefix("1"), "API AID should start with '1'")
+    }
+
+    func testEnvironmentVariableAccess() {
+        let environment = Env.apiAid
+        XCTAssertNotNil(environment, "Environment variable should be accessible")
+    }
+}

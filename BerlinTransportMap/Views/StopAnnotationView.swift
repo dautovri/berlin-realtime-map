@@ -11,19 +11,19 @@ struct StopAnnotationView: View {
             ZStack {
                 Circle()
                     .fill(Color(hex: "#FFD800"))
-                    .frame(width: 24, height: 24)
+                    .frame(width: 16, height: 16)
                 Circle()
-                    .stroke(Color(hex: "#006F3C"), lineWidth: 2)
-                    .frame(width: 24, height: 24)
+                    .stroke(Color(hex: "#006F3C"), lineWidth: 1.5)
+                    .frame(width: 16, height: 16)
                 Text("H")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(hex: "#006F3C"))
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(hex: "#006F3C"))
             }
             
             if showLabel {
                 Text(stop.name)
                     .font(.caption)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                     .padding(.horizontal, 4)
                     .background(.ultraThinMaterial)
@@ -33,14 +33,14 @@ struct StopAnnotationView: View {
                     if let displayTime = next.displayTime {
                         Text(displayTime, style: .time)
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .padding(.horizontal, 4)
                             .background(.ultraThinMaterial.opacity(0.8))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                     } else {
                         Text("Soon")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                             .padding(.horizontal, 4)
                             .background(.ultraThinMaterial.opacity(0.8))
                             .clipShape(RoundedRectangle(cornerRadius: 4))

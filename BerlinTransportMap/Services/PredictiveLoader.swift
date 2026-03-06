@@ -2,6 +2,7 @@ import Foundation
 import CoreLocation
 
 /// Service for predictive loading of transport data based on user patterns
+@MainActor
 @Observable
 final class PredictiveLoader {
     private let transportService: TransportService
@@ -9,7 +10,6 @@ final class PredictiveLoader {
     private let cacheService: CacheService
     private let networkMonitor: NetworkMonitor
     private let userPatternService = UserPatternService()
-    private let backgroundQueue = DispatchQueue.global(qos: .background)
     
     private let preloadDistanceThreshold = 800.0
     private let preloadTimeThreshold = 300.0
@@ -72,9 +72,8 @@ final class PredictiveLoader {
          guard !activePreloads.contains(locationKey) else { return }
          activePreloads.insert(locationKey)
          
-         backgroundQueue.async {
-             Task {
-                 do {
+         Task {
+             do {
                      print("Preloading data for location: \(coordinate.latitude), \(coordinate.longitude)")
                      
                      // Preload nearby stops
@@ -86,28 +85,35 @@ final class PredictiveLoader {
                      )
                      
                      // Cache preloaded stops
-                     await MainActor.run {
-                         self.preloadedStops[locationKey] = stops
-                     }
+                     self.preloadedStops[locationKey] = stops
                      
-                     // Preload departures for top stops
-                     await withTaskGroup(of: Void.self) { group in
+                     // Preload departures for top stops — collect results from nonisolated
+                     // tasks, then apply them on @MainActor after the group finishes.
+                     let fetchedDepartures = await withTaskGroup(
+                         of: (String, [TransportDeparture])?.self
+                     ) { group in
                          for stop in stops.prefix(5) {
                              group.addTask {
                                  do {
-                                     let departures = try await self.transportService.queryDepartures(
+                                     let deps = try await self.transportService.queryDepartures(
                                          stationId: stop.vbbStopId,
                                          maxDepartures: 10
                                      )
-                                     
-                                     await MainActor.run {
-                                         self.preloadedDepartures[stop.vbbStopId] = departures
-                                     }
+                                     return (stop.vbbStopId, deps)
                                  } catch {
                                      print("Failed to preload departures for \(stop.name): \(error)")
+                                     return nil
                                  }
                              }
                          }
+                         var results: [(String, [TransportDeparture])] = []
+                         for await result in group {
+                             if let r = result { results.append(r) }
+                         }
+                         return results
+                     }
+                     for (stopId, deps) in fetchedDepartures {
+                         self.preloadedDepartures[stopId] = deps
                      }
                      
                      print("Preloaded \(stops.count) stops and departures for predicted location")
@@ -116,11 +122,8 @@ final class PredictiveLoader {
                      print("Failed to preload data for predicted location: \(error)")
                  }
                  
-                 await MainActor.run {
-                     self.activePreloads.remove(locationKey)
-                 }
+                 self.activePreloads.remove(locationKey)
              }
-         }
      }
      
      /// Get preloaded stops for a location if available

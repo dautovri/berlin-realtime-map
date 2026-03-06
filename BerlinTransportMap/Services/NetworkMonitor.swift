@@ -2,10 +2,11 @@ import Network
 import Observation
 import SwiftUI
 
+@MainActor
 @Observable
 final class NetworkMonitor {
     private let monitor = NWPathMonitor()
-    private let queue = DispatchQueue(label: "NetworkMonitor")
+    private nonisolated(unsafe) var monitorTask: Task<Void, Never>?
 
     var isConnected: Bool = true
     var connectionType: ConnectionType = .unknown
@@ -18,13 +19,21 @@ final class NetworkMonitor {
     }
 
     init() {
-        monitor.pathUpdateHandler = { [weak self] path in
-            DispatchQueue.main.async {
+        let stream = AsyncStream<NWPath> { continuation in
+            monitor.pathUpdateHandler = { path in
+                continuation.yield(path)
+            }
+            monitor.start(queue: .global(qos: .utility))
+            continuation.onTermination = { [weak self] _ in
+                self?.monitor.cancel()
+            }
+        }
+        monitorTask = Task { [weak self] in
+            for await path in stream {
                 self?.isConnected = path.status == .satisfied
                 self?.connectionType = self?.getConnectionType(path) ?? .unknown
             }
         }
-        monitor.start(queue: queue)
     }
 
     private func getConnectionType(_ path: NWPath) -> ConnectionType {
@@ -40,6 +49,6 @@ final class NetworkMonitor {
     }
 
     deinit {
-        monitor.cancel()
+        monitorTask?.cancel()
     }
 }

@@ -1,1 +1,1 @@
-berlin,bvg,vbb,transit,map,ubahn,sbahn,tram,bus,live,departures,delays,stops
+vbb,departure,delay,route,station,vehicle,arrival,commute,germany,timetable,navigation

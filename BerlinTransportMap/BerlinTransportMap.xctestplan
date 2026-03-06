@@ -16,7 +16,13 @@
     }
   },
   "testTargets" : [
-  
+    {
+      "target" : {
+        "containerPath" : "container:BerlinTransportMap.xcodeproj",
+        "identifier" : "FF717E24F98FF676AE193423",
+        "name" : "BerlinTransportMapTests"
+      }
+    }
   ],
   "version" : 1
 }

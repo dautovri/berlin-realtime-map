@@ -3,7 +3,7 @@ import Foundation
 /// Offline database of all Berlin transport stops
 /// Loads from app bundle on first launch, then caches to Application Support
 /// Follows iOS 18+ best practices for file storage
-final class OfflineStopsDatabase {
+final class OfflineStopsDatabase: @unchecked Sendable {
     static let shared = OfflineStopsDatabase()
     
     private let fileManager = FileManager.default
@@ -36,6 +36,9 @@ final class OfflineStopsDatabase {
     private var applicationSupportDirectory: URL {
         fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
     }
+
+    private let decoder = JSONDecoder()
+    private let encoder = JSONEncoder()
     
     private init() {}
     
@@ -73,7 +76,22 @@ final class OfflineStopsDatabase {
     /// Find stops near a location
     func findStops(latitude: Double, longitude: Double, maxDistance: Int) -> [TransportStop] {
         let maxDistDouble = Double(maxDistance)
+        // Fast bounding-box pre-filter — skip trig for clearly-out-of-range stops.
+        // 1 degree latitude ≈ 111 km; at Berlin's latitude, 1° longitude ≈ 65 km.
+        let latMargin = maxDistDouble / 111_000.0
+        let lonMargin = maxDistDouble / 65_000.0
+        let minLat = latitude - latMargin
+        let maxLat = latitude + latMargin
+        let minLon = longitude - lonMargin
+        let maxLon = longitude + lonMargin
+
         return allStops.filter { stop in
+            // Cheap rectangle test first
+            guard stop.latitude >= minLat, stop.latitude <= maxLat,
+                  stop.longitude >= minLon, stop.longitude <= maxLon else {
+                return false
+            }
+            // Expensive distance only for candidates inside the box
             let distance = calculateDistance(
                 lat1: latitude, lon1: longitude,
                 lat2: stop.latitude, lon2: stop.longitude
@@ -84,11 +102,11 @@ final class OfflineStopsDatabase {
     
     /// Find stops matching a search query
     func searchStops(query: String) -> [TransportStop] {
-        let lowercasedQuery = query.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        guard lowercasedQuery.count >= 2 else { return [] }
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else { return [] }
         
         return allStops.filter { stop in
-            stop.name.lowercased().contains(lowercasedQuery)
+            stop.name.localizedStandardContains(trimmed)
         }
     }
     
@@ -107,11 +125,12 @@ final class OfflineStopsDatabase {
         do {
             let data = try Data(contentsOf: bundledURL)
             
-            // Try parsing as array of VBB API format first
+            // Try parsing as array of VBB API format first (includes products)
             struct VBBStop: Decodable {
                 let id: String?
                 let name: String?
                 let location: VBBLocation?
+                let products: VBBProducts?
             }
             
             struct VBBLocation: Decodable {
@@ -119,7 +138,28 @@ final class OfflineStopsDatabase {
                 let longitude: Double?
             }
             
-            let decoder = JSONDecoder()
+            struct VBBProducts: Decodable {
+                let suburban: Bool?
+                let subway: Bool?
+                let tram: Bool?
+                let bus: Bool?
+                let ferry: Bool?
+                let express: Bool?
+                let regional: Bool?
+                
+                var toTransportProducts: [TransportProduct] {
+                    var result: [TransportProduct] = []
+                    if suburban == true { result.append(.suburbanTrain) }
+                    if subway == true { result.append(.subway) }
+                    if tram == true { result.append(.tram) }
+                    if bus == true { result.append(.bus) }
+                    if ferry == true { result.append(.ferry) }
+                    if express == true { result.append(.highSpeedTrain) }
+                    if regional == true { result.append(.regionalTrain) }
+                    return result
+                }
+            }
+            
             if let vbbStops = try? decoder.decode([VBBStop].self, from: data) {
                 allStops = vbbStops.compactMap { vbbStop -> TransportStop? in
                     guard let id = vbbStop.id, let name = vbbStop.name else { return nil }
@@ -127,7 +167,8 @@ final class OfflineStopsDatabase {
                         id: id,
                         name: name,
                         latitude: vbbStop.location?.latitude ?? 0,
-                        longitude: vbbStop.location?.longitude ?? 0
+                        longitude: vbbStop.location?.longitude ?? 0,
+                        products: vbbStop.products?.toTransportProducts ?? []
                     )
                 }
             } else if let transportStops = try? decoder.decode([TransportStop].self, from: data) {
@@ -154,11 +195,11 @@ final class OfflineStopsDatabase {
         
         do {
             let data = try Data(contentsOf: cachedFileURL)
-            allStops = try JSONDecoder().decode([TransportStop].self, from: data)
+            allStops = try decoder.decode([TransportStop].self, from: data)
             
             // Check if cache is expired
             if let metadataData = try? Data(contentsOf: metadataFileURL),
-               let metadata = try? JSONDecoder().decode(Metadata.self, from: metadataData) {
+               let metadata = try? decoder.decode(Metadata.self, from: metadataData) {
                 let age = Date().timeIntervalSince(metadata.lastUpdated)
                 if age > cacheTTL {
                     print("OfflineStopsDatabase: Cache expired (\(Int(age / 86400)) days old), will refresh")
@@ -174,7 +215,6 @@ final class OfflineStopsDatabase {
     }
     
     private func saveToCache() throws {
-        let encoder = JSONEncoder()
         let data = try encoder.encode(allStops)
         try data.write(to: cachedFileURL)
         try excludeFromBackup(url: cachedFileURL)
@@ -270,7 +310,6 @@ final class OfflineStopsDatabase {
             }
         }
         
-        let decoder = JSONDecoder()
         let locations = try decoder.decode([VBBLocationResponse].self, from: data)
         
         return locations.map { resp in

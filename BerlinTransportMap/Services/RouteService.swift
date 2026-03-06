@@ -1,6 +1,7 @@
 import Foundation
 import CoreLocation
 
+@MainActor
 @Observable
 final class RouteService: @unchecked Sendable {
     private let baseURL = "https://v6.vbb.transport.rest"

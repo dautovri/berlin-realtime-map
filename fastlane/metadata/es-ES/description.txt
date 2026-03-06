@@ -1,0 +1,20 @@
+Sigue el transporte público de Berlín en tiempo real con Berlin Transit Map.
+
+SEGUIMIENTO EN VIVO
+Observa U-Bahn, S-Bahn, tranvías y buses moviéndose por la ciudad en tiempo real.
+
+MAPA CLARO Y MODERNO
+• Interfaz limpia y fácil de leer
+• Líneas por color
+• Marcadores claros
+• Animaciones fluidas
+
+DATOS EN TIEMPO REAL
+• Posición de vehículos en vivo
+• Actualizaciones continuas
+• Basado en datos oficiales de BVG
+
+IDEAL PARA
+• Viajes diarios
+• Turistas en Berlín
+• Planificar mejor cada trayecto

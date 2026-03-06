@@ -1,7 +1,5 @@
 import Foundation
-import Observation
 
-@Observable
 final class PredictionService {
     private let storage = HistoricalDataStorage()
     

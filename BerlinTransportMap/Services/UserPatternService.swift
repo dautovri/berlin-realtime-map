@@ -2,11 +2,14 @@ import Foundation
 import CoreLocation
 
 /// Service for analyzing user location patterns and predicting future locations
-@Observable
 final class UserPatternService {
     private let userDefaults = UserDefaults.standard
     private let maxHistorySize = 50
     private let historyKey = "userLocationHistory"
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+    private var pendingWrites = 0
+    private let writeBatchThreshold = 5
     
     struct LocationHistory: Codable {
         let latitude: Double
@@ -45,7 +48,11 @@ final class UserPatternService {
             locationHistory.removeFirst(locationHistory.count - maxHistorySize)
         }
         
-        saveHistory()
+        // Batch disk writes — don't flush on every single update
+        pendingWrites += 1
+        if pendingWrites >= writeBatchThreshold {
+            saveHistory()
+        }
     }
     
     /// Analyze current movement pattern
@@ -99,21 +106,13 @@ final class UserPatternService {
         return [prediction]
     }
     
-    /// Predict nearby areas when no clear movement pattern
+    /// Predict nearby areas when no clear movement pattern — just the
+    /// immediate neighborhood, not a full 12-direction fan-out.
     private func predictNearbyAreas(from location: CLLocation) -> [CLLocationCoordinate2D] {
-        let distances = [500.0, 1000.0, 1500.0] // 500m, 1km, 1.5km ahead
-        let bearings = [0, 90, 180, 270] // North, East, South, West
-        
-        var predictions: [CLLocationCoordinate2D] = []
-        
-        for distance in distances {
-            for bearing in bearings {
-                let coord = locationAtDistance(distance, bearing: Double(bearing), from: location.coordinate)
-                predictions.append(coord)
-            }
-        }
-        
-        return predictions
+        // Single point ahead at 800m is enough for pre-loading without
+        // hammering the API with 12 speculative requests.
+        let bearing = locationHistory.last?.course ?? 0
+        return [locationAtDistance(800, bearing: bearing, from: location.coordinate)]
     }
     
     /// Calculate bearing between two coordinates
@@ -155,7 +154,7 @@ final class UserPatternService {
     
     private func saveHistory() {
         do {
-            let data = try JSONEncoder().encode(locationHistory)
+            let data = try encoder.encode(locationHistory)
             userDefaults.set(data, forKey: historyKey)
         } catch {
             print("Failed to save location history: \(error)")
@@ -165,7 +164,7 @@ final class UserPatternService {
     private func loadHistory() {
         guard let data = userDefaults.data(forKey: historyKey) else { return }
         do {
-            locationHistory = try JSONDecoder().decode([LocationHistory].self, from: data)
+            locationHistory = try decoder.decode([LocationHistory].self, from: data)
         } catch {
             print("Failed to load location history: \(error)")
             locationHistory = []

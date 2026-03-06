@@ -1,24 +1,25 @@
 import Foundation
-import Observation
 
 /// Events service for fetching event data from Berlin's events API
-@Observable
 final class EventsService: @unchecked Sendable {
     static let shared = EventsService()
     
-    private let cacheService = CacheService()
+    private var cachedEvents: [Event]?
+    private var cacheTimestamp: Date?
+    private let cacheTTL: TimeInterval = 3600
     private let baseURL = "https://api.berlin.de/events/"
+    private let decoder = JSONDecoder()
+    nonisolated(unsafe) fileprivate static let isoFormatter = ISO8601DateFormatter()
     
     init() {}
     
     // MARK: - Events Fetching
     
     func fetchEvents() async throws -> [Event] {
-        let cacheKey = "events"
-        
-        // Check cache (1 hour)
-        if let cached: [Event] = cacheService.get(cacheKey), 
-           Date().timeIntervalSince(cached.first?.date ?? Date.distantPast) < 3600 {
+        // Return cached if fresh
+        if let cached = cachedEvents,
+           let ts = cacheTimestamp,
+           Date().timeIntervalSince(ts) < cacheTTL {
             return cached
         }
         
@@ -26,7 +27,8 @@ final class EventsService: @unchecked Sendable {
         let events = try await fetchEventsFromAPI()
         
         // Cache the result
-        cacheService.set(events, forKey: cacheKey, ttl: 3600)
+        cachedEvents = events
+        cacheTimestamp = Date()
         
         return events
     }
@@ -43,7 +45,7 @@ final class EventsService: @unchecked Sendable {
             throw EventsError.networkError("Invalid response")
         }
         
-        let apiResponse = try JSONDecoder().decode(BerlinEventsResponse.self, from: data)
+        let apiResponse = try decoder.decode(BerlinEventsResponse.self, from: data)
         
         return apiResponse.events.compactMap { Event(from: $0) }
     }
@@ -81,7 +83,7 @@ extension Event {
               let lat = berlinEvent.location?.latitude,
               let lon = berlinEvent.location?.longitude,
               let dateString = berlinEvent.date?.start,
-              let date = ISO8601DateFormatter().date(from: dateString) else {
+              let date = EventsService.isoFormatter.date(from: dateString) else {
             return nil
         }
         
