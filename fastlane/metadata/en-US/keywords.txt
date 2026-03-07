@@ -1,1 +1,1 @@
-vbb,departure,delay,route,station,vehicle,arrival,commute,germany,timetable,navigation
+vbb,departure,route,station,vehicle,arrival,commute,timetable,tracker,realtime,metro,transport,trip

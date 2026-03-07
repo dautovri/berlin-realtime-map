@@ -41,9 +41,6 @@ BerlinTransportMapPackage/.build/
 
 .build/
 
-# Bundler
-.bundle/
-
 # CocoaPods
 #
 # We recommend against adding the Pods directory to your .gitignore. However
@@ -62,24 +59,8 @@ BerlinTransportMapPackage/.build/
 
 Carthage/Build/
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo.
-# Instead, use fastlane to re-generate the screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/#source-control
-
-fastlane/report.xml
-fastlane/Preview.html
+# App Store metadata (managed by asc CLI)
 fastlane/screenshots/**/*.png
-fastlane/test_output
-
-# Fastlane credentials (NEVER commit these)
-fastlane/.env
-fastlane/api_key/
-
-# Fastlane backup files
-fastlane/*.backup
 
 # macOS
 .DS_Store
@@ -89,9 +70,3 @@ fastlane/*.backup
 build/
 DerivedData/
 *.ipa
-
-# API Keys (NEVER commit)
-fastlane/api_key/
-
-# Ruby bundler (restore with: bundle install)
-vendor/
