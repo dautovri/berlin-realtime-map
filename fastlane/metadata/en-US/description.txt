@@ -1,13 +1,11 @@
-Track Berlin public transport in real time with Berlin Transit Map.
+Track Berlin public transport in real time — see U-Bahn, S-Bahn, trams, and buses move live across the city.
+
+Berlin Transit Map shows exactly where your next ride is, updated continuously with official BVG data.
 
 LIVE VEHICLE TRACKING
-Watch U-Bahn, S-Bahn, trams, and buses move across the city in real-time. See exactly where your next ride is.
-
-BEAUTIFUL MAP VIEW
-• Clean, modern map interface
-• Color-coded transit lines
-• Easy-to-read vehicle markers
-• Smooth animations
+• Watch vehicles move in real time on the map
+• Color-coded lines for every transit type
+• Tap any vehicle for route and delay details
 
 ALL TRANSIT TYPES
 • U-Bahn (Metro)
@@ -16,26 +14,26 @@ ALL TRANSIT TYPES
 • Bus
 • Regional trains
 
-REAL-TIME DATA
-• Live vehicle positions
-• Updated continuously
-• Powered by official BVG data
+REAL-TIME DEPARTURES
+• Live departure boards for every stop
+• Delay alerts so you're never caught off guard
+• Arrival countdowns updated continuously
 
 MODERN DESIGN
-• Native iOS experience
-• Optimized for all iPhones
+• Clean, native iOS map interface
+• Smooth animations and intuitive gestures
 • Dark mode support
-• Intuitive gestures
+• Optimized for all iPhones
 
 PRIVACY FOCUSED
 • No account required
 • No personal data collected
 • No location tracking
 
-Perfect for:
-• Daily commuters
-• Tourists exploring Berlin
+PERFECT FOR
+• Daily commuters in Berlin
+• Tourists exploring the city
 • Transit enthusiasts
-• Planning your journey
+• Planning your next journey
 
-Experience Berlin transit with faster decisions, fewer surprises, and better timing every day.
+Download Berlin Transit Map for faster decisions, fewer surprises, and better timing — every day.

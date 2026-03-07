@@ -1,1 +1,1 @@
-Track Berlin public transport in real time with live vehicle positions, stop departures, and delay updates.
+Track Berlin U-Bahn, S-Bahn, tram, and bus in real time. See live vehicle positions on the map, check stop departures, and stay ahead of delays.
