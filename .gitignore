@@ -70,3 +70,6 @@ fastlane/screenshots/**/*.png
 build/
 DerivedData/
 *.ipa
+marketing/demo/realtime-demo.mov
+marketing/demo/realtime-demo-v2.mov
+simulator_screenshot.png

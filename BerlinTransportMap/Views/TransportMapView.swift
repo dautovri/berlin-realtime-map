@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 import MapKit
 import UIKit
@@ -81,6 +82,8 @@ struct TransportMapView: View {
     @State private var showingHelp = false
     @State private var showingSettings = false
     @State private var showingOfflineMode = false
+    @AppStorage("vehicleFetchCount") private var vehicleFetchCount = 0
+    @Environment(\.requestReview) private var requestReview
 
     private let services = ServiceContainer.shared
     private let offlineDatabase = OfflineStopsDatabase.shared
@@ -549,6 +552,10 @@ struct TransportMapView: View {
 
             updateVehiclesWithAnimation(fetchedVehicles)
             dataSource = .network
+            vehicleFetchCount += 1
+            if vehicleFetchCount == 5 || vehicleFetchCount == 20 {
+                requestReview()
+            }
             let anchored = fetchedVehicles.filter { $0.nextStopCoordinate != nil && $0.nextStopArrival != nil }.count
             print("VehicleRadar: Fetched \(fetchedVehicles.count) vehicles, \(anchored) with next-stop anchors ✓")
         } catch {
