@@ -97,7 +97,7 @@ struct BerlinTransportMapHelpTopicsConfiguration {
     ]
 }
 
-struct HelpTopic: Identifiable {
+struct HelpTopic: Identifiable, Hashable {
     let id = UUID()
     let section: String
     let title: String

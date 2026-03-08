@@ -1,16 +1,14 @@
 import SwiftUI
 
 struct BerlinTransportMapAboutView: View {
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) private var dismiss
     private let appName = AppInfo.current.name
     private let developerName = "Ruslan Dautov"
     private let developerEmail = "dautovri@outlook.com"
     private let websiteURL = URL(string: "https://dautovri.com")
-    private let githubURL = URL(string: "https://github.com/dautovri/berlin-realtime-map")
     private let linkedInURL = URL(string: "https://linkedin.com/in/dautovri")
     private let twitterURL = URL(string: "https://x.com/dautovri")
-    private let privacyPolicyURL = URL(string: "https://dautovri.com/privacy")
-    private let termsOfUseURL = URL(string: "https://dautovri.com/terms")
+    private let privacyPolicyURL = URL(string: "https://gist.github.com/dautovri/2ca5f7b5b4b3789056c5dadbf1f60966")
     private let appDescription = "Real-time Berlin public transport map showing live vehicle positions and departures."
     private let appVersion = AppInfo.current.version
     private let appBuild = AppInfo.current.build
@@ -33,274 +31,445 @@ struct BerlinTransportMapAboutView: View {
     }
 
     private var shareURL: URL? {
-        appStorePageURL ?? websiteURL ?? githubURL
+        appStorePageURL ?? websiteURL
     }
 
-    private var issuesURL: URL? {
-        githubURL?.appendingPathComponent("issues")
+    private var bugReportURL: URL? {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = developerEmail
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "\(appName) Bug Report")
+        ]
+        return components.url
     }
-    
+
     var body: some View {
         NavigationStack {
-            List {
-                // App Header Section
-                Section {
-                    VStack(alignment: .center, spacing: 12) {
-                        Image(systemName: "map.circle.fill")
-                            .font(.system(size: 64))
-                            .foregroundStyle(.blue)
-                        
-                        VStack(alignment: .center, spacing: 4) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    VStack(spacing: 10) {
+                        HStack {
+                            Image(systemName: "map.fill")
+                                .font(.title)
                             Text(appName)
-                                .font(.headline)
-                            Text(appDescription)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Text("by \(developerName)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .font(.title2.bold())
                         }
-                        
-                        VStack(spacing: 8) {
-                            Text("Version \(appVersion) (Build \(appBuild))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        .foregroundStyle(.white)
+
+                        Text(appDescription)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+
+                        Text("v\(appVersion)")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                } header: {
-                    Text("About")
-                }
+                    .padding(.vertical, 24)
+                    .padding(.horizontal)
+                    .background(.cyan.gradient)
 
-                // Highlights Section
-                Section {
-                    ForEach(highlights, id: \.self) { item in
-                        HStack(spacing: 12) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text(item)
-                            Spacer()
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 10) {
+                            routeBadge("U-Bahn", tint: .blue)
+                            routeBadge("S-Bahn", tint: .green)
+                            routeBadge("Bus", tint: .purple)
+                            routeBadge("Tram", tint: .red)
+                            routeBadge("Ferry", tint: .cyan)
                         }
+                        .padding(.horizontal)
                     }
-                } header: {
-                    Text("Highlights")
-                }
+                    .scrollIndicators(.hidden)
+                    .padding(.vertical)
 
-                // Support Section
-                Section {
-                    Button {
-                        showingTipJar = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "heart.fill")
-                                .foregroundStyle(.pink)
-                            Text("Support Development")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                    VStack(alignment: .leading, spacing: 0) {
+                        routeLineItem(color: .blue, title: "Real-time departures", subtitle: "Live BVG/VBB data for every stop")
+                        routeLineItem(color: .green, title: "Map-first experience", subtitle: "See nearby stops and vehicles at a glance")
+                        routeLineItem(color: .orange, title: "Fast and focused", subtitle: "Lightweight design, instant answers")
                     }
-                    .foregroundStyle(.primary)
-                    .accessibilityIdentifier("support_development_button")
+                    .padding(.horizontal)
 
-                    if let shareURL {
-                        ShareLink(item: shareURL) {
-                            HStack {
-                                Image(systemName: "square.and.arrow.up")
-                                    .foregroundStyle(.blue)
-                                Text("Share App")
-                                Spacer()
-                            }
-                        }
-                        .foregroundStyle(.primary)
-                    }
+                    Divider()
+                        .padding(.vertical)
+                        .padding(.horizontal)
 
-                    if let writeReviewURL {
-                        Link(destination: writeReviewURL) {
-                            HStack {
-                                Image(systemName: "star.fill")
-                                    .foregroundStyle(.yellow)
-                                Text("Rate on the App Store")
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .foregroundStyle(.primary)
-                    }
-                } header: {
-                    Text("Support")
-                }
-
-                // Feedback Section
-                Section {
-                    if let issuesURL {
-                        Link(destination: issuesURL) {
-                            HStack {
-                                Image(systemName: "ladybug.fill")
-                                    .foregroundStyle(.red)
-                                Text("Report a Bug")
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .foregroundStyle(.primary)
-                    }
-
-                    if let emailURL = developerEmail.mailto {
-                        Link(destination: emailURL) {
-                            HStack {
-                                Image(systemName: "envelope.fill")
-                                    .foregroundStyle(.blue)
-                                Text("Contact Support")
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .foregroundStyle(.primary)
-                    }
-                } header: {
-                    Text("Feedback")
-                }
-                
-                // Developer Section
-                Section {
                     VStack(spacing: 12) {
-                        if let githubURL {
-                            Link(destination: githubURL) {
-                                HStack {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .foregroundStyle(.gray)
-                                    Text("GitHub")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                        HStack(spacing: 12) {
+                            Button("Support", systemImage: "heart.fill") {
+                                showingTipJar = true
                             }
-                            .foregroundStyle(.primary)
-                        }
-                        
-                        if let linkedInURL {
-                            Link(destination: linkedInURL) {
-                                HStack {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .foregroundStyle(.blue)
-                                    Text("LinkedIn")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                            .buttonStyle(.borderedProminent)
+                            .tint(.pink)
+
+                            if let emailURL = developerEmail.mailto {
+                                Link(destination: emailURL) {
+                                    Label("Contact", systemImage: "envelope.fill")
                                 }
+                                .buttonStyle(.bordered)
                             }
-                            .foregroundStyle(.primary)
-                        }
-                        
-                        if let twitterURL {
-                            Link(destination: twitterURL) {
-                                HStack {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .foregroundStyle(.black)
-                                    Text("Twitter/X")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+
+                            if let shareURL {
+                                ShareLink(item: shareURL) {
+                                    Label("Share", systemImage: "square.and.arrow.up")
                                 }
+                                .buttonStyle(.bordered)
                             }
-                            .foregroundStyle(.primary)
                         }
-                        
+
+                        if let writeReviewURL {
+                            Link(destination: writeReviewURL) {
+                                Label("Rate on App Store", systemImage: "star.fill")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    Divider()
+                        .padding(.vertical)
+                        .padding(.horizontal)
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                         if let websiteURL {
-                            Link(destination: websiteURL) {
-                                HStack {
-                                    Image(systemName: "globe")
-                                        .foregroundStyle(.blue)
-                                    Text("Website")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .foregroundStyle(.primary)
+                            linkTile("Portfolio", systemImage: "globe", url: websiteURL, tint: .blue)
+                        }
+                        if let linkedInURL {
+                            linkTile("LinkedIn", systemImage: "person.2.fill", url: linkedInURL, tint: .blue)
+                        }
+                        if let twitterURL {
+                            linkTile("X", systemImage: "at", url: twitterURL, tint: .primary)
                         }
                     }
-                } header: {
-                    Text("Developer")
-                }
-                
-                // Links Section
-                Section {
-                    if let privacyURL = privacyPolicyURL {
-                        Link(destination: privacyURL) {
-                            HStack {
-                                Text("Privacy Policy")
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    
-                    if let termsURL = termsOfUseURL {
-                        Link(destination: termsURL) {
-                            HStack {
-                                Text("Terms of Use")
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Legal")
-                }
-                
-                // Acknowledgements Section
-                Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("This app is built with:")
-                            .font(.caption)
+                    .padding(.horizontal)
+
+                    VStack(spacing: 8) {
+                        Text("Made by \(developerName)")
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("• SwiftUI - Apple's modern UI framework")
-                                .font(.caption2)
-                            Text("• MapKit - Apple Maps integration")
-                                .font(.caption2)
-                            Text("• BVG/VBB APIs - Real-time transit data")
-                                .font(.caption2)
+
+                        if let privacyURL = privacyPolicyURL {
+                            Link("Privacy Policy", destination: privacyURL)
+                                .font(.caption)
                         }
-                        .foregroundStyle(.secondary)
                     }
-                } header: {
-                    Text("Acknowledgements")
+                    .padding(.vertical)
                 }
+                .padding(.bottom, 28)
             }
+            .scrollIndicators(.hidden)
             .navigationTitle("About")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
+                    Button("Close", systemImage: "xmark", action: { dismiss() })
+                        .labelStyle(.iconOnly)
                 }
             }
             .sheet(isPresented: $showingTipJar) {
                 TipJarView()
             }
         }
+    }
+
+    private func routeLineItem(color: Color, title: String, subtitle: String) -> some View {
+        HStack(spacing: 14) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(color)
+                .frame(width: 6)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(.vertical, 12)
+    }
+
+    private func linkTile(_ title: String, systemImage: String, url: URL, tint: Color) -> some View {
+        Link(destination: url) {
+            VStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.title3)
+                    .foregroundStyle(tint)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+        }
+    }
+
+    private var mapHero: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top, spacing: 16) {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.cyan.opacity(0.14))
+                    .frame(width: 84, height: 84)
+                    .overlay {
+                        Image(systemName: "map.fill")
+                            .font(.title.bold())
+                            .foregroundStyle(.cyan)
+                    }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(appName)
+                        .font(.title2.bold())
+
+                    Text(appDescription)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+
+                    Text("Made by \(developerName)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Version \(appVersion) • Build \(appBuild)", systemImage: "app.badge")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    routeBadge("U", tint: .blue)
+                    routeBadge("S", tint: .green)
+                    routeBadge("Bus", tint: .orange)
+                    routeBadge("Tram", tint: .red)
+                }
+            }
+
+            ViewThatFits {
+                HStack(spacing: 12) {
+                    supportButton
+
+                    if let shareURL {
+                        ShareLink(item: shareURL) {
+                            Label("Share map", systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    if let writeReviewURL {
+                        Link(destination: writeReviewURL) {
+                            Label("Rate app", systemImage: "star.fill")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    supportButton
+
+                    HStack(spacing: 12) {
+                        if let shareURL {
+                            ShareLink(item: shareURL) {
+                                Label("Share map", systemImage: "square.and.arrow.up")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+
+                        if let writeReviewURL {
+                            Link(destination: writeReviewURL) {
+                                Label("Rate app", systemImage: "star.fill")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(24)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 30))
+        .overlay {
+            RoundedRectangle(cornerRadius: 30)
+                .strokeBorder(.quaternary, lineWidth: 1)
+        }
+    }
+
+    private var networkLegend: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("What the map is best at", systemImage: "map.circle.fill")
+                .font(.headline)
+                .foregroundStyle(.blue)
+
+            VStack(spacing: 12) {
+                legendRow(symbol: "location.fill", tint: .blue, title: highlights[0], subtitle: "Watch the network update in real time without losing the wider map context.")
+                legendRow(symbol: "figure.walk", tint: .green, title: highlights[1], subtitle: "Scan nearby stops quickly when you’re already on the move.")
+                legendRow(symbol: "bolt.horizontal.fill", tint: .orange, title: highlights[2], subtitle: "Open fast, stay lightweight, and focus on the next useful answer.")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(Color.cyan.opacity(0.08), in: RoundedRectangle(cornerRadius: 26))
+    }
+
+    private var routeSupportPanel: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Route issues or map quirks?", systemImage: "bubble.left.and.exclamationmark.bubble.right.fill")
+                .font(.headline)
+                .foregroundStyle(.teal)
+
+            if let emailURL = developerEmail.mailto {
+                Link(destination: emailURL) {
+                    routeAction(title: "Contact support", subtitle: "Questions, feedback, and route issues.", systemImage: "envelope.fill", tint: .blue)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let bugReportURL {
+                Link(destination: bugReportURL) {
+                    routeAction(title: "Report a bug", subtitle: "Send the steps and I'll investigate.", systemImage: "ladybug.fill", tint: .red)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(.background, in: RoundedRectangle(cornerRadius: 26))
+        .overlay {
+            RoundedRectangle(cornerRadius: 26)
+                .strokeBorder(.quaternary, lineWidth: 1)
+        }
+    }
+
+    private var developerDepot: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Developer and policy links", systemImage: "building.columns.fill")
+                .font(.headline)
+                .foregroundStyle(.indigo)
+
+            VStack(alignment: .leading, spacing: 12) {
+                if let websiteURL {
+                    Link(destination: websiteURL) {
+                        infoRow(title: "Portfolio", subtitle: "More tools and transit experiments", systemImage: "globe", tint: .blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let linkedInURL {
+                    Link(destination: linkedInURL) {
+                        infoRow(title: "LinkedIn", subtitle: "Professional profile", systemImage: "person.2.fill", tint: .blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let twitterURL {
+                    Link(destination: twitterURL) {
+                        infoRow(title: "X", subtitle: "Short updates and release notes", systemImage: "bubble.left.and.text.bubble.right.fill", tint: .primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let privacyURL = privacyPolicyURL {
+                    Link(destination: privacyURL) {
+                        infoRow(title: "Privacy Policy", subtitle: "How location and transport data are handled", systemImage: "hand.raised.fill", tint: .green)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 26))
+    }
+
+    private var supportButton: some View {
+        Button("Support", systemImage: "heart.fill") {
+            showingTipJar = true
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.pink)
+        .accessibilityIdentifier("support_development_button")
+    }
+
+    private func routeBadge(_ title: String, tint: Color) -> some View {
+        Text(title)
+            .font(.headline)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(tint, in: Capsule())
+            .foregroundStyle(.white)
+    }
+
+    private func legendRow(symbol: String, tint: Color, title: String, subtitle: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: symbol)
+                .font(.title3)
+                .foregroundStyle(tint)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(14)
+        .background(.background, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func routeAction(title: String, subtitle: String, systemImage: String, tint: Color) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: systemImage)
+                .font(.title3)
+                .foregroundStyle(tint)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "arrow.up.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(14)
+        .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func infoRow(title: String, subtitle: String, systemImage: String, tint: Color) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: systemImage)
+                .foregroundStyle(tint)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "arrow.up.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 4)
     }
 }
 

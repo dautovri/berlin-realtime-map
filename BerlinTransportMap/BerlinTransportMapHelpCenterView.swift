@@ -7,10 +7,10 @@ struct BerlinTransportMapHelpCenterView: View {
     
     var filteredTopics: [String: [HelpTopic]] {
         let filtered = searchText.isEmpty ? allTopics : allTopics.filter { topic in
-            topic.title.localizedCaseInsensitiveContains(searchText) ||
-            topic.content.localizedCaseInsensitiveContains(searchText) ||
+            topic.title.localizedStandardContains(searchText) ||
+            topic.content.localizedStandardContains(searchText) ||
             topic.keywords.contains { keyword in
-                keyword.localizedCaseInsensitiveContains(searchText)
+                keyword.localizedStandardContains(searchText)
             }
         }
         
@@ -48,7 +48,7 @@ struct BerlinTransportMapHelpCenterView: View {
                     if let sectionTopics = filteredTopics[section], !sectionTopics.isEmpty {
                         Section(header: Text(section)) {
                             ForEach(sectionTopics, id: \.id) { topic in
-                                NavigationLink(destination: BerlinTransportMapHelpDetailView(topic: topic)) {
+                                NavigationLink(value: topic) {
                                     HStack(spacing: 12) {
                                         Image(systemName: topic.icon)
                                             .font(.system(size: 16))
@@ -100,6 +100,9 @@ struct BerlinTransportMapHelpCenterView: View {
             .searchable(text: $searchText, prompt: "Search help topics")
             .navigationTitle("Help & Support")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: HelpTopic.self) { topic in
+                BerlinTransportMapHelpDetailView(topic: topic)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {

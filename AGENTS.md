@@ -71,6 +71,10 @@ If SwiftData is configured to use CloudKit:
 - Model properties must always either have default values or be marked as optional.
 - All relationships must be marked optional.
 
+## File output rules
+
+- The only Markdown file allowed in the repo root is `README.md`. Never create additional `.md` files (no changelogs, reports, summaries, verification docs, etc.) unless the user explicitly asks for one.
+
 ## Project structure
 
 - Use a consistent project structure, with folder layout determined by app features.

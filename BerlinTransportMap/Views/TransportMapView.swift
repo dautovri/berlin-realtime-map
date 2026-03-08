@@ -1,7 +1,6 @@
 import StoreKit
 import SwiftUI
 import MapKit
-import UIKit
 
 enum DataSource {
     case network  // just successfully fetched
@@ -49,8 +48,6 @@ struct TransportMapView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var currentRegion: MKCoordinateRegion?
-    @State private var showingDepartures = false
-    @State private var showingVehicleInfo = false
     @State private var showingDeveloperInfo = false
     @State private var lastLoadTime: Date?
     @State private var lastVehiclesLoadTime: Date?
@@ -74,8 +71,7 @@ struct TransportMapView: View {
     @State private var route: Route?
     @State private var routeAccentColor: Color = .blue
     @State private var stopsLoadTask: Task<Void, Never>?
-
-    private static let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+    @State private var favoritesFeedbackTrigger = 0
 
     @State private var showingFavorites = false
     @State private var showingAbout = false
@@ -182,7 +178,6 @@ struct TransportMapView: View {
             Annotation(title, coordinate: coordinate) {
                 Button {
                     selectedVehicle = vehicle
-                    showingVehicleInfo = true
                 } label: {
                     LiveVehicleMarkerView(
                         vehicle: vehicle,
@@ -241,6 +236,7 @@ struct TransportMapView: View {
 
     var body: some View {
         contentWithSheets
+            .transportMapFeedback(trigger: favoritesFeedbackTrigger)
             .task {
                 if let region = currentRegion {
                     await loadStopsForRegion(region)
@@ -337,7 +333,7 @@ struct TransportMapView: View {
 
                 ToolbarItemGroup(placement: .bottomBar) {
                     Button {
-                        Self.impactFeedback.impactOccurred()
+                        triggerFavoritesFeedback()
                         showingFavorites = true
                     } label: {
                         Label("Favorites", systemImage: "star")
@@ -376,11 +372,31 @@ struct TransportMapView: View {
 
     private var contentWithSheets: some View {
         mainContent
-            .sheet(isPresented: $showingDepartures) {
-                departuresSheet
+            .sheet(item: $selectedStop) { stop in
+                RESTDeparturesSheet(
+                    stop: stop,
+                    departures: restDepartures,
+                    isLoading: isLoadingDepartures,
+                    predictionService: services.predictionService,
+                    onClose: {
+                        selectedStop = nil
+                    }
+                )
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
-            .sheet(isPresented: $showingVehicleInfo) {
-                vehicleInfoSheet
+            .sheet(item: $selectedVehicle) { vehicle in
+                VehicleInfoSheet(
+                    vehicle: vehicle,
+                    onClose: {
+                        selectedVehicle = nil
+                    },
+                    onShowRoute: {
+                        Task {
+                            await loadRoute(for: vehicle)
+                        }
+                    }
+                )
             }
             .sheet(isPresented: $showingAbout) {
                 BerlinTransportMapAboutView()
@@ -398,42 +414,6 @@ struct TransportMapView: View {
                 DeveloperInfoSheet()
                     .presentationDetents([.medium])
             }
-    }
-
-    @ViewBuilder
-    private var departuresSheet: some View {
-        if let stop = selectedStop {
-            RESTDeparturesSheet(
-                stop: stop,
-                departures: restDepartures,
-                isLoading: isLoadingDepartures,
-                predictionService: services.predictionService,
-                onClose: {
-                    showingDepartures = false
-                    selectedStop = nil
-                }
-            )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-        }
-    }
-
-    @ViewBuilder
-    private var vehicleInfoSheet: some View {
-        if let vehicle = selectedVehicle {
-            VehicleInfoSheet(
-                vehicle: vehicle,
-                onClose: {
-                    showingVehicleInfo = false
-                    selectedVehicle = nil
-                },
-                onShowRoute: {
-                    Task {
-                        await loadRoute(for: vehicle)
-                    }
-                }
-            )
-        }
     }
 
     private var favoritesSheet: some View {
@@ -474,7 +454,6 @@ struct TransportMapView: View {
     @MainActor
     private func openDepartures(for stop: TransportStop) {
         selectedStop = stop
-        showingDepartures = true
         restDepartures = []
         isLoadingDepartures = true
 
@@ -757,6 +736,10 @@ struct TransportMapView: View {
             return "\(Int(age / 3600))h"
         }
     }
+
+    private func triggerFavoritesFeedback() {
+        favoritesFeedbackTrigger += 1
+    }
     
     private func refreshData() {
         services.cacheService.clear()
@@ -797,6 +780,17 @@ struct TransportMapView: View {
             events = try await services.eventsService.fetchEvents()
         } catch {
             print("Failed to load events: \(error)")
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func transportMapFeedback(trigger: Int) -> some View {
+        if #available(iOS 17.0, macOS 14.0, *) {
+            self.sensoryFeedback(.impact(flexibility: .soft), trigger: trigger)
+        } else {
+            self
         }
     }
 }
