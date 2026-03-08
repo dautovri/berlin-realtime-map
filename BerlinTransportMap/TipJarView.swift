@@ -63,6 +63,7 @@ struct TipJarView: View {
             HStack(spacing: 12) {
                 Text(option.emoji)
                     .font(.title2)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(realProduct?.displayName ?? option.displayName)

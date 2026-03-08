@@ -60,6 +60,7 @@ struct TransportMapView: View {
     @State private var favoritesService: FavoritesService?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var lastLocationUpdate = Date.distantPast
     @State private var pollingInterval: TimeInterval = 5.0
     @State private var dataSource: DataSource = .network
@@ -158,6 +159,8 @@ struct TransportMapView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(stop.name)
+                .accessibilityHint("Shows departures for this stop")
             }
         }
     }
@@ -188,6 +191,8 @@ struct TransportMapView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(vehicleAccessibilityLabel(for: vehicle))
+                .accessibilityHint("Shows route and trip details")
             }
             .tag(vehicle.id)
         }
@@ -289,6 +294,7 @@ struct TransportMapView: View {
             Map(position: $cameraPosition) {
                 mapContent
             }
+            .accessibilityIgnoresInvertColors()
             .mapControls {
                 MapCompass()
                 MapUserLocationButton()
@@ -478,13 +484,22 @@ struct TransportMapView: View {
 
     private func centerOnUserLocation() {
         if locationManager.isAuthorized, let location = locationManager.location {
-            withAnimation(.easeInOut(duration: 0.5)) {
+            if reduceMotion {
                 cameraPosition = .region(
                     MKCoordinateRegion(
                         center: location.coordinate,
                         span: Self.nearbySpan
                     )
                 )
+            } else {
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    cameraPosition = .region(
+                        MKCoordinateRegion(
+                            center: location.coordinate,
+                            span: Self.nearbySpan
+                        )
+                    )
+                }
             }
         } else {
             locationManager.requestPermission()
@@ -634,9 +649,19 @@ struct TransportMapView: View {
         // Animate all annotations to their projected end-of-interval positions.
         // This runs once per poll (every 15-30s), NOT every second.
         let animDuration = max(pollingInterval - 1.0, 1.0)
-        withAnimation(.linear(duration: animDuration)) {
+        if reduceMotion {
             vehicleProjectedPositions = projected
+        } else {
+            withAnimation(.linear(duration: animDuration)) {
+                vehicleProjectedPositions = projected
+            }
         }
+    }
+
+    private func vehicleAccessibilityLabel(for vehicle: Vehicle) -> String {
+        let lineName = vehicle.line?.displayName ?? "Unknown line"
+        let destination = vehicle.direction ?? "Unknown destination"
+        return "\(lineName) toward \(destination)"
     }
 
     private func approximateDistanceMeters(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
@@ -803,11 +828,12 @@ struct LiveVehicleMarkerView: View {
     let isMoving: Bool
     let isPulseEnabled: Bool
     let isSelected: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulse = false
 
     var body: some View {
         ZStack {
-            if isMoving && isPulseEnabled {
+            if isMoving && isPulseEnabled && !reduceMotion {
                 Circle()
                     .stroke(vehicleColor.opacity(0.45), lineWidth: 2)
                     .frame(width: isSelected ? 50 : 44, height: isSelected ? 50 : 44)
@@ -836,21 +862,24 @@ struct LiveVehicleMarkerView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
         }
-            .animation(.easeInOut(duration: 0.45), value: headingDegrees)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.45), value: headingDegrees)
         .onAppear {
-            guard isMoving, isPulseEnabled else { return }
+            guard isMoving, isPulseEnabled, !reduceMotion else { return }
             pulse = true
         }
         .onChange(of: isMoving) { _, moving in
-            pulse = moving && isPulseEnabled
+            pulse = moving && isPulseEnabled && !reduceMotion
         }
         .onChange(of: isPulseEnabled) { _, enabled in
-            pulse = enabled && isMoving
+            pulse = enabled && isMoving && !reduceMotion
+        }
+        .onChange(of: reduceMotion) { _, isReduced in
+            pulse = !isReduced && isMoving && isPulseEnabled
         }
         .animation(
-            (isMoving && isPulseEnabled)
+            (!reduceMotion && isMoving && isPulseEnabled)
                 ? .easeOut(duration: 1.4).repeatForever(autoreverses: false)
-                : .default,
+                : nil,
             value: pulse
         )
     }
@@ -881,6 +910,7 @@ struct LiveVehicleMarkerView: View {
 struct StopMarkerView: View {
     let stop: TransportStop
     let isSelected: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let haltestelleYellow = Color(hex: "#FFD800")
     private let haltestelleGreen = Color(hex: "#006F3C")
@@ -901,7 +931,7 @@ struct StopMarkerView: View {
                 .foregroundStyle(haltestelleGreen)
         }
         .scaleEffect(isSelected ? 1.1 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isSelected)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isSelected)
     }
 }
 
@@ -1089,6 +1119,12 @@ struct VehicleInfoSheet: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title2)
                         .foregroundStyle(.secondary)
+                }
+                .frame(minWidth: 44, minHeight: 44)
+                .accessibilityLabel("Close")
+                .accessibilityInputLabels(["Close"])
+                .accessibilityShowsLargeContentViewer {
+                    Label("Close", systemImage: "xmark.circle.fill")
                 }
             }
 

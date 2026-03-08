@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BerlinTransportMapAboutView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     private let appName = AppInfo.current.name
     private let developerName = "Ruslan Dautov"
     private let developerEmail = "dautovri@outlook.com"
@@ -52,6 +53,7 @@ struct BerlinTransportMapAboutView: View {
                         HStack {
                             Image(systemName: "map.fill")
                                 .font(.title)
+                                .accessibilityHidden(true)
                             Text(appName)
                                 .font(.title2.bold())
                         }
@@ -165,6 +167,12 @@ struct BerlinTransportMapAboutView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close", systemImage: "xmark", action: { dismiss() })
                         .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .accessibilityLabel("Close")
+                        .accessibilityInputLabels(["Close"])
+                        .accessibilityShowsLargeContentViewer {
+                            Label("Close", systemImage: "xmark")
+                        }
                 }
             }
             .sheet(isPresented: $showingTipJar) {
@@ -198,14 +206,19 @@ struct BerlinTransportMapAboutView: View {
                 Image(systemName: systemImage)
                     .font(.title3)
                     .foregroundStyle(tint)
+                    .accessibilityHidden(true)
                 Text(title)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+            .background(linkTileBackgroundStyle, in: .rect(cornerRadius: 14))
         }
+    }
+
+    private var linkTileBackgroundStyle: AnyShapeStyle {
+        reduceTransparency ? AnyShapeStyle(.background) : AnyShapeStyle(.ultraThinMaterial)
     }
 
     private var mapHero: some View {
