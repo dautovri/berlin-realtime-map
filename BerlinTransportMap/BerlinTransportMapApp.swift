@@ -22,11 +22,13 @@ struct BerlinTransportMapApp: App {
 
     init() {
         // Eagerly preload stops database on app launch
-        Task.detached(priority: .userInitiated) {
+        Task(priority: .userInitiated) {
             await OfflineStopsDatabase.shared.loadIfNeeded()
         }
         // Warm up MapKit tile cache for Berlin's core area
-        MapTilePreloader.shared.preloadBerlinTiles()
+        Task { @MainActor in
+            MapTilePreloader.shared.preloadBerlinTiles()
+        }
     }
 
     var body: some Scene {
@@ -41,7 +43,8 @@ struct BerlinTransportMapApp: App {
 
 /// Preloads MapKit tiles for Berlin's core area at common zoom levels
 /// so the map appears instantly without white tiles on first launch
-final class MapTilePreloader: @unchecked Sendable {
+@MainActor
+final class MapTilePreloader {
     static let shared = MapTilePreloader()
     private var hasPreloaded = false
 

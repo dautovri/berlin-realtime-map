@@ -9,6 +9,11 @@ struct ContentView: View {
         ProcessInfo.processInfo.environment["VERIFY_ABOUT_SCREENSHOT"] == "1"
             || ProcessInfo.processInfo.arguments.contains("-verifyAboutScreenshot")
     }
+
+    private var isSettingsVerificationMode: Bool {
+        ProcessInfo.processInfo.environment["VERIFY_SETTINGS_SCREENSHOT"] == "1"
+            || ProcessInfo.processInfo.arguments.contains("-verifySettingsScreenshot")
+    }
 #endif
 
     var body: some View {
@@ -24,6 +29,9 @@ struct ContentView: View {
                 BerlinTransportMapAboutView()
             }
             .preferredColorScheme(activeColorScheme)
+        } else if isSettingsVerificationMode {
+            SettingsView()
+                .preferredColorScheme(activeColorScheme)
         } else {
             TransportMapView()
                 .preferredColorScheme(activeColorScheme)

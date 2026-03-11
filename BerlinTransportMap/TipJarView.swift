@@ -42,6 +42,23 @@ struct TipJarView: View {
                         .accessibilityIdentifier("tipjar_done_button")
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                HStack {
+                    Spacer()
+
+                    Button("Not now") {
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("tipjar_not_now_button")
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+                .background {
+                    Rectangle().fill(.regularMaterial)
+                }
+            }
             .task {
                 await store.loadProducts()
             }

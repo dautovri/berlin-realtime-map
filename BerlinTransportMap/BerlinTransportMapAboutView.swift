@@ -99,12 +99,6 @@ struct BerlinTransportMapAboutView: View {
 
                     VStack(spacing: 12) {
                         HStack(spacing: 12) {
-                            Button("Support", systemImage: "heart.fill") {
-                                showingTipJar = true
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.pink)
-
                             if let emailURL = developerEmail.mailto {
                                 Link(destination: emailURL) {
                                     Label("Contact", systemImage: "envelope.fill")
@@ -161,6 +155,26 @@ struct BerlinTransportMapAboutView: View {
                 .padding(.bottom, 28)
             }
             .scrollIndicators(.hidden)
+            .safeAreaInset(edge: .bottom) {
+                Button("Support", systemImage: "heart.fill") {
+                    showingTipJar = true
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.pink)
+                .controlSize(.large)
+                .frame(maxWidth: .infinity)
+                .accessibilityIdentifier("support_development_button")
+                .padding(.horizontal)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+                .background {
+                    if reduceTransparency {
+                        Color(.systemBackground)
+                    } else {
+                        Rectangle().fill(.thinMaterial)
+                    }
+                }
+            }
             .navigationTitle("About")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {

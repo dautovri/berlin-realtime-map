@@ -79,10 +79,11 @@ struct FavoritesView: View {
     
     private func loadFavorites() async {
         print("FavoritesView: Loading favorites...")
-        favoritesService = FavoritesService(modelContext: modelContext)
+        let favoritesService = FavoritesService(modelContext: modelContext)
+        self.favoritesService = favoritesService
         
         do {
-            let loadedFavorites = try favoritesService!.loadFavorites()
+            let loadedFavorites = try favoritesService.loadFavorites()
             print("FavoritesView: Loaded \(loadedFavorites.count) favorites")
             favorites = loadedFavorites
             isLoading = false
