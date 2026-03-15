@@ -10,14 +10,14 @@ struct BerlinTransportMapAboutView: View {
     private let linkedInURL = URL(string: "https://linkedin.com/in/dautovri")
     private let twitterURL = URL(string: "https://x.com/dautovri")
     private let privacyPolicyURL = URL(string: "https://gist.github.com/dautovri/2ca5f7b5b4b3789056c5dadbf1f60966")
-    private let appDescription = "Real-time Berlin public transport map showing live vehicle positions and departures."
+    private let appDescription = "Track Berlin trains, trams, and buses live on a fast interactive map with real-time stop departures."
     private let appVersion = AppInfo.current.version
     private let appBuild = AppInfo.current.build
     private let appStoreID: String? = "6757723208"
     private let highlights = [
-        "Real-time BVG/VBB departures",
-        "Map-first view of nearby stops",
-        "Lightweight, fast, and focused"
+        "Live vehicle positions on the map",
+        "Real-time departures with delays",
+        "No account, no tracking"
     ]
     @State private var showingTipJar = false
 

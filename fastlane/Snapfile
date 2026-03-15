@@ -1,0 +1,30 @@
+# fastlane snapshot configuration
+# Run: fastlane snapshot
+#
+# SETUP REQUIRED: Add a UI Testing Bundle target to BerlinTransportMap.xcodeproj
+#   1. In Xcode: File > New > Target > UI Testing Bundle
+#   2. Name it "BerlinTransportMapUITests"
+#   3. Add BerlinTransportMapUITests/SnapshotHelper.swift and BerlinTransportMapUITests/ScreenshotUITests.swift to the target
+#   4. Run: fastlane snapshot
+
+scheme("BerlinTransportMap")
+
+devices([
+  "iPhone 16 Pro Max",
+  "iPhone SE (3rd generation)"
+])
+
+languages([
+  "en-US",
+  "de-DE"
+])
+
+output_directory("./fastlane/screenshots")
+
+clear_previous_screenshots(false)
+
+override_status_bar(true)
+
+stop_after_first_error(false)
+
+number_of_retries(1)

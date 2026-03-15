@@ -19,6 +19,7 @@ struct StopAnnotationView: View {
                     .font(.system(size: 9, weight: .bold, design: .rounded))
                     .foregroundStyle(Color(hex: "#006F3C"))
             }
+            .accessibilityHidden(true)
             
             if showLabel {
                 Text(stop.name)
@@ -49,6 +50,7 @@ struct StopAnnotationView: View {
             }
         }
         .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+        .accessibilityElement(children: .ignore)
     }
 }
 

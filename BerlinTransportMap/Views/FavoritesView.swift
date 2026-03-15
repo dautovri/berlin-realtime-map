@@ -146,11 +146,14 @@ struct FavoriteRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityElement(children: .combine)
                 Spacer()
                 Image(systemName: favorite.type == .stop ? "mappin.circle" : "route")
                     .foregroundStyle(.blue)
+                    .accessibilityHidden(true)
             }
         }
         .buttonStyle(.plain)
+        .accessibilityHint(favorite.type == .stop ? "Opens this stop on the map" : "Opens this route on the map")
     }
 }
