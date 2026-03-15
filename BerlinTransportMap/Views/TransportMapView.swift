@@ -7,6 +7,11 @@ enum DataSource {
     case stale    // last in-memory positions; next fetch in progress or errored
 }
 
+private enum MapSheet: Identifiable {
+    case about, help, settings, favorites, developerInfo
+    var id: Self { self }
+}
+
 private struct VehicleTrailPoint {
     let coordinate: CLLocationCoordinate2D
     let timestamp: Date
@@ -48,7 +53,6 @@ struct TransportMapView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var currentRegion: MKCoordinateRegion?
-    @State private var showingDeveloperInfo = false
     @State private var lastLoadTime: Date?
     @State private var lastVehiclesLoadTime: Date?
     @State private var isLoadingVehicles = false
@@ -67,18 +71,13 @@ struct TransportMapView: View {
     @State private var showingCacheInfo = false
     @State private var events: [Event] = []
     @State private var selectedEvent: Event?
-    @State private var showingEventDetails = false
 
     @State private var route: Route?
     @State private var routeAccentColor: Color = .blue
     @State private var stopsLoadTask: Task<Void, Never>?
     @State private var favoritesFeedbackTrigger = 0
 
-    @State private var showingFavorites = false
-    @State private var showingAbout = false
-    @State private var showingHelp = false
-    @State private var showingSettings = false
-    @State private var showingOfflineMode = false
+    @State private var activeSheet: MapSheet?
     @AppStorage("vehicleFetchCount") private var vehicleFetchCount = 0
     @Environment(\.requestReview) private var requestReview
 
@@ -266,11 +265,6 @@ struct TransportMapView: View {
             .onDisappear {
                 stopsLoadTask?.cancel()
             }
-            .onChange(of: services.networkMonitor.isConnected) { _, isConnected in
-                if !isConnected {
-                    showingOfflineMode = true
-                }
-            }
             .onChange(of: scenePhase) { _, newPhase in
                 switch newPhase {
                 case .active:
@@ -340,24 +334,24 @@ struct TransportMapView: View {
                 ToolbarItemGroup(placement: .bottomBar) {
                     Button {
                         triggerFavoritesFeedback()
-                        showingFavorites = true
+                        activeSheet = .favorites
                     } label: {
                         Label("Favorites", systemImage: "star")
                     }
                     Spacer()
                     Menu {
                         Button {
-                            showingSettings = true
+                            activeSheet = .settings
                         } label: {
                             Label("Settings", systemImage: "gear")
                         }
                         Button {
-                            showingHelp = true
+                            activeSheet = .help
                         } label: {
                             Label("Help", systemImage: "questionmark.circle")
                         }
                         Button {
-                            showingAbout = true
+                            activeSheet = .about
                         } label: {
                             Label("About", systemImage: "info.circle")
                         }
@@ -404,21 +398,20 @@ struct TransportMapView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showingAbout) {
-                BerlinTransportMapAboutView()
-            }
-            .sheet(isPresented: $showingHelp) {
-                BerlinTransportMapHelpCenterView()
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-            }
-            .sheet(isPresented: $showingFavorites) {
-                favoritesSheet
-            }
-            .sheet(isPresented: $showingDeveloperInfo) {
-                DeveloperInfoSheet()
-                    .presentationDetents([.medium])
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .about:
+                    BerlinTransportMapAboutView()
+                case .help:
+                    BerlinTransportMapHelpCenterView()
+                case .settings:
+                    SettingsView()
+                case .favorites:
+                    favoritesSheet
+                case .developerInfo:
+                    DeveloperInfoSheet()
+                        .presentationDetents([.medium])
+                }
             }
     }
 
@@ -435,7 +428,7 @@ struct TransportMapView: View {
                 }
             },
             onClose: {
-                showingFavorites = false
+                activeSheet = nil
             }
         )
     }
