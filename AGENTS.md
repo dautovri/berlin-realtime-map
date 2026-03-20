@@ -92,3 +92,9 @@ If SwiftData is configured to use CloudKit:
 ## asc cli reference
 
 See `ASC.md` for the command catalog and workflows.
+
+## gstack
+
+Use /browse from gstack for all web browsing.
+Available skills: /office-hours, /plan-ceo-review, /plan-eng-review, /plan-design-review, /design-consultation, /review, /ship, /browse, /qa, /qa-only, /design-review, /setup-browser-cookies, /retro, /investigate, /document-release, /codex, /careful, /freeze, /guard, /unfreeze, /gstack-upgrade.
+If gstack skills are not working, run: cd ~/.agents/skills/gstack && ./setup
