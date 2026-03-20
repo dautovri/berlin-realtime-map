@@ -22,8 +22,14 @@ final class ConfigTests: XCTestCase {
         XCTAssertTrue(aid.hasPrefix("1"), "API AID should start with '1'")
     }
 
-    func testEnvironmentVariableAccess() {
-        let environment = Env.apiAid
-        XCTAssertNotNil(environment, "Environment variable should be accessible")
+    func testApiAuthorizationUsesEnvironmentWhenAvailableOtherwiseFallsBack() {
+        let apiAuth = Config.apiAuthorization
+        let resolvedAid = apiAuth["aid"] as? String
+
+        if let environmentAid = Env.apiAid {
+            XCTAssertEqual(resolvedAid, environmentAid)
+        } else {
+            XCTAssertEqual(resolvedAid, "1Rxs112shyHLatUX4fofnmdxK")
+        }
     }
 }

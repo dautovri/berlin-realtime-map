@@ -36,19 +36,31 @@ final class TransportErrorTests: XCTestCase {
     func testFromCancellationError() {
         let cancellationError = CancellationError()
         let error = TransportError.from(cancellationError)
-        XCTAssertEqual(error, TransportError.cancelled)
+        if case .cancelled = error {
+            XCTAssertTrue(true)
+        } else {
+            XCTFail("Expected cancellation to map to .cancelled")
+        }
     }
 
     func testFromURLError() {
         let urlError = URLError(.notConnectedToInternet)
         let error = TransportError.from(urlError)
-        XCTAssertEqual(error, TransportError.networkError(urlError.localizedDescription))
+        if case let .networkError(message) = error {
+            XCTAssertEqual(message, urlError.localizedDescription)
+        } else {
+            XCTFail("Expected URLError to map to .networkError")
+        }
     }
 
     func testFromTransportErrorPassesThrough() {
         let original = TransportError.invalidLocation
         let error = TransportError.from(original)
-        XCTAssertEqual(error, original)
+        if case .invalidLocation = error {
+            XCTAssertTrue(true)
+        } else {
+            XCTFail("Expected TransportError.from to pass through existing TransportError values")
+        }
     }
 
     func testFromUnknownError() {

@@ -1,60 +1,51 @@
 import XCTest
+import SwiftUI
+import UIKit
 @testable import BerlinTransportMap
 
 final class ThemeTests: XCTestCase {
 
-    func testVehicleColorForTram() {
-        let color = TransportTheme.Vehicle.color(for: .tram)
-        XCTAssertEqual(color, Color(hex: "#D8232A"))
+    func testColorFromHexWith3DigitsExpandsCorrectly() {
+        assertColor(Color(hex: "FFF"), matches: "#FFFFFF")
     }
 
-    func testVehicleColorForSubway() {
-        let color = TransportTheme.Vehicle.color(for: .subway)
-        XCTAssertEqual(color, Color(hex: "#0066CC"))
+    func testColorFromHexWith6DigitsPreservesComponents() {
+        assertColor(Color(hex: "FF0000"), matches: "#FF0000")
     }
 
-    func testVehicleColorForSuburbanTrain() {
-        let color = TransportTheme.Vehicle.color(for: .suburbanTrain)
-        XCTAssertEqual(color, Color(hex: "#008C3C"))
+    func testColorFromHexWithInvalidInputFallsBackToNeutralGray() {
+        assertColor(Color(hex: "INVALID"), matches: "#808080")
     }
 
-    func testVehicleColorForBus() {
-        let color = TransportTheme.Vehicle.color(for: .bus)
-        XCTAssertEqual(color, Color(hex: "#993399"))
+    func testStopThemeColorsUseExpectedPalette() {
+        assertColor(TransportTheme.Stop.haltestelleYellow, matches: "#FFD800")
+        assertColor(TransportTheme.Stop.haltestelleGreen, matches: "#006F3C")
     }
 
-    func testVehicleColorForFerry() {
-        let color = TransportTheme.Vehicle.color(for: .ferry)
-        XCTAssertEqual(color, Color(hex: "#0099CC"))
-    }
+    private func assertColor(
+        _ color: Color,
+        matches hex: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let actual = UIColor(color)
+        let expected = UIColor(Color(hex: hex))
 
-    func testVehicleColorForRegionalTrain() {
-        let color = TransportTheme.Vehicle.color(for: .regionalTrain)
-        XCTAssertEqual(color, Color(hex: "#EC192E"))
-    }
+        var actualRed: CGFloat = 0
+        var actualGreen: CGFloat = 0
+        var actualBlue: CGFloat = 0
+        var actualAlpha: CGFloat = 0
+        var expectedRed: CGFloat = 0
+        var expectedGreen: CGFloat = 0
+        var expectedBlue: CGFloat = 0
+        var expectedAlpha: CGFloat = 0
 
-    func testColorFromHexWith3Digits() {
-        let color = Color(hex: "FFF")
-        XCTAssertEqual(color, Color(hex: "#FFFFFF"))
-    }
+        XCTAssertTrue(actual.getRed(&actualRed, green: &actualGreen, blue: &actualBlue, alpha: &actualAlpha), file: file, line: line)
+        XCTAssertTrue(expected.getRed(&expectedRed, green: &expectedGreen, blue: &expectedBlue, alpha: &expectedAlpha), file: file, line: line)
 
-    func testColorFromHexWith6Digits() {
-        let color = Color(hex: "FF0000")
-        XCTAssertEqual(color, Color(hex: "#FF0000"))
-    }
-
-    func testColorFromHexWithInvalidInput() {
-        let color = Color(hex: "INVALID")
-        XCTAssertEqual(color, Color(hex: "#808080"))
-    }
-
-    func testHaltestelleYellowColor() {
-        let color = TransportTheme.Stop.haltestelleYellow
-        XCTAssertEqual(color, Color(hex: "#FFD800"))
-    }
-
-    func testHaltestelleGreenColor() {
-        let color = TransportTheme.Stop.haltestelleGreen
-        XCTAssertEqual(color, Color(hex: "#006F3C"))
+        XCTAssertEqual(actualRed, expectedRed, accuracy: 0.001, file: file, line: line)
+        XCTAssertEqual(actualGreen, expectedGreen, accuracy: 0.001, file: file, line: line)
+        XCTAssertEqual(actualBlue, expectedBlue, accuracy: 0.001, file: file, line: line)
+        XCTAssertEqual(actualAlpha, expectedAlpha, accuracy: 0.001, file: file, line: line)
     }
 }

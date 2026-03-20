@@ -1,37 +1,51 @@
 import XCTest
+import CoreLocation
 @testable import BerlinTransportMap
 
-class PredictiveLoaderTests: XCTestCase {
+final class PredictiveLoaderTests: XCTestCase {
 
-    var predictiveLoader: PredictiveLoader!
+    func testStartPredictiveLoadingMarksLoaderActive() async {
+        await MainActor.run {
+            let predictiveLoader = ServiceContainer.shared.predictiveLoader
+            predictiveLoader.clearPreloadedData()
+            predictiveLoader.stopPredictiveLoading()
+            predictiveLoader.startPredictiveLoading()
 
-    override func setUp() {
-        super.setUp()
-        // Note: PredictiveLoader depends on TransportService and UserPatternService.
-        // For unit tests, we should inject mock services, but for now, we'll test isolated logic.
-        predictiveLoader = PredictiveLoader()
+            XCTAssertTrue(predictiveLoader.isPredictiveLoadingActive)
+
+            predictiveLoader.stopPredictiveLoading()
+            predictiveLoader.clearPreloadedData()
+        }
     }
 
-    override func tearDown() {
-        predictiveLoader = nil
-        super.tearDown()
+    func testStopPredictiveLoadingClearsActivePreloads() async {
+        await MainActor.run {
+            let predictiveLoader = ServiceContainer.shared.predictiveLoader
+            predictiveLoader.clearPreloadedData()
+            predictiveLoader.stopPredictiveLoading()
+            predictiveLoader.startPredictiveLoading()
+            predictiveLoader.stopPredictiveLoading()
+
+            XCTAssertFalse(predictiveLoader.isPredictiveLoadingActive)
+            XCTAssertEqual(predictiveLoader.activePreloadCount, 0)
+
+            predictiveLoader.clearPreloadedData()
+        }
     }
 
-    func testStartPredictiveLoading() {
-        predictiveLoader.startPredictiveLoading()
-        // Since isActive is private, we can't directly test it.
-        // To improve: Make isActive testable or add a getter.
-        // For now, assume it sets the flag.
-        XCTAssertTrue(true) // Placeholder
-    }
+    func testLocationKeyRoundsNearbyCoordinatesIntoSameBucket() async {
+        let first = CLLocationCoordinate2D(latitude: 52.52044, longitude: 13.40944)
+        let second = CLLocationCoordinate2D(latitude: 52.52046, longitude: 13.40946)
 
-    func testStopPredictiveLoading() {
-        predictiveLoader.startPredictiveLoading()
-        predictiveLoader.stopPredictiveLoading()
-        // Again, private state.
-        // To improve: Add test hooks.
-    }
+        await MainActor.run {
+            let predictiveLoader = ServiceContainer.shared.predictiveLoader
+            predictiveLoader.clearPreloadedData()
+            predictiveLoader.stopPredictiveLoading()
 
-    // Note: Full tests require mocking dependencies and making state accessible.
-    // Current tests are basic; need refactoring for better testability.
+            XCTAssertEqual(
+                predictiveLoader.makeLocationKey(for: first),
+                predictiveLoader.makeLocationKey(for: second)
+            )
+        }
+    }
 }

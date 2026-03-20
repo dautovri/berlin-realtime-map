@@ -17,6 +17,26 @@ private struct VehicleTrailPoint {
     let timestamp: Date
 }
 
+private struct VehicleMotionPlan {
+    let startCoordinate: CLLocationCoordinate2D
+    let endCoordinate: CLLocationCoordinate2D
+    let startDate: Date
+    let endDate: Date
+
+    func coordinate(at date: Date) -> CLLocationCoordinate2D {
+        let totalDuration = endDate.timeIntervalSince(startDate)
+        guard totalDuration > 0 else { return endCoordinate }
+
+        let elapsed = date.timeIntervalSince(startDate)
+        let progress = min(max(elapsed / totalDuration, 0), 1)
+
+        return CLLocationCoordinate2D(
+            latitude: startCoordinate.latitude + (endCoordinate.latitude - startCoordinate.latitude) * progress,
+            longitude: startCoordinate.longitude + (endCoordinate.longitude - startCoordinate.longitude) * progress
+        )
+    }
+}
+
 /// Projects a vehicle's position `seconds` into the future using schedule data.
 private func projectCoordinate(
     from current: CLLocationCoordinate2D,
@@ -59,8 +79,8 @@ struct TransportMapView: View {
     @State private var isLiveUpdating = true
     @State private var vehicleHeadings: [String: Double] = [:]
     @State private var vehicleTrails: [String: [VehicleTrailPoint]] = [:]
-    /// Projected end-of-interval positions. Set once per poll; MapKit animates to them smoothly.
-    @State private var vehicleProjectedPositions: [String: CLLocationCoordinate2D] = [:]
+    @State private var vehicleRenderedPositions: [String: CLLocationCoordinate2D] = [:]
+    @State private var vehicleMotionPlans: [String: VehicleMotionPlan] = [:]
     @State private var favoritesService: FavoritesService?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -75,6 +95,7 @@ struct TransportMapView: View {
     @State private var route: Route?
     @State private var routeAccentColor: Color = .blue
     @State private var stopsLoadTask: Task<Void, Never>?
+    @State private var vehiclesLoadTask: Task<Void, Never>?
     @State private var favoritesFeedbackTrigger = 0
 
     @State private var activeSheet: MapSheet?
@@ -92,11 +113,28 @@ struct TransportMapView: View {
     }
 
     private var shouldRenderTrails: Bool {
-        isZoomedIn && vehicles.count <= 180
+        selectedVehicle != nil
     }
 
-    private var shouldAnimateVehiclePulse: Bool {
-        isZoomedIn && vehicles.count <= 120
+    private var stopAnnotationLimit: Int {
+        guard let region = currentRegion else {
+            return 100
+        }
+
+        switch region.span.latitudeDelta {
+        case ...0.008:
+            return 120
+        case ...0.02:
+            return 80
+        case ...0.05:
+            return 55
+        default:
+            return 35
+        }
+    }
+
+    private var stopsToRender: [TransportStop] {
+        Array(stops.prefix(stopAnnotationLimit))
     }
 
     private var vehiclesToRender: [Vehicle] {
@@ -108,13 +146,13 @@ struct TransportMapView: View {
         let limit: Int
         switch zoom {
         case ...0.02:
-            limit = 500
+            limit = 180
         case ...0.05:
-            limit = 260
+            limit = 120
         case ...0.10:
-            limit = 150
+            limit = 80
         default:
-            limit = 90
+            limit = 50
         }
 
         return Array(vehicles.prefix(limit))
@@ -132,7 +170,7 @@ struct TransportMapView: View {
     @MapContentBuilder
     private var trailOverlay: some MapContent {
         if shouldRenderTrails {
-            ForEach(vehiclesToRender.prefix(120)) { vehicle in
+            ForEach(vehiclesToRender.filter { $0.id == selectedVehicle?.id }.prefix(1)) { vehicle in
                 if let trail = vehicleTrails[vehicle.id], trail.count >= 2 {
                     MapPolyline(coordinates: trail.map(\.coordinate))
                         .stroke(Color(hex: vehicle.line?.color ?? "#007AFF").opacity(0.35), lineWidth: 2)
@@ -143,7 +181,7 @@ struct TransportMapView: View {
 
     @MapContentBuilder
     private var stopAnnotations: some MapContent {
-        ForEach(stops) { stop in
+        ForEach(stopsToRender) { stop in
             Annotation("", coordinate: CLLocationCoordinate2D(
                 latitude: stop.latitude,
                 longitude: stop.longitude
@@ -158,6 +196,7 @@ struct TransportMapView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("stop_annotation")
                 .accessibilityLabel(stop.name)
                 .accessibilityHint("Shows departures for this stop")
             }
@@ -175,7 +214,7 @@ struct TransportMapView: View {
     private func vehicleAnnotation(for vehicle: Vehicle) -> some MapContent {
         // Use the projected (animated) position when available so the vehicle
         // glides smoothly toward its next stop over the polling interval.
-        if let coordinate = vehicleProjectedPositions[vehicle.id] ?? vehicle.currentLocation {
+        if let coordinate = vehicleRenderedPositions[vehicle.id] ?? vehicle.currentLocation {
             let title = vehicle.line?.displayName ?? "?"
             Annotation(title, coordinate: coordinate) {
                 Button {
@@ -184,8 +223,6 @@ struct TransportMapView: View {
                     LiveVehicleMarkerView(
                         vehicle: vehicle,
                         headingDegrees: vehicleHeadings[vehicle.id],
-                        isMoving: true,
-                        isPulseEnabled: shouldAnimateVehiclePulse,
                         isSelected: vehicle.id == selectedVehicle?.id
                     )
                 }
@@ -262,8 +299,18 @@ struct TransportMapView: View {
                     }
                 }
             }
+            .task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(750))
+                    guard !Task.isCancelled else { break }
+                    await MainActor.run {
+                        advanceVehicleMotion(to: .now)
+                    }
+                }
+            }
             .onDisappear {
                 stopsLoadTask?.cancel()
+                vehiclesLoadTask?.cancel()
             }
             .onChange(of: scenePhase) { _, newPhase in
                 switch newPhase {
@@ -288,32 +335,35 @@ struct TransportMapView: View {
             Map(position: $cameraPosition) {
                 mapContent
             }
+            .accessibilityIdentifier("transport_map_canvas")
             .accessibilityIgnoresInvertColors()
             .mapControls {
                 MapCompass()
                 MapUserLocationButton()
                 MapScaleView()
             }
-            .onMapCameraChange(frequency: .continuous) { context in
+            .onMapCameraChange(frequency: .onEnd) { context in
                 let newRegion = context.region
                 let oldRegion = currentRegion
 
-                currentRegion = newRegion
-
                 if let old = oldRegion {
-                    let centerChanged = abs(newRegion.center.latitude - old.center.latitude) > 0.01 ||
-                                         abs(newRegion.center.longitude - old.center.longitude) > 0.01
-                    let spanChanged = abs(newRegion.span.latitudeDelta - old.span.latitudeDelta) > 0.005
-
-                    if centerChanged || spanChanged {
-                        scheduleStopsLoad(for: newRegion)
+                    if shouldCommitVisibleRegionChange(from: old, to: newRegion) {
+                        currentRegion = newRegion
                     }
+
+                    guard shouldReloadTransportData(from: old, to: newRegion) else {
+                        return
+                    }
+
+                    scheduleStopsLoad(for: newRegion)
+                    scheduleVehicleLoad(for: newRegion)
                 } else {
+                    currentRegion = newRegion
                     // First camera event — map has rendered its initial position.
                     // Kick off both stops and vehicles immediately rather than
                     // waiting up to 20s for the first polling tick.
                     scheduleStopsLoad(for: newRegion)
-                    Task { await loadVehicles(for: newRegion) }
+                    scheduleVehicleLoad(for: newRegion, delay: .milliseconds(120))
                 }
             }
             .navigationTitle("Berlin Transport")
@@ -423,9 +473,7 @@ struct TransportMapView: View {
             },
             onSelectRoute: { route in
                 self.route = route
-                if let firstCoord = route.coordinates.first {
-                    cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
-                }
+                focusCamera(on: route.coordinates)
             },
             onClose: {
                 activeSheet = nil
@@ -497,6 +545,61 @@ struct TransportMapView: View {
         } else {
             locationManager.requestPermission()
         }
+    }
+
+    private func focusCamera(
+        on coordinates: [CLLocationCoordinate2D],
+        fallback fallbackCoordinate: CLLocationCoordinate2D? = nil
+    ) {
+        let validCoordinates = coordinates.filter(CLLocationCoordinate2DIsValid)
+        let focusCoordinates = validCoordinates.isEmpty
+            ? [fallbackCoordinate].compactMap { $0 }
+            : validCoordinates + [fallbackCoordinate].compactMap { $0 }
+
+        guard let region = regionFitting(focusCoordinates) else { return }
+
+        if reduceMotion {
+            cameraPosition = .region(region)
+        } else {
+            withAnimation(.easeInOut(duration: 0.45)) {
+                cameraPosition = .region(region)
+            }
+        }
+    }
+
+    private func regionFitting(_ coordinates: [CLLocationCoordinate2D]) -> MKCoordinateRegion? {
+        let validCoordinates = coordinates.filter(CLLocationCoordinate2DIsValid)
+        guard let first = validCoordinates.first else { return nil }
+
+        guard validCoordinates.count > 1 else {
+            return MKCoordinateRegion(center: first, span: Self.nearbySpan)
+        }
+
+        let latitudes = validCoordinates.map(\.latitude)
+        let longitudes = validCoordinates.map(\.longitude)
+
+        guard
+            let minLatitude = latitudes.min(),
+            let maxLatitude = latitudes.max(),
+            let minLongitude = longitudes.min(),
+            let maxLongitude = longitudes.max()
+        else {
+            return nil
+        }
+
+        let latitudePadding = max((maxLatitude - minLatitude) * 0.25, 0.004)
+        let longitudePadding = max((maxLongitude - minLongitude) * 0.25, 0.004)
+
+        return MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: (minLatitude + maxLatitude) / 2,
+                longitude: (minLongitude + maxLongitude) / 2
+            ),
+            span: MKCoordinateSpan(
+                latitudeDelta: max(maxLatitude - minLatitude + latitudePadding, Self.nearbySpan.latitudeDelta),
+                longitudeDelta: max(maxLongitude - minLongitude + longitudePadding, Self.nearbySpan.longitudeDelta)
+            )
+        )
     }
 
     @MainActor
@@ -608,47 +711,66 @@ struct TransportMapView: View {
 
         vehicleTrails = updatedTrails
 
-        // For each vehicle, compute where it should be at the END of the next
-        // polling interval using schedule/stop data. We then animate from the
-        // current screen position to that projected position over the full
-        // polling interval with ONE withAnimation call — no per-second state
-        // thrashing, no annotation rebuilds between polls.
-        let now2 = Date()
-        var projected: [String: CLLocationCoordinate2D] = [:]
+        // Build explicit motion plans and advance them on a timer.
+        // SwiftUI Map doesn't reliably animate annotation coordinates from a
+        // single implicit animation transaction, so we update rendered marker
+        // positions periodically between backend polls.
+        let now2 = Date.now
+        var renderedPositions: [String: CLLocationCoordinate2D] = [:]
+        var motionPlans: [String: VehicleMotionPlan] = [:]
         for vehicle in incoming {
             guard let from = vehicle.currentLocation else { continue }
+            renderedPositions[vehicle.id] = from
 
             if let to = vehicle.nextStopCoordinate,
                let arrival = vehicle.nextStopArrival,
                arrival > now2 {
-                // Project to where this vehicle will be at end of next interval.
-                projected[vehicle.id] = projectCoordinate(
+                let projectedCoordinate = projectCoordinate(
                     from: from,
                     nextStop: to,
                     arrivalDate: arrival,
                     seconds: pollingInterval
                 )
-                updatedHeadings[vehicle.id] = bearing(from: from, to: to)
-            } else {
-                // No schedule data — annotation stays at current position.
-                projected[vehicle.id] = from
+
+                if approximateDistanceMeters(from: from, to: projectedCoordinate) > 2 {
+                    let planEndDate = min(arrival, now2.addingTimeInterval(max(pollingInterval, 1)))
+                    motionPlans[vehicle.id] = VehicleMotionPlan(
+                        startCoordinate: from,
+                        endCoordinate: projectedCoordinate,
+                        startDate: now2,
+                        endDate: planEndDate
+                    )
+                    updatedHeadings[vehicle.id] = bearing(from: from, to: projectedCoordinate)
+                }
             }
         }
 
         // Single write — covers both trail-based and projection-based headings.
         vehicleHeadings = updatedHeadings
         vehicles = incoming
+        vehicleMotionPlans = motionPlans
+        vehicleRenderedPositions = renderedPositions
+        advanceVehicleMotion(to: now2)
+    }
 
-        // Animate all annotations to their projected end-of-interval positions.
-        // This runs once per poll (every 15-30s), NOT every second.
-        let animDuration = max(pollingInterval - 1.0, 1.0)
-        if reduceMotion {
-            vehicleProjectedPositions = projected
-        } else {
-            withAnimation(.linear(duration: animDuration)) {
-                vehicleProjectedPositions = projected
+    @MainActor
+    private func advanceVehicleMotion(to date: Date) {
+        guard !reduceMotion else { return }
+
+        var updatedPositions = vehicleRenderedPositions
+        let activeVehicleIDs = Set(vehicles.map(\.id))
+        updatedPositions = updatedPositions.filter { activeVehicleIDs.contains($0.key) }
+
+        for vehicle in vehicles {
+            guard let current = vehicle.currentLocation else { continue }
+            if let plan = vehicleMotionPlans[vehicle.id] {
+                updatedPositions[vehicle.id] = plan.coordinate(at: date)
+            } else {
+                updatedPositions[vehicle.id] = current
             }
         }
+
+        vehicleRenderedPositions = updatedPositions
     }
 
     private func vehicleAccessibilityLabel(for vehicle: Vehicle) -> String {
@@ -685,6 +807,30 @@ struct TransportMapView: View {
         return degrees
     }
 
+    private func shouldCommitVisibleRegionChange(from old: MKCoordinateRegion, to new: MKCoordinateRegion) -> Bool {
+        let centerShift = approximateDistanceMeters(from: old.center, to: new.center)
+        let zoomDelta = abs(log(max(new.span.latitudeDelta, 0.0001) / max(old.span.latitudeDelta, 0.0001)))
+
+        return centerShift > 90 || zoomDelta > 0.12
+    }
+
+    private func shouldReloadTransportData(from old: MKCoordinateRegion, to new: MKCoordinateRegion) -> Bool {
+        let centerShift = approximateDistanceMeters(from: old.center, to: new.center)
+        let zoomDelta = abs(log(max(new.span.latitudeDelta, 0.0001) / max(old.span.latitudeDelta, 0.0001)))
+        let reloadThreshold = max(new.span.latitudeDelta * 111_000 * 0.3, 250)
+
+        return centerShift > reloadThreshold || zoomDelta > 0.28
+    }
+
+    private func sortedStops(_ stops: [TransportStop], around center: CLLocationCoordinate2D) -> [TransportStop] {
+        stops.sorted { left, right in
+            let leftCoordinate = CLLocationCoordinate2D(latitude: left.latitude, longitude: left.longitude)
+            let rightCoordinate = CLLocationCoordinate2D(latitude: right.latitude, longitude: right.longitude)
+            return approximateDistanceMeters(from: leftCoordinate, to: center)
+                < approximateDistanceMeters(from: rightCoordinate, to: center)
+        }
+    }
+
     @MainActor
     private func loadStopsForRegion(_ region: MKCoordinateRegion) async {
         let now = Date()
@@ -704,11 +850,11 @@ struct TransportMapView: View {
         // Use offline database first - it's always available and fast
         await offlineDatabase.loadIfNeeded()
         
-        let nearbyStops = offlineDatabase.findStops(
+        let nearbyStops = sortedStops(offlineDatabase.findStops(
             latitude: center.latitude,
             longitude: center.longitude,
             maxDistance: maxDistance
-        )
+        ), around: center)
         
         if !nearbyStops.isEmpty {
             self.stops = nearbyStops
@@ -724,7 +870,7 @@ struct TransportMapView: View {
                     maxDistance: min(maxDistance, 5000),
                     maxLocations: 100
                 )
-                self.stops = fetchedStops
+                self.stops = sortedStops(fetchedStops, around: center)
                 print("API: Fetched \(fetchedStops.count) stops from network")
             } catch {
                 errorMessage = error.localizedDescription
@@ -739,9 +885,19 @@ struct TransportMapView: View {
     private func scheduleStopsLoad(for region: MKCoordinateRegion) {
         stopsLoadTask?.cancel()
         stopsLoadTask = Task {
-            try? await Task.sleep(for: .milliseconds(280))
+            try? await Task.sleep(for: .milliseconds(450))
             guard !Task.isCancelled else { return }
             await loadStopsForRegion(region)
+        }
+    }
+
+    @MainActor
+    private func scheduleVehicleLoad(for region: MKCoordinateRegion, delay: Duration = .milliseconds(650)) {
+        vehiclesLoadTask?.cancel()
+        vehiclesLoadTask = Task {
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            await loadVehicles(for: region)
         }
     }
 
@@ -783,9 +939,7 @@ struct TransportMapView: View {
                 )
                 route = newRoute
                 routeAccentColor = Color(hex: vehicle.line?.color ?? "#007AFF")
-                if let firstCoord = leg.coordinates.first {
-                    cameraPosition = .region(MKCoordinateRegion(center: firstCoord, span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)))
-                }
+                focusCamera(on: leg.coordinates, fallback: vehicle.currentLocation)
             }
         } catch {
             errorMessage = "Failed to load route: \(error.localizedDescription)"
@@ -818,22 +972,10 @@ private extension View {
 struct LiveVehicleMarkerView: View {
     let vehicle: Vehicle
     let headingDegrees: Double?
-    let isMoving: Bool
-    let isPulseEnabled: Bool
     let isSelected: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulse = false
 
     var body: some View {
         ZStack {
-            if isMoving && isPulseEnabled && !reduceMotion {
-                Circle()
-                    .stroke(vehicleColor.opacity(0.45), lineWidth: 2)
-                    .frame(width: isSelected ? 50 : 44, height: isSelected ? 50 : 44)
-                    .scaleEffect(pulse ? 1.4 : 1.0)
-                    .opacity(pulse ? 0.0 : 0.65)
-            }
-
             Image(systemName: "location.north.fill")
                 .font(.system(size: isSelected ? 11 : 10, weight: .bold))
                 .foregroundStyle(vehicleColor.opacity(0.95))
@@ -855,26 +997,7 @@ struct LiveVehicleMarkerView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.45), value: headingDegrees)
-        .onAppear {
-            guard isMoving, isPulseEnabled, !reduceMotion else { return }
-            pulse = true
-        }
-        .onChange(of: isMoving) { _, moving in
-            pulse = moving && isPulseEnabled && !reduceMotion
-        }
-        .onChange(of: isPulseEnabled) { _, enabled in
-            pulse = enabled && isMoving && !reduceMotion
-        }
-        .onChange(of: reduceMotion) { _, isReduced in
-            pulse = !isReduced && isMoving && isPulseEnabled
-        }
-        .animation(
-            (!reduceMotion && isMoving && isPulseEnabled)
-                ? .easeOut(duration: 1.4).repeatForever(autoreverses: false)
-                : nil,
-            value: pulse
-        )
+        .animation(.easeInOut(duration: 0.45), value: headingDegrees)
     }
 
     var vehicleColor: Color {

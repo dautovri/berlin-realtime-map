@@ -21,6 +21,14 @@ final class PredictiveLoader {
     
     private var preloadedStops: [String: [TransportStop]] = [:]
     private var preloadedDepartures: [String: [TransportDeparture]] = [:]
+
+    var isPredictiveLoadingActive: Bool {
+        isActive
+    }
+
+    var activePreloadCount: Int {
+        activePreloads.count
+    }
     
     init(transportService: TransportService, vehicleRadarService: VehicleRadarService, cacheService: CacheService, networkMonitor: NetworkMonitor) {
         self.transportService = transportService
@@ -149,6 +157,10 @@ final class PredictiveLoader {
          preloadedDepartures.removeAll()
          activePreloads.removeAll()
          lastPreloadLocation = nil
+     }
+
+     func makeLocationKey(for coordinate: CLLocationCoordinate2D) -> String {
+         locationKey(for: coordinate)
      }
      
      /// Generate a cache key for a location

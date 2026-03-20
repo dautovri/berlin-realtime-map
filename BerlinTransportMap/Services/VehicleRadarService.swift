@@ -287,14 +287,36 @@ struct Vehicle: Identifiable, Codable {
         return CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude)
     }
 
+    private var nextAnchoredStopover: VehicleStopoverEntry? {
+        let now = Date.now.addingTimeInterval(5)
+
+        if let arrivalStop = nextStopovers?.first(where: {
+            guard $0.stop?.location != nil, let arrival = $0.arrivalDate else { return false }
+            return arrival > now
+        }) {
+            return arrivalStop
+        }
+
+        return nextStopovers?.first(where: {
+            guard $0.stop?.location != nil else { return false }
+            if let departure = $0.departureDate {
+                return departure > now
+            }
+            if let arrival = $0.arrivalDate {
+                return arrival > now
+            }
+            return false
+        })
+    }
+
     /// The next stop the vehicle is heading toward, with its arrival time and coordinates.
     var nextStopCoordinate: CLLocationCoordinate2D? {
-        guard let stop = nextStopovers?.first(where: { $0.stop?.location != nil })?.stop?.location else { return nil }
+        guard let stop = nextAnchoredStopover?.stop?.location else { return nil }
         return CLLocationCoordinate2D(latitude: stop.latitude, longitude: stop.longitude)
     }
 
     var nextStopArrival: Date? {
-        nextStopovers?.first(where: { $0.stop?.location != nil })?.arrivalDate
+        nextAnchoredStopover?.arrivalDate ?? nextAnchoredStopover?.departureDate
     }
 }
 

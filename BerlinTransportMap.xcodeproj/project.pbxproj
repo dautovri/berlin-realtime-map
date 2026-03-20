@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1B200000000000000000001 /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B200000000000000000011 /* SnapshotHelper.swift */; };
+		A1B200000000000000000002 /* ScreenshotUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B200000000000000000012 /* ScreenshotUITests.swift */; };
+		A1B200000000000000000003 /* MapInteractionPerformanceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */; };
 		14DA0AF43D838C1E01605EAE /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC1FC51390C7A591880A694 /* TransportErrorTests.swift */; };
 		2212D64ECE55BFD3A40EFB3A /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */; };
 		2730672A7ACF5C0EA1754D02 /* ConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7778AD79403ECE20067F38 /* ConfigTests.swift */; };
@@ -32,6 +35,13 @@
 			remoteGlobalIDString = 8B41F6442DEDD0D5001A66F9;
 			remoteInfo = BerlinTransportMap;
 		};
+		A1B200000000000000000010 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B41F63D2DEDD0D5001A66F9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B41F6442DEDD0D5001A66F9;
+			remoteInfo = BerlinTransportMap;
+		};
 		FEB97CDC19FDDA91149C0098 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8B41F63D2DEDD0D5001A66F9 /* Project object */;
@@ -42,6 +52,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A1B200000000000000000011 /* SnapshotHelper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
+		A1B200000000000000000012 /* ScreenshotUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScreenshotUITests.swift; sourceTree = "<group>"; };
+		A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapInteractionPerformanceUITests.swift; sourceTree = "<group>"; };
+		A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BerlinTransportMapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3075E41C04F8DCF7EECB037D /* ConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ConfigTests.swift; sourceTree = SOURCE_ROOT; };
 		576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ServiceContainerTests.swift; sourceTree = SOURCE_ROOT; };
 		6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/WeatherServiceTests.swift; sourceTree = SOURCE_ROOT; };
@@ -71,6 +85,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A1B200000000000000000015 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		82CAA2B102F0E8C7400CA54D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -110,6 +131,16 @@
 			path = Tests;
 			sourceTree = SOURCE_ROOT;
 		};
+		A1B200000000000000000016 /* BerlinTransportMapUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A1B200000000000000000011 /* SnapshotHelper.swift */,
+				A1B200000000000000000012 /* ScreenshotUITests.swift */,
+				A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */,
+			);
+			path = BerlinTransportMapUITests;
+			sourceTree = "<group>";
+		};
 		74A0867C3D2452B39EAD498E /* iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -125,6 +156,7 @@
 				8B41F6812DEDD23B001A66F9 /* Frameworks */,
 				8B41F6462DEDD0D5001A66F9 /* Products */,
 				0358A27CF83A96BEF6073B8E /* Tests */,
+				A1B200000000000000000016 /* BerlinTransportMapUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -132,6 +164,7 @@
 			isa = PBXGroup;
 			children = (
 				8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */,
+				A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */,
 				6ECEDC7EE9C39E3BFCF25BB6 /* BerlinTransportMapTests.xctest */,
 				E5F7B9C2F1EA953C1F2769C7 /* BerlinTransportMapTests.xctest */,
 			);
@@ -149,6 +182,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A1B200000000000000000017 /* BerlinTransportMapUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B200000000000000000023 /* Build configuration list for PBXNativeTarget "BerlinTransportMapUITests" */;
+			buildPhases = (
+				A1B200000000000000000019 /* Sources */,
+				A1B200000000000000000015 /* Frameworks */,
+				A1B200000000000000000018 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1B200000000000000000020 /* PBXTargetDependency */,
+			);
+			name = BerlinTransportMapUITests;
+			productName = BerlinTransportMapUITests;
+			productReference = A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8B41F6662DEDD0D6001A66F9 /* Build configuration list for PBXNativeTarget "BerlinTransportMap" */;
@@ -200,6 +251,10 @@
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					A1B200000000000000000017 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 8B41F6442DEDD0D5001A66F9;
+					};
 					8B41F6442DEDD0D5001A66F9 = {
 						CreatedOnToolsVersion = 16.3;
 					};
@@ -225,11 +280,19 @@
 			targets = (
 				8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */,
 				FF717E24F98FF676AE193423 /* BerlinTransportMapTests */,
+				A1B200000000000000000017 /* BerlinTransportMapUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A1B200000000000000000018 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		154B06650D36B304E6479C16 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -247,6 +310,16 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A1B200000000000000000019 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B200000000000000000003 /* MapInteractionPerformanceUITests.swift in Sources */,
+				A1B200000000000000000002 /* ScreenshotUITests.swift in Sources */,
+				A1B200000000000000000001 /* SnapshotHelper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8A4B681EECF60C795AB35060 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -270,6 +343,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		A1B200000000000000000020 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = BerlinTransportMap;
+			target = 8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */;
+			targetProxy = A1B200000000000000000010 /* PBXContainerItemProxy */;
+		};
 		C65D84CAB4A0C09F9314D401 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = BerlinTransportMap;
@@ -279,6 +358,38 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A1B200000000000000000021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BerlinTransportMap;
+			};
+			name = Debug;
+		};
+		A1B200000000000000000022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BerlinTransportMap;
+			};
+			name = Release;
+		};
 		04080A2E0C17F9FE2BB4CF3E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -306,6 +417,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
@@ -323,6 +435,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
@@ -460,11 +573,12 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = BerlinTransportMap/BerlinTransportMap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "See nearby transit vehicles and stops around your location";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -475,7 +589,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap;
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
@@ -493,11 +607,12 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = BerlinTransportMap/BerlinTransportMap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "See nearby transit vehicles and stops around your location";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -508,7 +623,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap;
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
@@ -537,6 +652,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A1B200000000000000000023 /* Build configuration list for PBXNativeTarget "BerlinTransportMapUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B200000000000000000021 /* Debug */,
+				A1B200000000000000000022 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		15BA2465B02D452ADA5DF3D7 /* Build configuration list for PBXNativeTarget "BerlinTransportMapTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

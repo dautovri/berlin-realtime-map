@@ -21,6 +21,20 @@
                ReferencedContainer = "container:BerlinTransportMap.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A1B200000000000000000017"
+               BuildableName = "BerlinTransportMapUITests.xctest"
+               BlueprintName = "BerlinTransportMapUITests"
+               ReferencedContainer = "container:BerlinTransportMap.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
