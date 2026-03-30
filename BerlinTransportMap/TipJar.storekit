@@ -1,104 +1,104 @@
 {
-  "identifier" : "BerlinTransportMap Tip Jar",
-  "products" : [
+  "identifier": "BerlinTransportMap Tip Jar",
+  "products": [
     {
-      "displayPrice" : "0.99",
-      "familyShareable" : false,
-      "internalID" : "BTM001",
-      "localizations" : [
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "BTM001",
+      "localizations": [
         {
-          "description" : "A small tip to support development",
-          "displayName" : "Small Tip",
-          "locale" : "en_US"
+          "description": "Support with the price of a coffee",
+          "displayName": "Buy Me a Coffee",
+          "locale": "en_US"
         }
       ],
-      "productID" : "com.dautov.berlintransportmap.tip.small",
-      "referenceName" : "Small Tip",
-      "type" : "Consumable"
+      "productID": "com.dautov.berlintransportmap.tip.small",
+      "referenceName": "Buy Me a Coffee",
+      "type": "Consumable"
     },
     {
-      "displayPrice" : "2.99",
-      "familyShareable" : false,
-      "internalID" : "BTM002",
-      "localizations" : [
+      "displayPrice": "9.99",
+      "familyShareable": false,
+      "internalID": "BTM002",
+      "localizations": [
         {
-          "description" : "A medium tip to support development",
-          "displayName" : "Medium Tip",
-          "locale" : "en_US"
+          "description": "A double shot of support",
+          "displayName": "Buy Me Two Coffees",
+          "locale": "en_US"
         }
       ],
-      "productID" : "com.dautov.berlintransportmap.tip.medium",
-      "referenceName" : "Medium Tip",
-      "type" : "Consumable"
+      "productID": "com.dautov.berlintransportmap.tip.medium",
+      "referenceName": "Buy Me Two Coffees",
+      "type": "Consumable"
     },
     {
-      "displayPrice" : "4.99",
-      "familyShareable" : false,
-      "internalID" : "BTM003",
-      "localizations" : [
+      "displayPrice": "19.99",
+      "familyShareable": false,
+      "internalID": "BTM003",
+      "localizations": [
         {
-          "description" : "A large tip to support development",
-          "displayName" : "Large Tip",
-          "locale" : "en_US"
+          "description": "Your generous support",
+          "displayName": "Buy Me a Treat",
+          "locale": "en_US"
         }
       ],
-      "productID" : "com.dautov.berlintransportmap.tip.large",
-      "referenceName" : "Large Tip",
-      "type" : "Consumable"
+      "productID": "com.dautov.berlintransportmap.tip.large",
+      "referenceName": "Buy Me a Treat",
+      "type": "Consumable"
     }
   ],
-  "settings" : {
-    "_failTransactionsEnabled" : false,
-    "_locale" : "en_US",
-    "_storefront" : "USA",
-    "_storeKitErrors" : [
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "DEU",
+    "_storeKitErrors": [
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Load Products"
+        "current": null,
+        "enabled": false,
+        "name": "Load Products"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Purchase"
+        "current": null,
+        "enabled": false,
+        "name": "Purchase"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Verification"
+        "current": null,
+        "enabled": false,
+        "name": "Verification"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Store Sync"
+        "current": null,
+        "enabled": false,
+        "name": "App Store Sync"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Subscription Status"
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Status"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Transaction"
+        "current": null,
+        "enabled": false,
+        "name": "App Transaction"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Manage Subscriptions Sheet"
+        "current": null,
+        "enabled": false,
+        "name": "Manage Subscriptions Sheet"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Offer Code Redeem Sheet"
+        "current": null,
+        "enabled": false,
+        "name": "Offer Code Redeem Sheet"
       },
       {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Subscription Renewal"
+        "current": null,
+        "enabled": false,
+        "name": "Subscription Renewal"
       }
     ],
-    "_timeRate" : 0
+    "_timeRate": 0
   },
-  "version" : 2
+  "version": 2
 }

@@ -16,8 +16,6 @@ final class CacheService: @unchecked Sendable {
     }
 
     private let memoryCache = NSCache<NSString, Entry>()
-    private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
 
     private static let cachePrefix = "transport_cache_"
 
@@ -78,7 +76,7 @@ final class CacheService: @unchecked Sendable {
     // MARK: - Generic Set/Get (NSCache-backed)
     func set<T: Codable>(_ data: T, forKey key: String, ttl: TimeInterval = 300) {
         do {
-            let encoded = try encoder.encode(data)
+            let encoded = try JSONEncoder().encode(data)
             let entry = Entry(data: encoded, ttl: ttl)
             memoryCache.setObject(entry, forKey: key as NSString)
         } catch {
@@ -95,7 +93,7 @@ final class CacheService: @unchecked Sendable {
         }
 
         do {
-            return try decoder.decode(T.self, from: entry.data)
+            return try JSONDecoder().decode(T.self, from: entry.data)
         } catch {
             memoryCache.removeObject(forKey: key as NSString)
             return nil
@@ -108,13 +106,5 @@ final class CacheService: @unchecked Sendable {
 
     func clear() {
         memoryCache.removeAllObjects()
-    }
-
-    func age(of key: String) -> TimeInterval? {
-        // NSCache entries don't expose creation time, but the Entry wrapper has expiresAt.
-        guard let entry = memoryCache.object(forKey: key as NSString) else { return nil }
-        // Approximate: age = ttl - remaining
-        let remaining = entry.expiresAt.timeIntervalSinceNow
-        return remaining < 0 ? nil : nil // Not precisely trackable; return nil
     }
 }

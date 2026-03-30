@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct BerlinTransportMapHelpCenterView: View {
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     private let allTopics = BerlinTransportMapHelpTopicsConfiguration.allTopics
     
@@ -28,7 +28,7 @@ struct BerlinTransportMapHelpCenterView: View {
                     Section {
                         VStack(alignment: .leading, spacing: 12) {
                             Image(systemName: "questionmark.circle.fill")
-                                .font(.system(size: 40))
+                                .font(.largeTitle)
                                 .foregroundStyle(.blue)
                             
                             VStack(alignment: .leading, spacing: 4) {
@@ -51,7 +51,7 @@ struct BerlinTransportMapHelpCenterView: View {
                                 NavigationLink(value: topic) {
                                     HStack(spacing: 12) {
                                         Image(systemName: topic.icon)
-                                            .font(.system(size: 16))
+                                            .font(.body)
                                             .foregroundStyle(.blue)
                                             .frame(width: 20)
                                         
@@ -63,12 +63,6 @@ struct BerlinTransportMapHelpCenterView: View {
                                                 .foregroundStyle(.secondary)
                                                 .lineLimit(1)
                                         }
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption)
-                                            .foregroundStyle(.tertiary)
                                     }
                                     .padding(.vertical, 4)
                                 }
@@ -81,7 +75,7 @@ struct BerlinTransportMapHelpCenterView: View {
                     Section {
                         VStack(spacing: 12) {
                             Image(systemName: "magnifyingglass")
-                                .font(.system(size: 32))
+                                .font(.title)
                                 .foregroundStyle(.secondary)
                             
                             VStack(spacing: 4) {
@@ -116,7 +110,8 @@ struct BerlinTransportMapHelpCenterView: View {
 
 struct BerlinTransportMapHelpDetailView: View {
     let topic: HelpTopic
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     
     var body: some View {
         ScrollView {
@@ -124,7 +119,7 @@ struct BerlinTransportMapHelpDetailView: View {
                 // Header
                 HStack(spacing: 12) {
                     Image(systemName: topic.icon)
-                        .font(.system(size: 32))
+                        .font(.largeTitle)
                         .foregroundStyle(.blue)
                     
                     VStack(alignment: .leading, spacing: 4) {
@@ -161,19 +156,24 @@ struct BerlinTransportMapHelpDetailView: View {
                     Text("Still need help?")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    
-                    Link(destination: "mailto:dautovri@outlook.com".mailto ?? URL(string: "https://dautovri.com")!) {
-                        HStack {
-                            Image(systemName: "envelope.fill")
-                            Text("Contact Support")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
+
+                    if let supportURL = "mailto:dautovri@outlook.com".mailto {
+                        Button {
+                            openURL(supportURL)
+                        } label: {
+                            HStack {
+                                Image(systemName: "envelope.fill")
+                                Text("Contact Support")
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                            .foregroundStyle(.blue)
                         }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                        .foregroundStyle(.blue)
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding()

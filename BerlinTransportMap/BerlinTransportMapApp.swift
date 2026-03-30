@@ -16,7 +16,10 @@ struct BerlinTransportMapApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            print("Warning: Could not create persistent ModelContainer, falling back to in-memory: \(error)")
+            let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            // Force-try is safe here: an in-memory container with a valid schema cannot fail
+            return try! ModelContainer(for: schema, configurations: [fallbackConfig])
         }
     }()
 
@@ -34,7 +37,16 @@ struct BerlinTransportMapApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+#if targetEnvironment(macCatalyst)
+                .frame(minWidth: 900, minHeight: 600)
+#endif
         }
+#if targetEnvironment(macCatalyst)
+        .windowResizability(.contentMinSize)
+        .commands {
+            BerlinTransportCommands()
+        }
+#endif
         .modelContainer(sharedModelContainer)
     }
 }
@@ -84,3 +96,28 @@ final class MapTilePreloader {
         }
     }
 }
+
+// MARK: - macOS Menu Commands
+
+#if targetEnvironment(macCatalyst)
+struct BerlinTransportCommands: Commands {
+    var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About Berlin Transport") {
+                NotificationCenter.default.post(name: .showAboutSheet, object: nil)
+            }
+        }
+        CommandGroup(after: .appInfo) {
+            Button("Preferences…") {
+                NotificationCenter.default.post(name: .showSettingsSheet, object: nil)
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
+    }
+}
+
+extension Notification.Name {
+    static let showAboutSheet = Notification.Name("com.dautov.berlintransportmap.showAbout")
+    static let showSettingsSheet = Notification.Name("com.dautov.berlintransportmap.showSettings")
+}
+#endif

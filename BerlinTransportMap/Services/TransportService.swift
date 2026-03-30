@@ -5,7 +5,7 @@ import Observation
 /// Transport service using VBB REST API (https://v6.vbb.transport.rest)
 @MainActor
 @Observable
-final class TransportService: @unchecked Sendable {
+final class TransportService {
     private let baseURL = "https://v6.vbb.transport.rest"
     private let session: URLSession
     private let offlineDatabase = OfflineStopsDatabase.shared
@@ -91,7 +91,7 @@ final class TransportService: @unchecked Sendable {
 
         // Try offline database first for instant results
         await offlineDatabase.loadIfNeeded()
-        let offlineResults = offlineDatabase.searchStops(query: query)
+        let offlineResults = await offlineDatabase.searchStops(query: query)
         
         if !offlineResults.isEmpty {
             return Array(offlineResults.prefix(maxLocations))

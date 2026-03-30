@@ -3,7 +3,7 @@ import Foundation
 /// Offline database of all Berlin transport stops
 /// Loads from app bundle on first launch, then caches to Application Support
 /// Follows iOS 18+ best practices for file storage
-final class OfflineStopsDatabase: @unchecked Sendable {
+actor OfflineStopsDatabase {
     static let shared = OfflineStopsDatabase()
     
     private let fileManager = FileManager.default

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BerlinTransportMapAboutView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     private let appName = AppInfo.current.name
     private let developerName = "Ruslan Dautov"
@@ -48,110 +49,19 @@ struct BerlinTransportMapAboutView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 0) {
-                    VStack(spacing: 10) {
-                        HStack {
-                            Image(systemName: "map.fill")
-                                .font(.title)
-                                .accessibilityHidden(true)
-                            Text(appName)
-                                .font(.title2.bold())
-                        }
-                        .foregroundStyle(.white)
+                VStack(spacing: 20) {
+                    mapHero
+                    networkLegend
+                    routeSupportPanel
+                    developerDepot
 
-                        Text(appDescription)
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.85))
-                            .multilineTextAlignment(.center)
-
-                        Text("v\(appVersion)")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.6))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
-                    .padding(.horizontal)
-                    .background(.cyan.gradient)
-
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 10) {
-                            routeBadge("U-Bahn", tint: .blue)
-                            routeBadge("S-Bahn", tint: .green)
-                            routeBadge("Bus", tint: .purple)
-                            routeBadge("Tram", tint: .red)
-                            routeBadge("Ferry", tint: .cyan)
-                        }
-                        .padding(.horizontal)
-                    }
-                    .scrollIndicators(.hidden)
-                    .padding(.vertical)
-
-                    VStack(alignment: .leading, spacing: 0) {
-                        routeLineItem(color: .blue, title: "Real-time departures", subtitle: "Live BVG/VBB data for every stop")
-                        routeLineItem(color: .green, title: "Map-first experience", subtitle: "See nearby stops and vehicles at a glance")
-                        routeLineItem(color: .orange, title: "Fast and focused", subtitle: "Lightweight design, instant answers")
-                    }
-                    .padding(.horizontal)
-
-                    Divider()
-                        .padding(.vertical)
-                        .padding(.horizontal)
-
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            if let emailURL = developerEmail.mailto {
-                                Link(destination: emailURL) {
-                                    Label("Contact", systemImage: "envelope.fill")
-                                }
-                                .buttonStyle(.bordered)
-                            }
-
-                            if let shareURL {
-                                ShareLink(item: shareURL) {
-                                    Label("Share", systemImage: "square.and.arrow.up")
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
-
-                        if let writeReviewURL {
-                            Link(destination: writeReviewURL) {
-                                Label("Rate on App Store", systemImage: "star.fill")
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                    }
-                    .padding(.horizontal)
-
-                    Divider()
-                        .padding(.vertical)
-                        .padding(.horizontal)
-
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        if let websiteURL {
-                            linkTile("Portfolio", systemImage: "globe", url: websiteURL, tint: .blue)
-                        }
-                        if let linkedInURL {
-                            linkTile("LinkedIn", systemImage: "person.2.fill", url: linkedInURL, tint: .blue)
-                        }
-                        if let twitterURL {
-                            linkTile("X", systemImage: "at", url: twitterURL, tint: .primary)
-                        }
-                    }
-                    .padding(.horizontal)
-
-                    VStack(spacing: 8) {
-                        Text("Made by \(developerName)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        if let privacyURL = privacyPolicyURL {
-                            Link("Privacy Policy", destination: privacyURL)
-                                .font(.caption)
-                        }
-                    }
-                    .padding(.vertical)
+                    Text("Made with ♥ in Berlin by \(developerName)")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 4)
                 }
+                .padding(.horizontal)
+                .padding(.vertical)
                 .padding(.bottom, 28)
             }
             .scrollIndicators(.hidden)
@@ -195,46 +105,6 @@ struct BerlinTransportMapAboutView: View {
         }
     }
 
-    private func routeLineItem(color: Color, title: String, subtitle: String) -> some View {
-        HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(color)
-                .frame(width: 6)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .padding(.vertical, 12)
-    }
-
-    private func linkTile(_ title: String, systemImage: String, url: URL, tint: Color) -> some View {
-        Link(destination: url) {
-            VStack(spacing: 8) {
-                Image(systemName: systemImage)
-                    .font(.title3)
-                    .foregroundStyle(tint)
-                    .accessibilityHidden(true)
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(linkTileBackgroundStyle, in: .rect(cornerRadius: 14))
-        }
-    }
-
-    private var linkTileBackgroundStyle: AnyShapeStyle {
-        reduceTransparency ? AnyShapeStyle(.background) : AnyShapeStyle(.ultraThinMaterial)
-    }
-
     private var mapHero: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top, spacing: 16) {
@@ -276,43 +146,19 @@ struct BerlinTransportMapAboutView: View {
                 }
             }
 
-            ViewThatFits {
-                HStack(spacing: 12) {
-                    supportButton
-
-                    if let shareURL {
-                        ShareLink(item: shareURL) {
-                            Label("Share map", systemImage: "square.and.arrow.up")
-                        }
-                        .buttonStyle(.bordered)
+            HStack(spacing: 12) {
+                if let shareURL {
+                    ShareLink(item: shareURL) {
+                        Label("Share map", systemImage: "square.and.arrow.up")
                     }
-
-                    if let writeReviewURL {
-                        Link(destination: writeReviewURL) {
-                            Label("Rate app", systemImage: "star.fill")
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                    .buttonStyle(.bordered)
                 }
 
-                VStack(alignment: .leading, spacing: 12) {
-                    supportButton
-
-                    HStack(spacing: 12) {
-                        if let shareURL {
-                            ShareLink(item: shareURL) {
-                                Label("Share map", systemImage: "square.and.arrow.up")
-                            }
-                            .buttonStyle(.bordered)
-                        }
-
-                        if let writeReviewURL {
-                            Link(destination: writeReviewURL) {
-                                Label("Rate app", systemImage: "star.fill")
-                            }
-                            .buttonStyle(.bordered)
-                        }
+                if let writeReviewURL {
+                    Link(destination: writeReviewURL) {
+                        Label("Rate app", systemImage: "star.fill")
                     }
+                    .buttonStyle(.bordered)
                 }
             }
         }
@@ -349,14 +195,18 @@ struct BerlinTransportMapAboutView: View {
                 .foregroundStyle(.teal)
 
             if let emailURL = developerEmail.mailto {
-                Link(destination: emailURL) {
+                Button {
+                    openURL(emailURL)
+                } label: {
                     routeAction(title: "Contact support", subtitle: "Questions, feedback, and route issues.", systemImage: "envelope.fill", tint: .blue)
                 }
                 .buttonStyle(.plain)
             }
 
             if let bugReportURL {
-                Link(destination: bugReportURL) {
+                Button {
+                    openURL(bugReportURL)
+                } label: {
                     routeAction(title: "Report a bug", subtitle: "Send the steps and I'll investigate.", systemImage: "ladybug.fill", tint: .red)
                 }
                 .buttonStyle(.plain)
@@ -379,28 +229,28 @@ struct BerlinTransportMapAboutView: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 if let websiteURL {
-                    Link(destination: websiteURL) {
+                    Button { openURL(websiteURL) } label: {
                         infoRow(title: "Portfolio", subtitle: "More tools and transit experiments", systemImage: "globe", tint: .blue)
                     }
                     .buttonStyle(.plain)
                 }
 
                 if let linkedInURL {
-                    Link(destination: linkedInURL) {
+                    Button { openURL(linkedInURL) } label: {
                         infoRow(title: "LinkedIn", subtitle: "Professional profile", systemImage: "person.2.fill", tint: .blue)
                     }
                     .buttonStyle(.plain)
                 }
 
                 if let twitterURL {
-                    Link(destination: twitterURL) {
+                    Button { openURL(twitterURL) } label: {
                         infoRow(title: "X", subtitle: "Short updates and release notes", systemImage: "bubble.left.and.text.bubble.right.fill", tint: .primary)
                     }
                     .buttonStyle(.plain)
                 }
 
                 if let privacyURL = privacyPolicyURL {
-                    Link(destination: privacyURL) {
+                    Button { openURL(privacyURL) } label: {
                         infoRow(title: "Privacy Policy", subtitle: "How location and transport data are handled", systemImage: "hand.raised.fill", tint: .green)
                     }
                     .buttonStyle(.plain)

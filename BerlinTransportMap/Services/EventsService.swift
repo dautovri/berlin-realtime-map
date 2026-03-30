@@ -1,9 +1,7 @@
 import Foundation
 
 /// Events service for fetching event data from Berlin's events API
-final class EventsService: @unchecked Sendable {
-    static let shared = EventsService()
-    
+actor EventsService {
     private var cachedEvents: [Event]?
     private var cacheTimestamp: Date?
     private let cacheTTL: TimeInterval = 3600

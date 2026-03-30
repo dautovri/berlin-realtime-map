@@ -3,7 +3,7 @@ import CoreLocation
 
 @MainActor
 @Observable
-final class RouteService: @unchecked Sendable {
+final class RouteService {
     private let baseURL = "https://v6.vbb.transport.rest"
     private let session: URLSession
 

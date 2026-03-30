@@ -45,9 +45,9 @@ final class TipJarStore {
     let tipOptions: [TipOption] = {
         let ids = StoreKitConfiguration.tipProductIDs
         return [
-            TipOption(id: ids[0], displayName: "Small Tip", description: "A small tip to support development", displayPrice: "$0.99", emoji: "☕️"),
-            TipOption(id: ids[1], displayName: "Medium Tip", description: "A medium tip to support development", displayPrice: "$2.99", emoji: "🍕"),
-            TipOption(id: ids[2], displayName: "Large Tip", description: "A generous tip to support development", displayPrice: "$4.99", emoji: "🎉"),
+            TipOption(id: ids[0], displayName: "Buy Me a Coffee", description: "Support with the price of a coffee", displayPrice: "$4.99", emoji: "☕️"),
+            TipOption(id: ids[1], displayName: "Buy Me Two Coffees", description: "A double shot of support", displayPrice: "$9.99", emoji: "☕️☕️"),
+            TipOption(id: ids[2], displayName: "Buy Me a Treat", description: "Your generous support", displayPrice: "$19.99", emoji: "🎁"),
         ]
     }()
 

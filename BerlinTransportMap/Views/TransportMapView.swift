@@ -126,10 +126,10 @@ struct TransportMapView: View {
             return 120
         case ...0.02:
             return 80
-        case ...0.05:
+        case ...0.04:
             return 55
         default:
-            return 35
+            return 0   // hide stops entirely when zoomed out
         }
     }
 
@@ -192,7 +192,7 @@ struct TransportMapView: View {
                     StopAnnotationView(
                         stop: stop,
                         departures: nil,
-                        showLabel: isZoomedIn || selectedStop?.id == stop.id
+                        showLabel: selectedStop?.id == stop.id
                     )
                 }
                 .buttonStyle(.plain)
@@ -215,8 +215,7 @@ struct TransportMapView: View {
         // Use the projected (animated) position when available so the vehicle
         // glides smoothly toward its next stop over the polling interval.
         if let coordinate = vehicleRenderedPositions[vehicle.id] ?? vehicle.currentLocation {
-            let title = vehicle.line?.displayName ?? "?"
-            Annotation(title, coordinate: coordinate) {
+            Annotation("", coordinate: coordinate) {
                 Button {
                     selectedVehicle = vehicle
                 } label: {
@@ -328,6 +327,14 @@ struct TransportMapView: View {
                     services.predictiveLoader.handleLocationUpdate(location)
                 }
             }
+#if targetEnvironment(macCatalyst)
+            .onReceive(NotificationCenter.default.publisher(for: .showAboutSheet)) { _ in
+                activeSheet = .about
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .showSettingsSheet)) { _ in
+                activeSheet = .settings
+            }
+#endif
     }
 
     private var mainContent: some View {
@@ -850,7 +857,7 @@ struct TransportMapView: View {
         // Use offline database first - it's always available and fast
         await offlineDatabase.loadIfNeeded()
         
-        let nearbyStops = sortedStops(offlineDatabase.findStops(
+        let nearbyStops = sortedStops(await offlineDatabase.findStops(
             latitude: center.latitude,
             longitude: center.longitude,
             maxDistance: maxDistance
@@ -973,52 +980,35 @@ struct LiveVehicleMarkerView: View {
     let vehicle: Vehicle
     let headingDegrees: Double?
     let isSelected: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        ZStack {
-            Image(systemName: "location.north.fill")
-                .font(.system(size: isSelected ? 11 : 10, weight: .bold))
-                .foregroundStyle(vehicleColor.opacity(0.95))
-                .rotationEffect(.degrees(headingDegrees ?? 0))
-                .offset(y: isSelected ? -22 : -19)
-
-            Circle()
-                .stroke(vehicleColor.opacity(0.3), lineWidth: isSelected ? 4 : 3)
-                .frame(width: isSelected ? 42 : 36, height: isSelected ? 42 : 36)
-
-            Circle()
-                .fill(vehicleColor)
-                .frame(width: isSelected ? 32 : 28, height: isSelected ? 32 : 28)
-                .shadow(color: .black.opacity(0.3), radius: isSelected ? 4 : 3, x: 0, y: 2)
-
-            Text(vehicle.line?.displayName ?? "?")
-                .font(.system(size: isSelected ? 10 : 9, weight: .bold))
-                .foregroundStyle(Color(hex: vehicle.line?.foregroundColor ?? "#FFFFFF"))
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-        }
-        .animation(.easeInOut(duration: 0.45), value: headingDegrees)
+        Text(vehicle.line?.displayName ?? "?")
+            .font(.system(size: isSelected ? 12 : 10, weight: .heavy, design: .rounded))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .padding(.horizontal, isSelected ? 6 : 5)
+            .padding(.vertical, isSelected ? 3 : 2)
+            .background(vehicleColor, in: .rect(cornerRadius: 5))
+            .scaleEffect(isSelected ? 1.2 : 1.0)
+            .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
+
+    // MARK: - Helpers
 
     var vehicleColor: Color {
         if let colorHex = vehicle.line?.color, !colorHex.isEmpty {
             return Color(hex: colorHex)
         }
         switch vehicle.line?.productType {
-        case .tram:
-            return Color(hex: "#D8232A")
-        case .subway:
-            return Color(hex: "#0066CC")
-        case .suburbanTrain:
-            return Color(hex: "#008C3C")
-        case .bus:
-            return Color(hex: "#993399")
-        case .ferry:
-            return Color(hex: "#0099CC")
-        case .regionalTrain:
-            return Color(hex: "#EC192E")
-        default:
-            return .gray
+        case .tram:                      return Color(hex: "#D8232A")
+        case .subway:                    return Color(hex: "#0066CC")
+        case .suburbanTrain:             return Color(hex: "#008C3C")
+        case .bus:                       return Color(hex: "#993399")
+        case .ferry:                     return Color(hex: "#0099CC")
+        case .regionalTrain:            return Color(hex: "#EC192E")
+        default:                        return .gray
         }
     }
 }
