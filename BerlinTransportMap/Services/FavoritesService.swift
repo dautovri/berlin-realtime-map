@@ -14,6 +14,7 @@ final class FavoritesService {
     func saveFavorite(_ favorite: Favorite) throws {
         modelContext.insert(favorite)
         try modelContext.save()
+        ActivationMetricsService.shared.recordFavoriteSave()
     }
     
     func saveStopFavorite(name: String, stop: TransportStop) throws {

@@ -314,6 +314,7 @@ struct TransportMapView: View {
             .onChange(of: scenePhase) { _, newPhase in
                 switch newPhase {
                 case .active:
+                    ActivationMetricsService.shared.recordSession()
                     services.predictiveLoader.startPredictiveLoading()
                 case .inactive, .background:
                     services.predictiveLoader.stopPredictiveLoading()
@@ -507,6 +508,7 @@ struct TransportMapView: View {
 
     @MainActor
     private func openDepartures(for stop: TransportStop) {
+        ActivationMetricsService.shared.recordStopDetailOpen()
         selectedStop = stop
         restDepartures = []
         isLoadingDepartures = true

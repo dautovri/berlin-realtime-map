@@ -13,6 +13,7 @@
 		14DA0AF43D838C1E01605EAE /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC1FC51390C7A591880A694 /* TransportErrorTests.swift */; };
 		2212D64ECE55BFD3A40EFB3A /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */; };
 		2730672A7ACF5C0EA1754D02 /* ConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7778AD79403ECE20067F38 /* ConfigTests.swift */; };
+		2F6C1D4A7B8E9F0011223344 /* ActivationMetricsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6C1D4A7B8E9F0011223345 /* ActivationMetricsServiceTests.swift */; };
 		4832E1A8D31B41745E5C4D58 /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */; };
 		6E27A6CECB9A2FC404338D12 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */; };
 		720F1631A753713FE3DCCCF6 /* ServiceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9417CA4A80E9CEAB2DE87D60 /* ServiceContainerTests.swift */; };
@@ -56,6 +57,7 @@
 		A1B200000000000000000012 /* ScreenshotUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScreenshotUITests.swift; sourceTree = "<group>"; };
 		A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapInteractionPerformanceUITests.swift; sourceTree = "<group>"; };
 		A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BerlinTransportMapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F6C1D4A7B8E9F0011223345 /* ActivationMetricsServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ActivationMetricsServiceTests.swift; sourceTree = SOURCE_ROOT; };
 		3075E41C04F8DCF7EECB037D /* ConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ConfigTests.swift; sourceTree = SOURCE_ROOT; };
 		576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ServiceContainerTests.swift; sourceTree = SOURCE_ROOT; };
 		6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/WeatherServiceTests.swift; sourceTree = SOURCE_ROOT; };
@@ -114,6 +116,7 @@
 		0358A27CF83A96BEF6073B8E /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				2F6C1D4A7B8E9F0011223345 /* ActivationMetricsServiceTests.swift */,
 				7D7778AD79403ECE20067F38 /* ConfigTests.swift */,
 				D465407D8B3F7FB2439B44AE /* PredictiveLoaderTests.swift */,
 				9417CA4A80E9CEAB2DE87D60 /* ServiceContainerTests.swift */,
@@ -324,6 +327,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2F6C1D4A7B8E9F0011223344 /* ActivationMetricsServiceTests.swift in Sources */,
 				F5DCC86239DD831595DE6734 /* ConfigTests.swift in Sources */,
 				C5D6C34BEF236E7ED60F4ECB /* PredictiveLoaderTests.swift in Sources */,
 				773801C74768494CCB185641 /* ServiceContainerTests.swift in Sources */,
@@ -573,14 +577,15 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = BerlinTransportMap/BerlinTransportMap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "See nearby transit vehicles and stops around your location";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Berlin Transport uses your location to show nearby transit stops and vehicles on the map. For example, finding the closest U-Bahn station to your current position.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Berlin Transport uses your location to show nearby transit stops and vehicles on the map. For example, finding the closest U-Bahn station to your current position.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -611,14 +616,15 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = BerlinTransportMap/BerlinTransportMap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "See nearby transit vehicles and stops around your location";
+				INFOPLIST_KEY_NSLocationUsageDescription = "Berlin Transport uses your location to show nearby transit stops and vehicles on the map. For example, finding the closest U-Bahn station to your current position.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Berlin Transport uses your location to show nearby transit stops and vehicles on the map. For example, finding the closest U-Bahn station to your current position.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

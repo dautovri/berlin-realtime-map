@@ -4,6 +4,8 @@ import MapKit
 
 @main
 struct BerlinTransportMapApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Favorite.self
@@ -24,6 +26,7 @@ struct BerlinTransportMapApp: App {
     }()
 
     init() {
+        ActivationMetricsService.shared.recordSession()
         // Eagerly preload stops database on app launch
         Task(priority: .userInitiated) {
             await OfflineStopsDatabase.shared.loadIfNeeded()
@@ -59,6 +62,7 @@ struct BerlinTransportMapApp: App {
 final class MapTilePreloader {
     static let shared = MapTilePreloader()
     private var hasPreloaded = false
+    private var activeSnapshotters: [MKMapSnapshotter] = []
 
     private init() {}
 
@@ -89,11 +93,22 @@ final class MapTilePreloader {
             options.mapType = .standard
 
             let snapshotter = MKMapSnapshotter(options: options)
-            snapshotter.start { _, _ in
+            activeSnapshotters.append(snapshotter)
+            snapshotter.start { [weak self] _, _ in
                 // We don't need the snapshot image — just triggering
                 // the download caches the tiles for MapKit to reuse
+                Task { @MainActor in
+                    self?.activeSnapshotters.removeAll { $0 === snapshotter }
+                }
             }
         }
+    }
+
+    func cancelAll() {
+        for snapshotter in activeSnapshotters {
+            snapshotter.cancel()
+        }
+        activeSnapshotters.removeAll()
     }
 }
 
