@@ -93,7 +93,9 @@ struct BerlinTransportMapHelpCenterView: View {
             }
             .searchable(text: $searchText, prompt: "Search help topics")
             .navigationTitle("Help & Support")
-            .navigationBarTitleDisplayMode(.inline)
+            #if !os(tvOS)
+.navigationBarTitleDisplayMode(.inline)
+#endif
             .navigationDestination(for: HelpTopic.self) { topic in
                 BerlinTransportMapHelpDetailView(topic: topic)
             }
@@ -181,7 +183,9 @@ struct BerlinTransportMapHelpDetailView: View {
             .padding(.vertical)
         }
         .navigationTitle(topic.title)
-        .navigationBarTitleDisplayMode(.inline)
+        #if !os(tvOS)
+.navigationBarTitleDisplayMode(.inline)
+#endif
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Done") {
