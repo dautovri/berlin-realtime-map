@@ -19,7 +19,8 @@ See where your train, bus, or tram is right now on a live map. No account requir
 - ⏱️ **Real-Time Departures** - Tap any stop to see upcoming departures with live delay information
 - 🚏 **Stop Search** - Find stations and stops instantly
 - 🌍 **VBB Network Coverage** - Complete Berlin-Brandenburg public transport network
-- 📱 **Native iOS** - Built with SwiftUI and MapKit for a fast, modern experience
+- 📱 **Native iOS & tvOS** - Built with SwiftUI and MapKit for a fast, modern experience; also runs on Apple TV
+- 🎯 **First-Launch Onboarding** - Welcome overlay explains live tracking and prompts for location with context
 - 🔒 **Privacy First** - No account required, no tracking, no third-party analytics
 - 🌐 **Multi-Language** - Available in English, German, and French
 

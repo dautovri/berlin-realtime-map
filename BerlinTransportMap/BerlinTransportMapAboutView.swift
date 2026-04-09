@@ -79,14 +79,20 @@ struct BerlinTransportMapAboutView: View {
                 .padding(.bottom, 16)
                 .background {
                     if reduceTransparency {
+                        #if os(tvOS)
+                        Color.black
+                        #else
                         Color(.systemBackground)
+                        #endif
                     } else {
                         Rectangle().fill(.thinMaterial)
                     }
                 }
             }
             .navigationTitle("About")
-            .navigationBarTitleDisplayMode(.large)
+            #if !os(tvOS)
+.navigationBarTitleDisplayMode(.large)
+#endif
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Close", systemImage: "xmark", action: { dismiss() })
@@ -147,12 +153,14 @@ struct BerlinTransportMapAboutView: View {
             }
 
             HStack(spacing: 12) {
+                #if !os(tvOS)
                 if let shareURL {
                     ShareLink(item: shareURL) {
                         Label("Share map", systemImage: "square.and.arrow.up")
                     }
                     .buttonStyle(.bordered)
                 }
+#endif
 
                 if let writeReviewURL {
                     Link(destination: writeReviewURL) {

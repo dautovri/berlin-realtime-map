@@ -7,6 +7,7 @@ struct FavoritesView: View {
     @State private var favorites: [Favorite] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var showingRouteUnavailableAlert = false
     
     let onSelectStop: (TransportStop) -> Void
     let onSelectRoute: (Route) -> Void
@@ -74,6 +75,11 @@ struct FavoritesView: View {
             .task {
                 await loadFavorites()
             }
+            .alert("Route Replay Unavailable", isPresented: $showingRouteUnavailableAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Saved routes can't be replayed yet. Tap a stop favorite to see live departures.")
+            }
         }
     }
     
@@ -107,16 +113,8 @@ struct FavoritesView: View {
                 onSelectStop(stop)
             }
         case .route:
-            if favorite.routeName != nil {
-                let dummyRoute = Route(
-                    id: favorite.id.uuidString,
-                    legs: [],
-                    totalDuration: 0,
-                    departureTime: Date(),
-                    arrivalTime: Date()
-                )
-                onSelectRoute(dummyRoute)
-            }
+            showingRouteUnavailableAlert = true
+            return
         }
         onClose()
     }
@@ -154,6 +152,6 @@ struct FavoriteRow: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityHint(favorite.type == .stop ? "Opens this stop on the map" : "Opens this route on the map")
+        .accessibilityHint(favorite.type == .stop ? "Opens this stop on the map" : "Route replay not yet available")
     }
 }
