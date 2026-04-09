@@ -64,6 +64,7 @@ struct TransportMapView: View {
 
     @State private var locationManager = LocationManager()
     @State private var hasInitializedLocation = false
+    @State private var hasAutocentered = false
     @State private var stops: [TransportStop] = []
     @State private var vehicles: [Vehicle] = []
     @State private var restDepartures: [RESTDeparture] = []
@@ -326,6 +327,10 @@ struct TransportMapView: View {
                 if let location = newLocation {
                     lastLocationUpdate = Date()
                     services.predictiveLoader.handleLocationUpdate(location)
+                    if !hasAutocentered {
+                        hasAutocentered = true
+                        centerOnUserLocation()
+                    }
                 }
             }
 #if targetEnvironment(macCatalyst)

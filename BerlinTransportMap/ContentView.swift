@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @AppStorage("darkMode") private var darkMode = false
     @AppStorage("useSystemTheme") private var useSystemTheme = true
+    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
 
 #if DEBUG
     private var isAboutVerificationMode: Bool {
@@ -35,10 +36,28 @@ struct ContentView: View {
         } else {
             TransportMapView()
                 .preferredColorScheme(activeColorScheme)
+#if !os(tvOS)
+                .overlay {
+                    if !hasSeenWelcome {
+                        WelcomeOverlayView { hasSeenWelcome = true }
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeInOut(duration: 0.4), value: hasSeenWelcome)
+#endif
         }
 #else
         TransportMapView()
             .preferredColorScheme(activeColorScheme)
+#if !os(tvOS)
+            .overlay {
+                if !hasSeenWelcome {
+                    WelcomeOverlayView { hasSeenWelcome = true }
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.4), value: hasSeenWelcome)
+#endif
 #endif
     }
 
