@@ -262,7 +262,7 @@ struct TransportMapView: View {
         if !services.networkMonitor.isConnected {
             return Color.red.opacity(0.9)
         }
-        return dataSource == .stale ? Color.orange.opacity(0.9) : Color.green.opacity(0.9)
+        return dataSource == .stale ? Color.orange.opacity(0.9) : Color(hex: "#00A550")
     }
 
     private var cacheInfoText: String {
@@ -383,15 +383,12 @@ struct TransportMapView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingCacheInfo = true
-                    } label: {
-                        statusBadge
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Data source")
-                    .accessibilityValue(cacheStatusText)
-                    .accessibilityHint("Shows whether the app is using live or cached data")
+                    statusBadge
+                        .onTapGesture { showingCacheInfo = true }
+                        .accessibilityLabel("Data source")
+                        .accessibilityValue(cacheStatusText)
+                        .accessibilityHint("Shows whether the app is using live or cached data")
+                        .accessibilityAddTraits(.isButton)
                 }
 
                 ToolbarItemGroup(placement: .bottomBar) {
@@ -494,19 +491,14 @@ struct TransportMapView: View {
         )
     }
 
-    @ViewBuilder
     private var statusBadge: some View {
-        HStack(spacing: 4) {
-            Image(systemName: cacheStatusIconName)
-                .font(.caption)
-            Text(cacheStatusText)
-                .font(.caption.bold())
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(cacheBadgeColor)
-        .foregroundStyle(.white)
-        .clipShape(Capsule())
+        Text(cacheStatusText)
+            .font(.caption.bold())
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(cacheBadgeColor)
+            .foregroundStyle(.white)
+            .clipShape(Capsule())
     }
 
 

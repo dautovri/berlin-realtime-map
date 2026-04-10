@@ -94,8 +94,8 @@ private struct WelcomePageContent: View {
             Spacer(minLength: 0)
 
             HStack(spacing: 12) {
-                transitBadge("U", color: Color(hex: "#115D97"))
-                transitBadge("S", color: .haltestelleGreen)
+                TransitBadge("U", color: Color(hex: "#115D97"))
+                TransitBadge("S", color: .haltestelleGreen)
                 Image(systemName: "cablecar")
                     .font(.title3)
                     .foregroundStyle(.red)
@@ -126,9 +126,7 @@ private struct WelcomePageContent: View {
 
             Spacer(minLength: 0)
 
-            Button("Next") {
-                onNext()
-            }
+            Button("Next", action: onNext)
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .frame(maxWidth: 400)
@@ -142,7 +140,18 @@ private struct WelcomePageContent: View {
         }
     }
 
-    private func transitBadge(_ text: String, color: Color) -> some View {
+}
+
+private struct TransitBadge: View {
+    let text: String
+    let color: Color
+
+    init(_ text: String, color: Color) {
+        self.text = text
+        self.color = color
+    }
+
+    var body: some View {
         Text(text)
             .font(.headline.bold())
             .foregroundStyle(.white)
@@ -171,17 +180,17 @@ private struct WelcomeFeaturesContent: View {
                     .offset(y: appeared ? 0 : 16)
 
                 VStack(spacing: 24) {
-                    featureRow(
+                    FeatureRow(
                         icon: "hand.tap.fill",
                         title: "Tap any vehicle",
                         subtitle: "See its full route on the map"
                     )
-                    featureRow(
+                    FeatureRow(
                         icon: "clock.badge",
                         title: "Tap any stop",
                         subtitle: "View live departures with delay info"
                     )
-                    featureRow(
+                    FeatureRow(
                         icon: "star.fill",
                         title: "Save favorites",
                         subtitle: "Quick access to your regular stops"
@@ -194,9 +203,7 @@ private struct WelcomeFeaturesContent: View {
 
             Spacer(minLength: 0)
 
-            Button("Next") {
-                onNext()
-            }
+            Button("Next", action: onNext)
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .frame(maxWidth: 400)
@@ -209,7 +216,14 @@ private struct WelcomeFeaturesContent: View {
         }
     }
 
-    private func featureRow(icon: String, title: String, subtitle: String) -> some View {
+}
+
+private struct FeatureRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
         HStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.title2)
@@ -240,6 +254,7 @@ private struct WelcomeLocationContent: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
+    @ScaledMetric private var iconSize: CGFloat = 56
 
     private var isDenied: Bool {
         authStatus == .denied || authStatus == .restricted
@@ -251,7 +266,7 @@ private struct WelcomeLocationContent: View {
 
             VStack(spacing: 16) {
                 Image(systemName: "location.circle.fill")
-                    .font(.system(size: 56))
+                    .font(.system(size: iconSize))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.blue, .blue.opacity(0.7)],
