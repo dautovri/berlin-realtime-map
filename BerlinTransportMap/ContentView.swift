@@ -39,7 +39,7 @@ struct ContentView: View {
 #if !os(tvOS)
                 .overlay {
                     if !hasSeenWelcome {
-                        WelcomeOverlayView { hasSeenWelcome = true }
+                        OnboardingView { hasSeenWelcome = true }
                             .transition(.opacity)
                     }
                 }
@@ -52,7 +52,7 @@ struct ContentView: View {
 #if !os(tvOS)
             .overlay {
                 if !hasSeenWelcome {
-                    WelcomeOverlayView { hasSeenWelcome = true }
+                    OnboardingView { hasSeenWelcome = true }
                         .transition(.opacity)
                 }
             }
