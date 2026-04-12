@@ -1,42 +1,94 @@
 # TODOS
 
-## WelcomeOverlay / Onboarding
+## OnboardingView (12-screen, v1.6+)
 
-### P1 — Active (v1.6)
+### P1 — Active (v1.7)
 
-- **WelcomeOverlay: ScrollView wrapper for Dynamic Type / landscape resilience**
-  CRITICAL implementation notes from /autoplan Design Review (2026-04-11):
-  1. Wrap only the inner headline+body VStack of each page. The CTA button MUST remain outside the scroll region (pinned at bottom of card), otherwise it scrolls out of reach.
-  2. Replace `Spacer(minLength: 0)` inside page structs with explicit `.padding(.vertical, 24)` — Spacer collapses to zero inside ScrollView.
-  3. Move entrance animation (`.offset(y: appeared ? 0 : 20)`) to the outer wrapper container, not the scroll content, to avoid scroll position conflicts.
-  Affects: `WelcomePageContent`, `WelcomeFeaturesContent`, `WelcomeLocationContent` in WelcomeOverlayView.swift
+- **Tip purchase: disabled state during async + error state on failure**
+  `OnboardingView.swift:1252-1278` — `TipNudgeScreen` buttons not disabled during `purchaseTip`. Double-tap possible. No loading indicator. No error message on failure.
+  Fix: `.disabled(store.state == .loading)` on tip buttons. Show inline error if `store.state == .failed`.
+  ⚠️ **This was a BLOCKING pre-v1.6 submission item** — fix before next submission.
 
-- **WelcomeOverlay: Location button loading guard (isRequesting)**
-  Add `@State var isRequesting = false` to WelcomeLocationContent. Disable "Allow Location" button while permission prompt is in flight. Reset on `authorizationStatus` change. Prevents double-tap firing two permission requests.
+- **Location permission denial: silent dead end on ProcessingScreen**
+  `OnboardingView.swift:897-903` — `onNext()` called unconditionally after 1.5s regardless of authorization result.
+  Fix: Check `CLAuthorizationStatus` on ProcessingScreen. If `.denied`, show: "Location off — map starts at Alexanderplatz. Enable in Settings → Privacy anytime."
 
-- **FeatureRow: @ScaledMetric for iconFrameSize**
-  `WelcomeOverlayView.swift` — `FeatureRow` has a hardcoded `frame(width: 44, height: 44)` for the SF Symbol icon. At Accessibility XXL Dynamic Type sizes the frame clips the icon. Fix: `@ScaledMetric private var iconFrameSize: CGFloat = 44` and use `.frame(width: iconFrameSize, height: iconFrameSize)`.
+- **MiniDepartureBoard: hardcoded sample data presented as "right now"**
+  `OnboardingView.swift:1122` — headline "Here's what's coming right now." over static `sampleDepartures`.
+  Fix: Change headline to "Example departures — your live data loads in the app."
+
+- **SwiftData save: conditional confirmation on ValueDeliveryScreen**
+  `OnboardingView.swift:1035` — "These go straight to your Favorites ✓" shown before save verified.
+  Fix: Re-query SwiftData on `ValueDeliveryScreen` appearance; show "Stops saved ✓" vs. "Couldn't save your stops — re-add them in Favorites."
+
+- **Back button missing from all onboarding screens**
+  12-step flow with no back navigation. Users who misselect on step 2 are stuck.
+  Fix: Add `<` chevron for `step > 0 && step != 8` (ProcessingScreen cannot go back).
+
+- **Delete dead WelcomeOverlayView.swift**
+  326 lines, zero Swift references post-PR #4. ContentView uses OnboardingView exclusively.
+  Fix: `git rm BerlinTransportMap/Views/WelcomeOverlayView.swift`
 
 ### P2 — Followup
 
-- **WelcomeOverlay: Version the `hasSeenWelcome` key**
-  Current key is `"hasSeenWelcome"`. If onboarding content changes significantly, rename to `"hasSeenWelcomeV2"` so existing users see the new content.
+- **Tinder card mechanic: wire swipe direction to personalization OR remove the screen**
+  `OnboardingView.swift:573-688` — swipe direction not stored; same action on both directions. `SolutionScreen` already handles personalization from `PainScreen`. Four screens of friction with no payoff.
+  Fix option A: Record swipe direction and feed into `selectedPains` for richer personalization.
+  Fix option B: Remove the TinderCardScreen entirely (simpler, more honest flow).
+  **TASTE DECISION — user decides at autoplan gate.**
 
-- **WelcomeOverlay: Staggered feature row animations**
-  Give each FeatureRow its own `appeared` state or use individual `.animation(.spring.delay(n))` modifiers for true stagger.
+- **TransitTypeScreen: persist selections OR remove the screen**
+  `OnboardingView.swift:786-853` — `selectedTransitTypes` collected but never persisted or used.
+  Screen promises "We'll highlight these on your map" — broken promise.
+  Fix option A: Persist to `@AppStorage("preferredTransitTypes")`, wire to a future map filter.
+  Fix option B: Remove the screen to eliminate the broken promise.
+  **TASTE DECISION — user decides at autoplan gate.**
 
-- **WelcomeOverlay: Already-granted location state**
-  If user granted location before (reinstall), page 3 shows "Allow Location" which does nothing. Detect `.authorizedWhenInUse` / `.authorizedAlways` on page 3 and show "You're all set" + skip straight to dismiss.
+- **hasSeenWelcome key rename to hasSeenOnboardingV2**
+  Existing users have `hasSeenWelcome = true` → skip the new 12-screen flow forever.
+  Renaming would re-show onboarding to all retained users (good re-engagement OR annoying).
+  **TASTE DECISION — user decides at autoplan gate.**
 
-- **WelcomeOverlay: Features heading scale**
-  `WelcomeFeaturesContent` heading uses `.headline` (same weight as FeatureRow titles). Use `.title.bold()` for the section heading to create visual hierarchy.
+- **Hardcoded font sizes: replace with Dynamic Type**
+  Multiple screens use `.font(.system(size: 34, weight: .bold))` / `.font(.system(size: 30, weight: .bold))`.
+  Fix: Replace with `.font(.largeTitle.bold())` / `.font(.title.bold())`. Delay badge: add `.monospacedDigit()`.
 
-- **TransitBadge: Fixed frame clips at AX type**
-  `TransitBadge` has hardcoded `frame(width: 36, height: 36)`. Use `@ScaledMetric` or padding-based sizing to prevent clipping at Accessibility XXL.
+- **CLLocationManager: wrap in @Observable @MainActor class**
+  `OnboardingView.swift:220` — `CLLocationManager` passed as non-Sendable into child struct. Safe today; will error at Swift 6 strict concurrency.
+  Fix: `@Observable @MainActor final class LocationPermissionManager { let manager = CLLocationManager() }`
 
-- **WelcomeOverlay: Unit test harness**
-  No unit tests exist for any onboarding flow. Add tests for: first-launch gate (`hasSeenWelcome`), page navigation, location permission guard.
-  **Deferred from:** /autoplan (2026-04-11, P3 — separate sprint)
+- **saveSelectedStops: add idempotency guard**
+  Add `@State private var stopsSaved = false` guard in OnboardingView. Currently safe (called once at step==11) but defensively correct.
+
+- **ProcessingScreen: replace try? with Task.isCancelled check**
+  `OnboardingView.swift:~965` — `try? await Task.sleep(...)` silently swallows cancellation.
+  Fix: `try await Task.sleep(...) ; guard !Task.isCancelled else { return }`
+
+- **Unit test harness for onboarding**
+  No unit tests exist. Critical paths: `hasSeenWelcome` gate, stop save, location permission guard, tip purchase success/failure.
+  **Deferred from:** /autoplan (2026-04-13, P3 — separate sprint)
+
+- **ContentView #Preview: add ModelContainer**
+  `ContentView` `#Preview` block crashes without `.modelContainer(for: [TransportStopFavorite.self], inMemory: true)`.
+
+## Analytics
+
+### P2 — Active
+
+- **Review v1.5 onboarding funnel data before locking v1.7 scope**
+  v1.5 had 3-screen onboarding with analytics. v1.6 has 12 screens. No baseline comparison done.
+  Pull funnel data from ASC + any in-app events. If 3-screen completion was >80%, 12 screens may hurt.
+  **Flagged by:** /autoplan CEO review (2026-04-13)
+
+- **Define and instrument "aha moment"**
+  First successful departure lookup after onboarding is the activation event. Instrument it.
+  Build a 30-day retention check: what % of users who complete onboarding return on day 7?
+  **Flagged by:** /autoplan CEO review (2026-04-13)
+
+- **Post-onboarding activation path (first 60 seconds after onboarding)**
+  What does the user see? Does the map load quickly? If VBB API is slow, no guidance exists.
+  Define: what is the empty state on first map load? What does no-location look like?
+  **Flagged by:** /autoplan CEO review (2026-04-13)
 
 ## TransportMap
 
@@ -88,11 +140,12 @@
 
 ## Infrastructure / Risk
 
-### P3 — Strategic
+### P2 — Elevated (was P3)
 
-- **VBB API resilience**
-  `v6.vbb.transport.rest` is community-hosted by @derhuerst with no SLA. If the API changes or rate-limits, all departures break for all users. Options: (a) negotiate VBB partnership, (b) mirror via GTFS-RT official feed, (c) add offline fallback with last-known data. This is the existential risk for the app.
-  **Flagged by:** /autoplan CEO review (2026-04-11)
+- **VBB API resilience — PROTOTYPE GTFS-RT FALLBACK**
+  `v6.vbb.transport.rest` is community-hosted by @derhuerst with no SLA. If the API changes, rate-limits, or goes dark, all departures break for all users. Options: (a) negotiate VBB partnership, (b) mirror via GTFS-RT official feed, (c) add offline fallback with last-known data.
+  **ELEVATED P3→P2 by:** /autoplan CEO review (2026-04-13). Existential dependency; prototype GTFS-RT fallback in next sprint.
+  **Previously flagged by:** /autoplan CEO review (2026-04-11)
 
 - **Portfolio consolidation: MyStop Berlin + Berlin Transport Map**
   Two apps in the same portfolio targeting Berlin transit. Consider whether to consolidate or differentiate more clearly (real-time positions vs stop departures). Bring to /office-hours.
