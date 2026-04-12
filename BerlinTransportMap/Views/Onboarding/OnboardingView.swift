@@ -55,32 +55,6 @@ enum OnboardingPain: String, CaseIterable, Hashable {
     }
 }
 
-enum OnboardingTransitType: String, CaseIterable, Hashable {
-    case uBahn, sBahn, tram, bus, regional, ferry
-
-    var emoji: String {
-        switch self {
-        case .uBahn: return "🔵"
-        case .sBahn: return "🟢"
-        case .tram: return "🔴"
-        case .bus: return "🟣"
-        case .regional: return "🚂"
-        case .ferry: return "🚢"
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .uBahn: return "U-Bahn"
-        case .sBahn: return "S-Bahn"
-        case .tram: return "Tram"
-        case .bus: return "Bus"
-        case .regional: return "Regional (RE/RB)"
-        case .ferry: return "Ferry"
-        }
-    }
-}
-
 struct OnboardingStop: Identifiable, Hashable {
     let id: String
     let name: String
@@ -134,14 +108,6 @@ extension OnboardingStop {
             ]
         }
     }
-}
-
-// MARK: - Tinder Card State
-private struct TinderCard {
-    let text: String
-    var offset: CGSize = .zero
-    var rotation: Double = 0
-    var isGone = false
 }
 
 // MARK: - Progress Bar
@@ -216,7 +182,6 @@ struct OnboardingView: View {
     // User selections
     @State private var selectedGoal: OnboardingGoal? = nil
     @State private var selectedPains: Set<OnboardingPain> = []
-    @State private var selectedTransitTypes: Set<OnboardingTransitType> = []
     @State private var selectedStops: [OnboardingStop] = []
     @State private var locationManager = CLLocationManager()
 
@@ -225,7 +190,7 @@ struct OnboardingView: View {
     @State private var processingComplete = false
 
     private let primaryBlue = Color(hex: "#115D97")
-    private let totalProgressScreens = 10
+    private let totalProgressScreens = 8
 
     var body: some View {
         ZStack {
@@ -234,7 +199,7 @@ struct OnboardingView: View {
 
             VStack(spacing: 0) {
                 // Progress bar (screens 1–10, i.e. steps 1–10)
-                if step > 0 && step <= 10 {
+                if step > 0 && step <= 8 {
                     OnboardingProgressBar(current: step, total: totalProgressScreens)
                         .padding(.top, 16)
                         .padding(.bottom, 8)
@@ -247,13 +212,11 @@ struct OnboardingView: View {
                     case 1:  GoalScreen(selected: $selectedGoal, onNext: { advance() })
                     case 2:  PainScreen(selected: $selectedPains, onNext: { advance() })
                     case 3:  SocialProofScreen(onNext: { advance() })
-                    case 4:  TinderCardsScreen(onNext: { advance() })
-                    case 5:  SolutionScreen(pains: selectedPains, onNext: { advance() })
-                    case 6:  TransitTypeScreen(selected: $selectedTransitTypes, onNext: { advance() })
-                    case 7:  LocationPrimingScreen(locationManager: locationManager, onNext: { advance() })
-                    case 8:  ProcessingScreen(isComplete: $processingComplete, onComplete: { advance() })
-                    case 9:  DemoScreen(selected: $selectedStops, onNext: { advance() })
-                    case 10: ValueDeliveryScreen(stops: selectedStops, onNext: { advance() })
+                    case 4:  SolutionScreen(pains: selectedPains, onNext: { advance() })
+                    case 5:  LocationPrimingScreen(locationManager: locationManager, onNext: { advance() })
+                    case 6:  ProcessingScreen(isComplete: $processingComplete, onComplete: { advance() })
+                    case 7:  DemoScreen(selected: $selectedStops, onNext: { advance() })
+                    case 8:  ValueDeliveryScreen(stops: selectedStops, onNext: { advance() })
                     default: TipNudgeScreen(onDismiss: { finish() })
                     }
                 }
@@ -265,7 +228,7 @@ struct OnboardingView: View {
         }
         .animation(reduceMotion ? .none : .smooth(duration: 0.35), value: step)
         .task(id: processingComplete) {
-            if step == 8 && !processingComplete {
+            if step == 6 && !processingComplete {
                 try? await Task.sleep(for: .seconds(2.5))
                 processingComplete = true
             }
@@ -277,7 +240,7 @@ struct OnboardingView: View {
             step += 1
         }
         // Save demo stops to Favorites when leaving demo screen
-        if step == 11 {
+        if step == 9 {
             saveSelectedStops()
         }
     }
@@ -568,150 +531,7 @@ private struct SocialProofScreen: View {
     }
 }
 
-// MARK: - Screen 5: Tinder Cards
-
-private struct TinderCardsScreen: View {
-    let onNext: () -> Void
-    @State private var cardIndex = 0
-    @State private var dragOffset: CGSize = .zero
-    @State private var isAdvancing = false
-
-    private let cards = [
-        "I've stood at the stop for 10 minutes wondering if the bus just left or if it's still coming.",
-        "I've missed a connection because the board said '1 min' but the train was already gone.",
-        "I've refreshed Google Maps 5 times hoping for an update that never came.",
-        "I've had to sprint across a platform because I had no idea the next train was only 30 seconds away.",
-    ]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Which of these\nsounds familiar?")
-                    .font(.system(size: 30, weight: .bold))
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.white)
-                Text("Swipe right if it's happened to you.")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.75))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 24)
-
-            Spacer()
-
-            // Card stack
-            ZStack {
-                ForEach(Array(cards.enumerated().reversed()), id: \.offset) { idx, text in
-                    if idx >= cardIndex {
-                        TinderCardView(
-                            text: text,
-                            isTop: idx == cardIndex,
-                            stackOffset: CGFloat((idx - cardIndex) * 6),
-                            dragOffset: idx == cardIndex ? dragOffset : .zero
-                        )
-                        .gesture(idx == cardIndex ? dragGesture : nil)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 24)
-
-            Spacer()
-
-            HStack(spacing: 32) {
-                Button {
-                    nextCard()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.title2.bold())
-                        .foregroundStyle(.white.opacity(0.6))
-                        .frame(width: 60, height: 60)
-                        .background(Color.white.opacity(0.15), in: Circle())
-                }
-                .accessibilityLabel("Doesn't sound like me")
-
-                Button {
-                    nextCard()
-                } label: {
-                    Image(systemName: "checkmark")
-                        .font(.title2.bold())
-                        .foregroundStyle(.white)
-                        .frame(width: 60, height: 60)
-                        .background(Color.white.opacity(0.25), in: Circle())
-                }
-                .accessibilityLabel("Yes, this is me")
-            }
-            .padding(.bottom, 48)
-        }
-    }
-
-    private var dragGesture: some Gesture {
-        DragGesture()
-            .onChanged { drag in
-                dragOffset = drag.translation
-            }
-            .onEnded { drag in
-                if abs(drag.translation.width) > 80 {
-                    withAnimation(.spring(duration: 0.3)) {
-                        dragOffset = CGSize(width: drag.translation.width * 3, height: drag.translation.height)
-                    }
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .seconds(0.3))
-                        nextCard()
-                    }
-                } else {
-                    withAnimation(.spring(duration: 0.4)) {
-                        dragOffset = .zero
-                    }
-                }
-            }
-    }
-
-    private func nextCard() {
-        guard !isAdvancing else { return }
-        isAdvancing = true
-        withAnimation(.spring(duration: 0.25)) {
-            dragOffset = .zero
-        }
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.1))
-            if cardIndex < cards.count - 1 {
-                withAnimation { cardIndex += 1 }
-                isAdvancing = false
-            } else {
-                onNext()
-            }
-        }
-    }
-}
-
-private struct TinderCardView: View {
-    let text: String
-    let isTop: Bool
-    let stackOffset: CGFloat
-    let dragOffset: CGSize
-
-    var rotation: Double { Double(dragOffset.width / 20) }
-
-    var body: some View {
-        Text("\u{201C}\(text)\u{201D}")
-            .font(.title3.bold())
-            .fontDesign(.rounded)
-            .foregroundStyle(Color(hex: "#115D97"))
-            .multilineTextAlignment(.center)
-            .padding(28)
-            .frame(maxWidth: .infinity, minHeight: 200)
-            .background(.white, in: .rect(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
-            .offset(x: dragOffset.width, y: dragOffset.height + stackOffset)
-            .rotationEffect(.degrees(isTop ? rotation : 0))
-            .animation(.spring(duration: 0.4), value: stackOffset)
-    }
-}
-
-// MARK: - Screen 6: Solution
+// MARK: - Screen 5: Solution
 
 private struct SolutionScreen: View {
     let pains: Set<OnboardingPain>
@@ -783,76 +603,7 @@ private struct SolutionScreen: View {
     }
 }
 
-// MARK: - Screen 7: Transit Type Preference
-
-private struct TransitTypeScreen: View {
-    @Binding var selected: Set<OnboardingTransitType>
-    let onNext: () -> Void
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("What do you\nride most?")
-                            .font(.system(size: 30, weight: .bold))
-                            .fontDesign(.rounded)
-                            .foregroundStyle(.white)
-                        Text("We'll highlight these on your map.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.75))
-                    }
-                    .padding(.top, 24)
-
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(OnboardingTransitType.allCases, id: \.self) { type in
-                            Button {
-                                if selected.contains(type) {
-                                    selected.remove(type)
-                                } else {
-                                    selected.insert(type)
-                                }
-                            } label: {
-                                VStack(spacing: 8) {
-                                    Text(type.emoji)
-                                        .font(.title)
-                                    Text(type.label)
-                                        .font(.subheadline.bold())
-                                        .fontDesign(.rounded)
-                                        .foregroundStyle(selected.contains(type) ? .white : .primary)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 20)
-                                .background(
-                                    selected.contains(type) ? Color(hex: "#115D97") : Color(.systemGray6),
-                                    in: .rect(cornerRadius: 16)
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .animation(.spring(duration: 0.25), value: selected.contains(type))
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-            }
-
-            Button(action: onNext) {
-                Text("Set up my map →")
-                    .font(.headline)
-                    .foregroundStyle(Color(hex: "#115D97"))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 17)
-                    .background(.white, in: .rect(cornerRadius: 16))
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
-        }
-    }
-}
-
-// MARK: - Screen 8: Location Priming
+// MARK: - Screen 6: Location Priming
 
 private struct LocationPrimingScreen: View {
     let locationManager: CLLocationManager
@@ -1275,6 +1026,7 @@ private struct TipNudgeScreen: View {
                             .background(.white, in: .rect(cornerRadius: 14))
                         }
                         .buttonStyle(.plain)
+                        .disabled(store.state == .loading)
                     }
                 }
             }

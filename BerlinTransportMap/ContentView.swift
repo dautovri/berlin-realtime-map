@@ -3,7 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @AppStorage("darkMode") private var darkMode = false
     @AppStorage("useSystemTheme") private var useSystemTheme = true
-    @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    @AppStorage("hasSeenOnboardingV2") private var hasSeenOnboardingV2 = false
 
 #if DEBUG
     private var isAboutVerificationMode: Bool {
@@ -38,12 +38,12 @@ struct ContentView: View {
                 .preferredColorScheme(activeColorScheme)
 #if !os(tvOS)
                 .overlay {
-                    if !hasSeenWelcome {
-                        OnboardingView { hasSeenWelcome = true }
+                    if !hasSeenOnboardingV2 {
+                        OnboardingView { hasSeenOnboardingV2 = true }
                             .transition(.opacity)
                     }
                 }
-                .animation(.easeInOut(duration: 0.4), value: hasSeenWelcome)
+                .animation(.easeInOut(duration: 0.4), value: hasSeenOnboardingV2)
 #endif
         }
 #else
@@ -51,12 +51,12 @@ struct ContentView: View {
             .preferredColorScheme(activeColorScheme)
 #if !os(tvOS)
             .overlay {
-                if !hasSeenWelcome {
-                    OnboardingView { hasSeenWelcome = true }
+                if !hasSeenOnboardingV2 {
+                    OnboardingView { hasSeenOnboardingV2 = true }
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.4), value: hasSeenWelcome)
+            .animation(.easeInOut(duration: 0.4), value: hasSeenOnboardingV2)
 #endif
 #endif
     }
