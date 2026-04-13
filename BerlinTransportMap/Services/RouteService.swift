@@ -17,15 +17,10 @@ final class RouteService {
     func planRoute(start: TransportStop, end: TransportStop, mode: TransportMode, includeBikes: Bool = false) async throws -> Route {
         try Task.checkCancellation()
 
-        guard let fromEncoded = start.id.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let toEncoded = end.id.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            throw RouteError.invalidRequest
-        }
-
-        var components = URLComponents(string: "\(baseURL)/trips")!
+        var components = URLComponents(string: "\(baseURL)/journeys")!
         components.queryItems = [
-            URLQueryItem(name: "from", value: fromEncoded),
-            URLQueryItem(name: "to", value: toEncoded),
+            URLQueryItem(name: "from", value: start.id),
+            URLQueryItem(name: "to", value: end.id),
             URLQueryItem(name: "results", value: "3"),
             URLQueryItem(name: "departure", value: "now")
         ]
@@ -44,35 +39,46 @@ final class RouteService {
         try Task.checkCancellation()
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let tripsResponse = try decoder.decode(VBBTripsResponse.self, from: data)
+        let journeysResponse = try decoder.decode(VBBJourneysResponse.self, from: data)
 
-        guard let firstTrip = tripsResponse.trips.first else {
+        guard let firstJourney = journeysResponse.journeys.first else {
             throw RouteError.noRoutesFound
         }
 
-        return Route(from: firstTrip)
+        return Route(from: firstJourney)
     }
 }
 
-struct VBBTripsResponse: Decodable {
-    let trips: [VBBTrip]
+// MARK: - VBB API Models (/journeys)
+
+struct VBBJourneysResponse: Decodable {
+    let journeys: [VBBJourney]
 }
 
-struct VBBTrip: Decodable {
-    let id: String?
-    let startTime: Date?
-    let endTime: Date?
-    let duration: Int?
-    let legs: [VBBLeg]?
+struct VBBJourney: Decodable {
+    let legs: [VBBJourneyLeg]
 }
 
-struct VBBLeg: Decodable {
+struct VBBJourneyLeg: Decodable {
+    let origin: VBBJourneyStop?
+    let destination: VBBJourneyStop?
+    let departure: String?
+    let plannedDeparture: String?
+    let arrival: String?
+    let plannedArrival: String?
     let line: VBBLine?
-    let departure: VBBStopTime?
-    let arrival: VBBStopTime?
-    let distance: Int?
-    let polyline: String?
+    let walking: Bool?
+}
+
+struct VBBJourneyStop: Decodable {
+    let id: String?
+    let name: String?
+    let location: VBBJourneyCoordinate?
+}
+
+struct VBBJourneyCoordinate: Decodable {
+    let latitude: Double?
+    let longitude: Double?
 }
 
 struct VBBLine: Decodable {
@@ -83,15 +89,7 @@ struct VBBLine: Decodable {
     let operatorCode: String?
 }
 
-struct VBBStop: Decodable {
-    let id: String?
-    let name: String?
-}
-
-struct VBBStopTime: Decodable {
-    let stop: VBBStop?
-    let time: String?
-}
+// MARK: - Domain Models
 
 enum TransportMode: String, CaseIterable, Identifiable {
     case train = "Train"
@@ -113,12 +111,15 @@ struct Route {
         legs.flatMap { $0.coordinates }
     }
 
-    init(from vbbTrip: VBBTrip) {
-        self.id = vbbTrip.id ?? UUID().uuidString
-        self.totalDuration = TimeInterval(vbbTrip.duration ?? 0)
-        self.departureTime = vbbTrip.startTime ?? Date()
-        self.arrivalTime = vbbTrip.endTime ?? Date()
-        self.legs = vbbTrip.legs?.compactMap { RouteLeg(from: $0) } ?? []
+    init(from vbbJourney: VBBJourney) {
+        self.id = UUID().uuidString
+        self.legs = vbbJourney.legs.compactMap { RouteLeg(from: $0) }
+
+        let dep = self.legs.first?.departureTime ?? Date()
+        let arr = self.legs.last?.arrivalTime ?? Date()
+        self.departureTime = dep
+        self.arrivalTime = arr
+        self.totalDuration = max(arr.timeIntervalSince(dep), 0)
     }
 
     init(id: String, legs: [RouteLeg], totalDuration: TimeInterval, departureTime: Date, arrivalTime: Date) {
@@ -139,36 +140,35 @@ struct RouteLeg {
     let line: TransportLine?
     let coordinates: [CLLocationCoordinate2D]
 
-    init?(from vbbLeg: VBBLeg) {
-        self.type = vbbLeg.line != nil ? "publicTransport" : "walking"
+    init?(from vbbLeg: VBBJourneyLeg) {
+        self.type = (vbbLeg.walking == true) ? "walking" : "publicTransport"
 
-        if let depStop = vbbLeg.departure?.stop {
-            self.departureStop = TransportStop(
-                id: depStop.id ?? UUID().uuidString,
-                name: depStop.name ?? "Unknown",
-                latitude: 0,
-                longitude: 0
+        self.departureStop = vbbLeg.origin.map { stop in
+            TransportStop(
+                id: stop.id ?? UUID().uuidString,
+                name: stop.name ?? "Unknown",
+                latitude: stop.location?.latitude ?? 0,
+                longitude: stop.location?.longitude ?? 0
             )
-        } else {
-            self.departureStop = nil
         }
 
-        if let arrStop = vbbLeg.arrival?.stop {
-            self.arrivalStop = TransportStop(
-                id: arrStop.id ?? UUID().uuidString,
-                name: arrStop.name ?? "Unknown",
-                latitude: 0,
-                longitude: 0
+        self.arrivalStop = vbbLeg.destination.map { stop in
+            TransportStop(
+                id: stop.id ?? UUID().uuidString,
+                name: stop.name ?? "Unknown",
+                latitude: stop.location?.latitude ?? 0,
+                longitude: stop.location?.longitude ?? 0
             )
-        } else {
-            self.arrivalStop = nil
         }
 
-        self.line = vbbLeg.line.map { line in
-            TransportLine(vbbLineId: line.id, vbbLineName: line.name, vbbLinePublicCode: line.publicCode, vbbLineProduct: line.product)
+        let depStr = vbbLeg.departure ?? vbbLeg.plannedDeparture
+        let arrStr = vbbLeg.arrival ?? vbbLeg.plannedArrival
+        self.departureTime = parseISO8601(depStr)
+        self.arrivalTime = parseISO8601(arrStr)
+
+        self.line = vbbLeg.line.map { l in
+            TransportLine(vbbLineId: l.id, vbbLineName: l.name, vbbLinePublicCode: l.publicCode, vbbLineProduct: l.product)
         }
-        self.departureTime = nil
-        self.arrivalTime = nil
         self.coordinates = []
     }
 
@@ -182,6 +182,19 @@ struct RouteLeg {
         self.coordinates = coordinates
     }
 }
+
+// MARK: - Date Parsing
+
+private func parseISO8601(_ string: String?) -> Date? {
+    guard let string else { return nil }
+    // Try with fractional seconds first, then without
+    let withFrac = ISO8601DateFormatter()
+    withFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = withFrac.date(from: string) { return date }
+    return ISO8601DateFormatter().date(from: string)
+}
+
+// MARK: - Errors
 
 enum RouteError: LocalizedError {
     case noRoutesFound
