@@ -214,7 +214,7 @@ struct OnboardingView: View {
                     case 3:  SocialProofScreen(onNext: { advance() })
                     case 4:  SolutionScreen(pains: selectedPains, onNext: { advance() })
                     case 5:  LocationPrimingScreen(locationManager: locationManager, onNext: { advance() })
-                    case 6:  ProcessingScreen(isComplete: $processingComplete, onComplete: { advance() })
+                    case 6:  ProcessingScreen(isComplete: $processingComplete, onComplete: { advance() }, locationManager: locationManager)
                     case 7:  DemoScreen(selected: $selectedStops, onNext: { advance() })
                     case 8:  ValueDeliveryScreen(stops: selectedStops, onNext: { advance() })
                     default: TipNudgeScreen(onDismiss: { finish() })
@@ -224,6 +224,29 @@ struct OnboardingView: View {
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
+            }
+
+            // Back button — shown on all steps except Welcome (0) and Processing (6)
+            if step > 0 && step != 6 {
+                VStack {
+                    HStack {
+                        Button {
+                            withAnimation {
+                                step -= 1
+                            }
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.8))
+                                .padding(12)
+                                .contentShape(Rectangle())
+                        }
+                        Spacer()
+                    }
+                    .padding(.leading, 8)
+                    .padding(.top, 8)
+                    Spacer()
+                }
             }
         }
         .animation(reduceMotion ? .none : .smooth(duration: 0.35), value: step)
@@ -695,6 +718,7 @@ private struct LocationBullet: View {
 private struct ProcessingScreen: View {
     @Binding var isComplete: Bool
     let onComplete: () -> Void
+    let locationManager: CLLocationManager
 
     private let steps = [
         "Loading Berlin transit network",
@@ -704,6 +728,11 @@ private struct ProcessingScreen: View {
     @State private var completedSteps: Set<Int> = []
     @State private var pulse = false
     @State private var animationTask: Task<Void, Never>?
+
+    private var locationDenied: Bool {
+        locationManager.authorizationStatus == .denied
+            || locationManager.authorizationStatus == .restricted
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -743,11 +772,27 @@ private struct ProcessingScreen: View {
                         }
                     }
                 }
+
+                if locationDenied {
+                    HStack(spacing: 8) {
+                        Image(systemName: "location.slash.fill")
+                            .font(.subheadline)
+                        Text("Location off — map starts at Alexanderplatz.\nEnable in Settings → Privacy anytime.")
+                            .font(.caption)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .foregroundStyle(.white.opacity(0.75))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.white.opacity(0.12), in: .rect(cornerRadius: 10))
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
             }
             .padding(.horizontal, 32)
 
             Spacer()
         }
+        .animation(.easeInOut(duration: 0.3), value: locationDenied)
         .onAppear { animateSteps() }
         .onDisappear { animationTask?.cancel() }
         .onChange(of: isComplete) { _, done in

@@ -8,7 +8,7 @@ enum DataSource {
 }
 
 private enum MapSheet: Identifiable {
-    case about, help, settings, favorites, developerInfo
+    case about, help, settings, favorites, developerInfo, journeyPlanner
     var id: Self { self }
 }
 
@@ -92,6 +92,7 @@ struct TransportMapView: View {
     @State private var showingCacheInfo = false
     @State private var events: [Event] = []
     @State private var selectedEvent: Event?
+    @State private var dismissedEventsCard = false
 
     @State private var route: Route?
     @State private var routeAccentColor: Color = .blue
@@ -101,12 +102,26 @@ struct TransportMapView: View {
 
     @State private var activeSheet: MapSheet?
     @AppStorage("vehicleFetchCount") private var vehicleFetchCount = 0
+    @AppStorage("hasSeenOnboardingV2") private var hasSeenOnboardingV2 = false
     @Environment(\.requestReview) private var requestReview
 
     private let services = ServiceContainer.shared
     private let offlineDatabase = OfflineStopsDatabase.shared
     
     var isOffline: Bool { !services.networkMonitor.isConnected }
+
+    private var activeEventsCardEvent: Event? {
+        guard let center = currentRegion?.center else { return nil }
+        let now = Date()
+        let fourHoursLater = now.addingTimeInterval(4 * 3600)
+        return events.first { event in
+            let eventCoord = CLLocationCoordinate2D(latitude: event.latitude, longitude: event.longitude)
+            let mapCenter = CLLocation(latitude: center.latitude, longitude: center.longitude)
+            let eventLoc = CLLocation(latitude: eventCoord.latitude, longitude: eventCoord.longitude)
+            let distanceKm = mapCenter.distance(from: eventLoc) / 1000
+            return distanceKm <= 2.0 && event.date >= now && event.date <= fourHoursLater
+        }
+    }
 
     private var isZoomedIn: Bool {
         guard let region = currentRegion else { return false }
@@ -308,6 +323,9 @@ struct TransportMapView: View {
                     }
                 }
             }
+            .task {
+                await loadEvents()
+            }
             .onDisappear {
                 stopsLoadTask?.cancel()
                 vehiclesLoadTask?.cancel()
@@ -379,6 +397,25 @@ struct TransportMapView: View {
                     scheduleVehicleLoad(for: newRegion, delay: .milliseconds(120))
                 }
             }
+            .overlay(alignment: .top) {
+                if isOffline {
+                    OfflineBanner()
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let event = activeEventsCardEvent, !dismissedEventsCard {
+                    EventsCard(event: event) {
+                        withAnimation { dismissedEventsCard = true }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 60)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: isOffline)
+            .animation(.easeInOut(duration: 0.3), value: activeEventsCardEvent?.id)
             .navigationTitle("Berlin Transport")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -397,6 +434,12 @@ struct TransportMapView: View {
                         activeSheet = .favorites
                     } label: {
                         Label("Favorites", systemImage: "star")
+                    }
+                    Spacer()
+                    Button {
+                        activeSheet = .journeyPlanner
+                    } label: {
+                        Label("Plan", systemImage: "map")
                     }
                     Spacer()
                     Menu {
@@ -471,6 +514,16 @@ struct TransportMapView: View {
                 case .developerInfo:
                     DeveloperInfoSheet()
                         .presentationDetents([.medium])
+                case .journeyPlanner:
+                    JourneyPlannerSheet(
+                        transportService: services.transportService,
+                        routeService: services.routeService,
+                        onRouteSelected: { selectedRoute in
+                            self.route = selectedRoute
+                            focusCamera(on: selectedRoute.coordinates)
+                            activeSheet = nil
+                        }
+                    )
                 }
             }
     }
@@ -519,6 +572,7 @@ struct TransportMapView: View {
     private func loadDepartures(for stop: TransportStop) async {
         do {
             let departures = try await services.vehicleRadarService.fetchDepartures(stopId: stop.vbbStopId)
+            guard selectedStop?.id == stop.id else { isLoadingDepartures = false; return }
             restDepartures = departures
         } catch {
             errorMessage = "Failed to load departures: \(error.localizedDescription)"
@@ -648,8 +702,8 @@ struct TransportMapView: View {
 
             updateVehiclesWithAnimation(fetchedVehicles)
             dataSource = .network
-            vehicleFetchCount += 1
-            if vehicleFetchCount == 5 || vehicleFetchCount == 20 {
+            if vehicleFetchCount < 21 { vehicleFetchCount += 1 }
+            if hasSeenOnboardingV2 && (vehicleFetchCount == 5 || vehicleFetchCount == 20) {
                 requestReview()
             }
             let anchored = fetchedVehicles.filter { $0.nextStopCoordinate != nil && $0.nextStopArrival != nil }.count
@@ -962,6 +1016,306 @@ struct TransportMapView: View {
     }
 }
 
+// MARK: - Offline Banner
+
+private struct OfflineBanner: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "wifi.slash")
+                .font(.caption.bold())
+            Text("Offline — showing cached data")
+                .font(.caption.bold())
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color(hex: "#8A8A8E"), in: Capsule())
+        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+    }
+}
+
+// MARK: - Events Card
+
+private struct EventsCard: View {
+    let event: Event
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .font(.title3)
+                .foregroundStyle(Color(hex: "#6B4E9E"))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(event.name)
+                    .font(.subheadline.bold())
+                    .lineLimit(1)
+                Text("\(event.location) · \(event.date.formatted(.dateTime.hour().minute())) — expect delays nearby")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.caption.bold())
+                    .foregroundStyle(.secondary)
+                    .padding(6)
+                    .contentShape(Rectangle())
+            }
+        }
+        .padding(14)
+        .background(.regularMaterial, in: .rect(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.1), radius: 8, y: 2)
+    }
+}
+
+// MARK: - Journey Planner Sheet
+
+struct JourneyPlannerSheet: View {
+    let transportService: TransportService
+    let routeService: RouteService
+    let onRouteSelected: (Route) -> Void
+
+    @State private var fromQuery = ""
+    @State private var toQuery = ""
+    @State private var fromStop: TransportStop?
+    @State private var toStop: TransportStop?
+    @State private var fromResults: [TransportStop] = []
+    @State private var toResults: [TransportStop] = []
+    @State private var isSearchingFrom = false
+    @State private var isSearchingTo = false
+    @State private var route: Route?
+    @State private var isPlanning = false
+    @State private var errorMessage: String?
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    stopPicker(
+                        label: "From",
+                        query: $fromQuery,
+                        selected: $fromStop,
+                        results: $fromResults,
+                        isSearching: $isSearchingFrom,
+                        icon: "circle.fill",
+                        iconColor: Color(hex: "#00A550")
+                    )
+
+                    stopPicker(
+                        label: "To",
+                        query: $toQuery,
+                        selected: $toStop,
+                        results: $toResults,
+                        isSearching: $isSearchingTo,
+                        icon: "mappin.circle.fill",
+                        iconColor: Color(hex: "#C41E3A")
+                    )
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    if let route {
+                        routeResultView(route)
+                    }
+
+                    Button {
+                        Task { await planJourney() }
+                    } label: {
+                        HStack {
+                            if isPlanning {
+                                ProgressView()
+                                    .tint(.white)
+                                    .padding(.trailing, 4)
+                            }
+                            Text(isPlanning ? "Planning…" : "Plan Route")
+                                .font(.headline)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(canPlan ? Color.accentColor : Color.secondary.opacity(0.3), in: .rect(cornerRadius: 14))
+                        .foregroundStyle(.white)
+                    }
+                    .disabled(!canPlan || isPlanning)
+                }
+                .padding(20)
+            }
+            .navigationTitle("Plan Journey")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private var canPlan: Bool { fromStop != nil && toStop != nil }
+
+    private func stopPicker(
+        label: String,
+        query: Binding<String>,
+        selected: Binding<TransportStop?>,
+        results: Binding<[TransportStop]>,
+        isSearching: Binding<Bool>,
+        icon: String,
+        iconColor: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .foregroundStyle(iconColor)
+                    .font(.title3)
+
+                if let stop = selected.wrappedValue {
+                    HStack {
+                        Text(stop.name)
+                            .font(.subheadline.bold())
+                            .fontDesign(.rounded)
+                        Spacer()
+                        Button {
+                            selected.wrappedValue = nil
+                            query.wrappedValue = ""
+                            results.wrappedValue = []
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 12))
+                } else {
+                    TextField(label, text: query)
+                        .textFieldStyle(.plain)
+                        .padding(12)
+                        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 12))
+                        .onChange(of: query.wrappedValue) { _, q in
+                            Task { await searchStops(query: q, results: results, isSearching: isSearching) }
+                        }
+                }
+            }
+
+            if !results.wrappedValue.isEmpty && selected.wrappedValue == nil {
+                VStack(spacing: 0) {
+                    ForEach(results.wrappedValue.prefix(5)) { stop in
+                        Button {
+                            selected.wrappedValue = stop
+                            query.wrappedValue = stop.name
+                            results.wrappedValue = []
+                        } label: {
+                            HStack {
+                                Image(systemName: "tram.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 20)
+                                Text(stop.name)
+                                    .font(.subheadline)
+                                    .fontDesign(.rounded)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                        }
+                        if stop.id != results.wrappedValue.prefix(5).last?.id {
+                            Divider().padding(.leading, 44)
+                        }
+                    }
+                }
+                .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 12))
+            }
+        }
+    }
+
+    private func routeResultView(_ route: Route) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Route")
+                    .font(.headline)
+                Spacer()
+                let mins = Int(route.totalDuration / 60)
+                Text("\(mins) min")
+                    .font(.headline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(Array(route.legs.enumerated()), id: \.offset) { _, leg in
+                HStack(spacing: 10) {
+                    if let line = leg.line {
+                        Text(line.name ?? "?")
+                            .font(.caption.bold())
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color(hex: line.color ?? "#666666"), in: .rect(cornerRadius: 5))
+                            .foregroundStyle(.white)
+                    } else {
+                        Image(systemName: "figure.walk")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 30)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let dep = leg.departureStop {
+                            Text(dep.name)
+                                .font(.caption)
+                                .fontDesign(.rounded)
+                        }
+                        if let arr = leg.arrivalStop {
+                            Text("→ \(arr.name)")
+                                .font(.caption)
+                                .fontDesign(.rounded)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Button {
+                onRouteSelected(route)
+            } label: {
+                Text("Show on Map")
+                    .font(.subheadline.bold())
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.accentColor.opacity(0.15), in: .rect(cornerRadius: 12))
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
+    }
+
+    private func searchStops(query: String, results: Binding<[TransportStop]>, isSearching: Binding<Bool>) async {
+        guard query.count >= 2 else { results.wrappedValue = []; return }
+        isSearching.wrappedValue = true
+        defer { isSearching.wrappedValue = false }
+        results.wrappedValue = (try? await transportService.searchLocations(query: query)) ?? []
+    }
+
+    private func planJourney() async {
+        guard let from = fromStop, let to = toStop else { return }
+        isPlanning = true
+        errorMessage = nil
+        route = nil
+        defer { isPlanning = false }
+        do {
+            route = try await routeService.planRoute(start: from, end: to, mode: .subway)
+        } catch {
+            errorMessage = "Couldn't plan route — check your connection and try again."
+        }
+    }
+}
+
 private extension View {
     @ViewBuilder
     func transportMapFeedback(trigger: Int) -> some View {
@@ -1109,10 +1463,9 @@ struct RESTDepartureRow: View {
     let departure: RESTDeparture
     let predictionService: PredictionService
     let stop: TransportStop
-    
-    var predictedArrivalTime: Date? {
-        // Create a mock vehicle for prediction
-        let mockVehicle = Vehicle(
+
+    private var mockVehicle: Vehicle {
+        Vehicle(
             tripId: departure.tripId,
             line: departure.line,
             direction: departure.direction,
@@ -1120,7 +1473,6 @@ struct RESTDepartureRow: View {
             when: nil,
             nextStopovers: nil
         )
-        return predictionService.predictArrival(for: mockVehicle, at: stop)
     }
 
     var body: some View {
@@ -1148,6 +1500,8 @@ struct RESTDepartureRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                PredictionBadge(predictionService: predictionService, vehicle: mockVehicle, stop: stop)
             }
 
             Spacer()
@@ -1157,27 +1511,54 @@ struct RESTDepartureRow: View {
                     Text(time, style: .time)
                         .font(.subheadline)
                         .fontWeight(.medium)
+                        .monospacedDigit()
                 }
 
                 if let delay = departure.delay, delay > 0 {
-                    Text("+\(delay) min")
+                    Text("+\(delay / 60) min")
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color(hex: "#E8641A"))
                 } else if departure.cancelled == true {
                     Text("Cancelled")
                         .font(.caption)
-                        .foregroundStyle(.red)
-                }
-
-                // Predicted arrival time
-                if let predictedTime = predictedArrivalTime {
-                    Text("Predicted: \(predictedTime, style: .time)")
-                        .font(.caption)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color(hex: "#C41E3A"))
                 }
             }
         }
         .opacity(departure.cancelled == true ? 0.5 : 1.0)
+    }
+}
+
+private struct PredictionBadge: View {
+    let predictionService: PredictionService
+    let vehicle: Vehicle
+    let stop: TransportStop
+
+    @State private var info: (confidence: Double, averageDelayMinutes: Double)?
+
+    var body: some View {
+        Group {
+            if let info, info.confidence >= 0.5 {
+                let delayMin = Int(info.averageDelayMinutes.rounded())
+                if delayMin > 1 {
+                    badgeView(text: "Usually \(delayMin) min late", color: Color(hex: "#E8641A"))
+                } else if info.confidence >= 0.8 {
+                    badgeView(text: "Usually on time", color: Color(hex: "#00A550"))
+                }
+            }
+        }
+        .onAppear {
+            info = predictionService.predictionInfo(for: vehicle, at: stop)
+        }
+    }
+
+    private func badgeView(text: String, color: Color) -> some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundStyle(color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.12), in: .rect(cornerRadius: 4))
     }
 }
 

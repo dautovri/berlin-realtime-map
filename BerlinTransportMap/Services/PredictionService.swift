@@ -41,10 +41,27 @@ final class PredictionService {
         let dayOfWeek = calendar.component(.weekday, from: now)
         let hourOfDay = calendar.component(.hour, from: now)
         let lineName = vehicle.line?.displayName ?? "?"
-        
+
         let historical = storage.load(for: stop.id, lineName: lineName, dayOfWeek: dayOfWeek, hourOfDay: hourOfDay)
-        
+
         // Confidence based on number of data points (max at 10+)
         return min(Double(historical.count) / 10.0, 1.0)
+    }
+
+    /// Returns (confidence 0-1, averageDelayMinutes) for badge display, or nil when no data.
+    func predictionInfo(for vehicle: Vehicle, at stop: TransportStop) -> (confidence: Double, averageDelayMinutes: Double)? {
+        let now = Date()
+        let calendar = Calendar.current
+        let dayOfWeek = calendar.component(.weekday, from: now)
+        let hourOfDay = calendar.component(.hour, from: now)
+        let lineName = vehicle.line?.displayName ?? "?"
+
+        let historical = storage.load(for: stop.id, lineName: lineName, dayOfWeek: dayOfWeek, hourOfDay: hourOfDay)
+        guard !historical.isEmpty else { return nil }
+
+        let confidence = min(Double(historical.count) / 10.0, 1.0)
+        let totalDelay = historical.reduce(0) { $0 + $1.delayMinutes }
+        let averageDelay = Double(totalDelay) / Double(historical.count)
+        return (confidence, averageDelay)
     }
 }
