@@ -1,6 +1,7 @@
 import StoreKit
 import SwiftUI
 import MapKit
+import SwiftData
 
 enum DataSource {
     case network  // just successfully fetched
@@ -1403,6 +1404,7 @@ struct RESTDeparturesSheet: View {
     @Environment(\.modelContext) private var modelContext
     @State private var favoriteMessage: String?
     @State private var showingFavoriteAlert = false
+    @State private var isFavorite = false
 
     var body: some View {
         NavigationStack {
@@ -1432,8 +1434,9 @@ struct RESTDeparturesSheet: View {
                     Button {
                         addFavorite()
                     } label: {
-                        Label("Add Favorite", systemImage: "star")
+                        Label("Add Favorite", systemImage: isFavorite ? "star.fill" : "star")
                     }
+                    .disabled(isFavorite)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
@@ -1444,6 +1447,11 @@ struct RESTDeparturesSheet: View {
             .alert(favoriteMessage ?? "", isPresented: $showingFavoriteAlert) {
                 Button("OK", role: .cancel) { }
             }
+            .task(id: stop.id) {
+                let stopId = stop.id
+                let existing = try? modelContext.fetch(FetchDescriptor<Favorite>(predicate: #Predicate { $0.stopId == stopId }))
+                isFavorite = !(existing?.isEmpty ?? true)
+            }
         }
     }
 
@@ -1452,6 +1460,7 @@ struct RESTDeparturesSheet: View {
             let service = FavoritesService(modelContext: modelContext)
             try service.saveStopFavorite(name: stop.name, stop: stop)
             favoriteMessage = "Added to Favorites"
+            isFavorite = true
         } catch {
             favoriteMessage = "Failed to add favorite: \(error.localizedDescription)"
         }
