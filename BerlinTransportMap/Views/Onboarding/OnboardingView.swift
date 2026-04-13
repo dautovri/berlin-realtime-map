@@ -232,7 +232,14 @@ struct OnboardingView: View {
                     HStack {
                         Button {
                             withAnimation {
-                                step -= 1
+                                if step == 7 {
+                                    // Skip step 6 (ProcessingScreen) going back, and reset so it
+                                    // re-runs the 2.5s auto-advance next time step 6 is entered.
+                                    step = 5
+                                    processingComplete = false
+                                } else {
+                                    step -= 1
+                                }
                             }
                         } label: {
                             Image(systemName: "chevron.left")
@@ -828,7 +835,7 @@ private struct DemoScreen: View {
                     .font(.system(size: 30, weight: .bold))
                     .fontDesign(.rounded)
                     .foregroundStyle(.white)
-                Text(isDone ? "These go straight to your Favorites. ✓" : "Pick \(remaining) more \(remaining == 1 ? "stop" : "stops")")
+                Text(isDone ? "These go straight to your Favorites. ✓" : (selected.isEmpty ? "Pick 3 stops to continue" : "Pick \(remaining) more \(remaining == 1 ? "stop" : "stops")"))
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.8))
                     .animation(.spring(duration: 0.3), value: remaining)
