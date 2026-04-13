@@ -20,9 +20,7 @@
   9-step flow (post-cuts) with no back navigation. Users who misselect on step 2 are stuck.
   Fix: Add `<` chevron for `step > 0 && step != 6` (ProcessingScreen at step 6 cannot go back).
 
-- **Delete dead WelcomeOverlayView.swift**
-  326 lines, zero Swift references post-PR #4. ContentView uses OnboardingView exclusively.
-  Fix: `git rm BerlinTransportMap/Views/WelcomeOverlayView.swift`
+- ~~**Delete dead WelcomeOverlayView.swift**~~ Deleted by /qa on main (2026-04-13), commit `274c0ea`.
 
 ### P2 — Followup
 
@@ -159,6 +157,8 @@
 
 ## Completed
 
+- **JourneyPlannerSheet route shows '0 min', no legs** — Fixed by /qa on main (2026-04-13), commit `791b4fa`. RouteService called `/trips` (vehicle lookup) instead of `/journeys` (route planning). Fixed endpoint, response models, and duration computation from leg times.
+- **Duplicate stop favorites saved on onboarding** — Fixed by /qa on main (2026-04-13), commit `f45301c`. FavoritesService.saveStopFavorite had no dedup guard; added stopId predicate check before insert.
 - **ProcessingScreen permanently stuck** — Fixed by /qa on main (2026-04-13), commit `53dd2b3`. `.task(id: processingComplete)` fired once at launch (step=0), never re-ran at step 6. Fixed to `.task(id: step)`.
 - **MiniDepartureBoard fake 'right now' headline** — Fixed by /qa on main (2026-04-13), commit `547c014`.
 - **TinderCardsScreen + TransitTypeScreen cut** — Completed (2026-04-13), commit `0030fc1`.
