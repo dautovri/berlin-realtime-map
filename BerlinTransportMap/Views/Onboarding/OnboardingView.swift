@@ -869,7 +869,7 @@ private struct ValueDeliveryScreen: View {
                     .font(.system(size: 30, weight: .bold))
                     .fontDesign(.rounded)
                     .foregroundStyle(.white)
-                Text("Here's what's coming right now.")
+                Text("Example departures — your live data loads in the app.")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.75))
             }
