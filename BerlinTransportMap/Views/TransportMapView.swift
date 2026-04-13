@@ -1599,11 +1599,6 @@ struct VehicleInfoSheet: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    if let tripId = vehicle.line?.fahrtNr, !tripId.isEmpty {
-                        Text("Trip: \(tripId)")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
                 }
 
                 Spacer()
@@ -1623,29 +1618,6 @@ struct VehicleInfoSheet: View {
                 }
             }
 
-            Divider()
-
-            HStack(spacing: 20) {
-                if let coord = vehicle.currentLocation {
-                    VStack(spacing: 2) {
-                        Text("Lat")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(coord.latitude.formatted(.number.precision(.fractionLength(5))))
-                            .font(.caption.monospaced())
-                    }
-                    VStack(spacing: 2) {
-                        Text("Lon")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(coord.longitude.formatted(.number.precision(.fractionLength(5))))
-                            .font(.caption.monospaced())
-                    }
-                }
-
-
-            }
-
             Button {
                 onShowRoute()
                 onClose()
@@ -1660,7 +1632,7 @@ struct VehicleInfoSheet: View {
             }
         }
         .padding()
-        .presentationDetents([.height(200)])
+        .presentationDetents([.height(160)])
         .presentationDragIndicator(.visible)
     }
 

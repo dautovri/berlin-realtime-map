@@ -188,6 +188,7 @@ struct OnboardingView: View {
     // Processing
     @State private var processingProgress: Double = 0
     @State private var processingComplete = false
+    @State private var saveSucceeded = true
 
     private let primaryBlue = Color(hex: "#115D97")
     private let totalProgressScreens = 8
@@ -216,7 +217,7 @@ struct OnboardingView: View {
                     case 5:  LocationPrimingScreen(locationManager: locationManager, onNext: { advance() })
                     case 6:  ProcessingScreen(isComplete: $processingComplete, onComplete: { advance() }, locationManager: locationManager)
                     case 7:  DemoScreen(selected: $selectedStops, onNext: { advance() })
-                    case 8:  ValueDeliveryScreen(stops: selectedStops, onNext: { advance() })
+                    case 8:  ValueDeliveryScreen(stops: selectedStops, saveSucceeded: saveSucceeded, onNext: { advance() })
                     default: TipNudgeScreen(onDismiss: { finish() })
                     }
                 }
@@ -269,9 +270,9 @@ struct OnboardingView: View {
         withAnimation {
             step += 1
         }
-        // Save demo stops to Favorites when leaving demo screen
-        if step == 9 {
-            saveSelectedStops()
+        // Save demo stops to Favorites when advancing to ValueDeliveryScreen
+        if step == 8 {
+            saveSucceeded = saveSelectedStops()
         }
     }
 
@@ -279,9 +280,11 @@ struct OnboardingView: View {
         onDismiss()
     }
 
-    private func saveSelectedStops() {
+    @discardableResult
+    private func saveSelectedStops() -> Bool {
         let service = FavoritesService(modelContext: modelContext)
         let logger = Logger(subsystem: "BerlinTransportMap", category: "Onboarding")
+        var allSucceeded = true
         for stop in selectedStops {
             let stop3 = TransportStop(
                 id: stop.id,
@@ -293,8 +296,10 @@ struct OnboardingView: View {
                 try service.saveStopFavorite(name: stop.name, stop: stop3)
             } catch {
                 logger.error("Failed to save onboarding stop '\(stop.name)': \(error)")
+                allSucceeded = false
             }
         }
+        return allSucceeded
     }
 }
 
@@ -835,7 +840,7 @@ private struct DemoScreen: View {
                     .font(.system(size: 30, weight: .bold))
                     .fontDesign(.rounded)
                     .foregroundStyle(.white)
-                Text(isDone ? "These go straight to your Favorites. ✓" : (selected.isEmpty ? "Pick 3 stops to continue" : "Pick \(remaining) more \(remaining == 1 ? "stop" : "stops")"))
+                Text(isDone ? "These go straight to your Favorites." : (selected.isEmpty ? "Pick 3 stops to continue" : "Pick \(remaining) more \(remaining == 1 ? "stop" : "stops")"))
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.8))
                     .animation(.spring(duration: 0.3), value: remaining)
@@ -912,6 +917,7 @@ private struct DemoScreen: View {
 
 private struct ValueDeliveryScreen: View {
     let stops: [OnboardingStop]
+    let saveSucceeded: Bool
     let onNext: () -> Void
 
     var body: some View {
@@ -921,9 +927,11 @@ private struct ValueDeliveryScreen: View {
                     .font(.system(size: 30, weight: .bold))
                     .fontDesign(.rounded)
                     .foregroundStyle(.white)
-                Text("Example departures — your live data loads in the app.")
+                Text(saveSucceeded
+                    ? "Stops saved to Favorites ✓ — live data loads in the app."
+                    : "Couldn't save your stops — re-add them in Favorites.")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(saveSucceeded ? .white.opacity(0.75) : Color(hex: "#E8641A"))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)

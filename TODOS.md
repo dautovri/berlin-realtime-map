@@ -6,19 +6,18 @@
 
 - ~~**Tip purchase: disabled state during async + error state on failure**~~ `.disabled(store.state == .loading)` fixed (2026-04-13), commit `0030fc1`. Error state on failure (`store.state == .failed`) still open → move to P2.
 
-- **Location permission denial: silent dead end on ProcessingScreen**
-  `OnboardingView.swift:897-903` — `onNext()` called unconditionally after 1.5s regardless of authorization result.
-  Fix: Check `CLAuthorizationStatus` on ProcessingScreen. If `.denied`, show: "Location off — map starts at Alexanderplatz. Enable in Settings → Privacy anytime."
+- ~~**Location permission denial: silent dead end on ProcessingScreen**~~ Fixed by /qa on main (2026-04-13). `ProcessingScreen` already shows "Location off — map starts at Alexanderplatz. Enable in Settings → Privacy anytime." when `.denied`/`.restricted`.
 
 - ~~**MiniDepartureBoard: hardcoded sample data presented as "right now"**~~ Fixed by /qa on main (2026-04-13), commit `547c014`
 
-- **SwiftData save: conditional confirmation on ValueDeliveryScreen**
-  `OnboardingView.swift:1035` — "These go straight to your Favorites ✓" shown before save verified.
-  Fix: Re-query SwiftData on `ValueDeliveryScreen` appearance; show "Stops saved ✓" vs. "Couldn't save your stops — re-add them in Favorites."
+- ~~**SwiftData save: conditional confirmation on ValueDeliveryScreen**~~ Fixed by /qa on main (2026-04-13). Save now happens on advance to step 8 (before `ValueDeliveryScreen` renders); subtitle shows "Stops saved to Favorites ✓" on success or "Couldn't save your stops — re-add them in Favorites." on failure.
 
-- **Back button missing from all onboarding screens**
-  9-step flow (post-cuts) with no back navigation. Users who misselect on step 2 are stuck.
-  Fix: Add `<` chevron for `step > 0 && step != 6` (ProcessingScreen at step 6 cannot go back).
+- ~~**Back button missing from all onboarding screens**~~ Fixed by /qa on main (2026-04-13). `chevron.left` button present for `step > 0 && step != 6`, skips ProcessingScreen when going back from step 7.
+
+### P1 — Product Improvement
+- **ValueDeliveryScreen: show real live departures instead of hardcoded sample data**
+  After saving stops to Favorites, `ValueDeliveryScreen` shows fake `sampleDepartures`. This misses the strongest "aha moment" in a transit app — seeing your actual stops, live.
+  Fix: Fetch real BVG departure data for `selectedStops` async on screen appear; show real arrivals. Loading spinner while fetching. This requires async network call in onboarding.
 
 - ~~**Delete dead WelcomeOverlayView.swift**~~ Deleted by /qa on main (2026-04-13), commit `274c0ea`.
 
@@ -51,7 +50,7 @@
   Fix: `@Observable @MainActor final class LocationPermissionManager { let manager = CLLocationManager() }`
 
 - **saveSelectedStops: add idempotency guard**
-  Add `@State private var stopsSaved = false` guard in OnboardingView. Currently safe (called once at step==11) but defensively correct.
+  Add `@State private var stopsSaved = false` guard in OnboardingView. Currently safe (called once at step==8) but defensively correct.
 
 - **ProcessingScreen: replace try? with Task.isCancelled check**
   `OnboardingView.swift:~965` — `try? await Task.sleep(...)` silently swallows cancellation.
