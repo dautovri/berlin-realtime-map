@@ -13,9 +13,7 @@
   `OnboardingView.swift:897-903` — `onNext()` called unconditionally after 1.5s regardless of authorization result.
   Fix: Check `CLAuthorizationStatus` on ProcessingScreen. If `.denied`, show: "Location off — map starts at Alexanderplatz. Enable in Settings → Privacy anytime."
 
-- **MiniDepartureBoard: hardcoded sample data presented as "right now"**
-  `OnboardingView.swift:1122` — headline "Here's what's coming right now." over static `sampleDepartures`.
-  Fix: Change headline to "Example departures — your live data loads in the app."
+- ~~**MiniDepartureBoard: hardcoded sample data presented as "right now"**~~ Fixed by /qa on main (2026-04-13), commit `547c014`
 
 - **SwiftData save: conditional confirmation on ValueDeliveryScreen**
   `OnboardingView.swift:1035` — "These go straight to your Favorites ✓" shown before save verified.
@@ -160,6 +158,11 @@
 
 ## Completed
 
+- **ProcessingScreen permanently stuck** — Fixed by /qa on main (2026-04-13), commit `53dd2b3`. `.task(id: processingComplete)` fired once at launch (step=0), never re-ran at step 6. Fixed to `.task(id: step)`.
+- **MiniDepartureBoard fake 'right now' headline** — Fixed by /qa on main (2026-04-13), commit `547c014`.
+- **TinderCardsScreen + TransitTypeScreen cut** — Completed (2026-04-13), commit `0030fc1`.
+- **hasSeenWelcome → hasSeenOnboardingV2 rename** — Completed (2026-04-13), commit `0030fc1`.
+- **Tip purchase disabled state during async** — Completed (2026-04-13), commit `0030fc1`.
 - **First-launch welcome overlay (3 screens)** — Completed v1.5 (2026-04-09)
 - **tvOS compatibility guards** — Completed v1.5 (2026-04-09)
 - **Route favorites silent failure fix** — Completed v1.5 (2026-04-09)
