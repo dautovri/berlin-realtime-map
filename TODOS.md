@@ -89,18 +89,6 @@
 
 ## TransportMap
 
-### P1 — Active (v1.6)
-
-- **Stop-tap async race fix**
-  `TransportMapView.swift` ~line 519. In `loadDepartures(for stop:)`, add:
-  `guard selectedStop?.id == stop.id else { isLoadingDepartures = false; return }`
-  immediately before writing `restDepartures`. This discards stale responses when the user taps a second stop before the first response arrives.
-
-- **vehicleFetchCount: cap to prevent AppStorage bloat**
-  `TransportMapView.swift` line 651. Current: `vehicleFetchCount += 1`.
-  Fix: `if vehicleFetchCount < 21 { vehicleFetchCount += 1 }`.
-  ⚠️ Do NOT cap at 20 — that would cause `vehicleFetchCount == 20` to match on every subsequent fetch, spamming the review dialog. Cap at 21 so the `== 20` check fires once and is never reached again.
-
 ### P2 — Followup
 
 - **Stop-tap race: unit test**
@@ -157,6 +145,11 @@
 
 ## Completed
 
+- **Stop-tap async race fix** — Implemented on main (2026-04-13). `guard selectedStop?.id == stop.id` guard at TransportMapView.swift:576 discards stale responses on rapid stop-tap.
+- **vehicleFetchCount cap (bloat prevention)** — Implemented on main (2026-04-13). `if vehicleFetchCount < 21 { vehicleFetchCount += 1 }` at TransportMapView.swift:706.
+- **FavoriteRow dead tap zone** — Fixed by /qa on main (2026-04-13), commit `bd9f39f`. `.contentShape(Rectangle())` added to HStack; `.accessibilityElement(children: .combine)` removed from VStack (was intercepting accessibility taps before the Button action).
+- **Departure sheet star icon always empty** — Fixed by /qa on main (2026-04-13), commit `37c4bba`. Added `isFavorite` state with SwiftData `.task(id: stop.id)` query; star shows filled + disabled when stop already saved.
+- **OnboardingView DemoScreen back/subtitle bugs** — Fixed by /qa on main (2026-04-13), commit `cf7fb2a`.
 - **JourneyPlannerSheet route shows '0 min', no legs** — Fixed by /qa on main (2026-04-13), commit `791b4fa`. RouteService called `/trips` (vehicle lookup) instead of `/journeys` (route planning). Fixed endpoint, response models, and duration computation from leg times.
 - **Duplicate stop favorites saved on onboarding** — Fixed by /qa on main (2026-04-13), commit `f45301c`. FavoritesService.saveStopFavorite had no dedup guard; added stopId predicate check before insert.
 - **ProcessingScreen permanently stuck** — Fixed by /qa on main (2026-04-13), commit `53dd2b3`. `.task(id: processingComplete)` fired once at launch (step=0), never re-ran at step 6. Fixed to `.task(id: step)`.
