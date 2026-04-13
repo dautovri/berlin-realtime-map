@@ -509,4 +509,20 @@ No SwiftData schema changes. No breaking @AppStorage key changes. `hasSeenWelcom
 | 18 | Eng | saveSelectedStops idempotency guard | Mechanical | P5 explicit | Defensive; currently safe but correctness requires it | Skip |
 | 19 | Eng | #Preview ModelContainer inject | Mechanical | P5 explicit | Crash prevention; low effort | Skip |
 | 20 | Eng | WelcomeOverlayView TODOS: delete not mark | Mechanical | P5 explicit | Dead items cause confusion; deletion is cleaner | Mark as obsolete |
+| 21 | QA (post-review) | TinderCards: cut (TASTE → resolved) | Resolved | P5 explicit | Cut in commit 0030fc1. Flow collapses to 9 screens. | Wire swipe direction |
+| 22 | QA (post-review) | TransitTypeScreen: removed (TASTE → resolved) | Resolved | P5 explicit | Removed in commit 0030fc1. Broken promise eliminated. | Persist to AppStorage |
+| 23 | QA (post-review) | hasSeenWelcome → hasSeenOnboardingV2 (TASTE → resolved) | Resolved | P1 completeness | Renamed in commit 0030fc1. Retained users will see new flow. | Keep old key |
+| 24 | QA (post-review) | Tip purchase disabled state — BLOCKING fixed | Resolved | P1 completeness | .disabled(store.state == .loading) added, commit 0030fc1. | Defer to v1.7 |
+| 25 | QA (post-review) | ProcessingScreen stuck — CRITICAL fixed | Resolved | P1 completeness | .task(id: step) fix, commit 53dd2b3. Root: SwiftUI task id semantics. | — |
+| 26 | QA (post-review) | Fake "right now" headline — fixed | Resolved | P1 completeness | "Example departures" copy, commit 547c014. | — |
+
+---
+
+## Cross-Phase Themes
+
+**Theme: Silent failure paths** — flagged in Phase 1 (SwiftData unverified), Phase 2 (location denial dead-end, SwiftData false confirmation), Phase 3 (error paths missing). High-confidence signal. Pattern: every user-facing async operation in this codebase fails silently. Systematic fix needed in v1.7 before v1.8 adds more surface.
+
+**Theme: No test coverage** — flagged in Phase 1 (P3 item), Phase 3 (0/12 paths automated). High-confidence signal. Not blocking v1.6 (manual test plan covers critical paths) but becomes load-bearing as the app grows. Test harness before v1.8.
+
+**Theme: VBB API single point of failure** — flagged in Phase 1 (elevated P2) and Phase 3 Section 7. Community-hosted, no SLA. Zero mitigation in scope. Next sprint: prototype GTFS-RT fallback.
 

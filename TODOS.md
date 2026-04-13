@@ -4,10 +4,7 @@
 
 ### P1 — Active (v1.7)
 
-- **Tip purchase: disabled state during async + error state on failure**
-  `OnboardingView.swift:1252-1278` — `TipNudgeScreen` buttons not disabled during `purchaseTip`. Double-tap possible. No loading indicator. No error message on failure.
-  Fix: `.disabled(store.state == .loading)` on tip buttons. Show inline error if `store.state == .failed`.
-  ⚠️ **This was a BLOCKING pre-v1.6 submission item** — fix before next submission.
+- ~~**Tip purchase: disabled state during async + error state on failure**~~ `.disabled(store.state == .loading)` fixed (2026-04-13), commit `0030fc1`. Error state on failure (`store.state == .failed`) still open → move to P2.
 
 - **Location permission denial: silent dead end on ProcessingScreen**
   `OnboardingView.swift:897-903` — `onNext()` called unconditionally after 1.5s regardless of authorization result.
@@ -20,8 +17,8 @@
   Fix: Re-query SwiftData on `ValueDeliveryScreen` appearance; show "Stops saved ✓" vs. "Couldn't save your stops — re-add them in Favorites."
 
 - **Back button missing from all onboarding screens**
-  12-step flow with no back navigation. Users who misselect on step 2 are stuck.
-  Fix: Add `<` chevron for `step > 0 && step != 8` (ProcessingScreen cannot go back).
+  9-step flow (post-cuts) with no back navigation. Users who misselect on step 2 are stuck.
+  Fix: Add `<` chevron for `step > 0 && step != 6` (ProcessingScreen at step 6 cannot go back).
 
 - **Delete dead WelcomeOverlayView.swift**
   326 lines, zero Swift references post-PR #4. ContentView uses OnboardingView exclusively.
@@ -68,6 +65,10 @@
 
 - **ContentView #Preview: add ModelContainer**
   `ContentView` `#Preview` block crashes without `.modelContainer(for: [TransportStopFavorite.self], inMemory: true)`.
+
+- **TipNudgeScreen: show inline error on `store.state == .failed`**
+  `.disabled` guard added (commit 0030fc1). No error message on purchase failure — user sees nothing if StoreKit fails.
+  Fix: Show inline "Purchase failed — try again." when `store.state == .failed`.
 
 ## Analytics
 
