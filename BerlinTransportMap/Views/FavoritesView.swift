@@ -3,12 +3,9 @@ import SwiftData
 
 struct FavoritesView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var favoritesService: FavoritesService?
     @State private var favorites: [Favorite] = []
-    @State private var isLoading = true
-    @State private var errorMessage: String?
     @State private var showingRouteUnavailableAlert = false
-    
+
     let onSelectStop: (TransportStop) -> Void
     let onSelectRoute: (Route) -> Void
     let onClose: () -> Void
@@ -22,48 +19,39 @@ struct FavoritesView: View {
         self.onSelectRoute = onSelectRoute
         self.onClose = onClose
     }
-    
+
+    var stopFavorites: [Favorite] {
+        favorites.filter { $0.type == .stop }
+    }
+
     var body: some View {
         NavigationStack {
-            List {
-                if isLoading {
-                    ProgressView("Loading favorites...")
-                } else if let error = errorMessage {
-                    ContentUnavailableView {
-                        Label("Error", systemImage: "exclamationmark.triangle")
-                    } description: {
-                        Text(error)
-                    } actions: {
-                        Button("Retry") {
-                            Task {
-                                isLoading = true
-                                errorMessage = nil
-                                await loadFavorites()
-                            }
-                        }
-                    }
-                } else if favorites.isEmpty {
+            Group {
+                if favorites.isEmpty {
                     ContentUnavailableView(
                         "No Favorites",
                         systemImage: "star",
-                        description: Text("Save stops and routes for quick access")
+                        description: Text("Tap any stop on the map and press ★ to save it here")
                     )
                 } else {
-                    ForEach(favorites) { favorite in
-                        FavoriteRow(favorite: favorite) {
-                            handleSelectFavorite(favorite)
-                        }
-                        .swipeActions {
-                            Button(role: .destructive) {
-                                deleteFavorite(favorite)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                    List {
+                        ForEach(favorites) { favorite in
+                            FavoriteRow(favorite: favorite) {
+                                handleSelectFavorite(favorite)
+                            }
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    deleteFavorite(favorite)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
                         }
                     }
+                    .listStyle(.insetGrouped)
                 }
             }
-            .navigationTitle("Favorites")
+            .navigationTitle("My Stops")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -71,57 +59,41 @@ struct FavoritesView: View {
                 }
             }
             .task {
-                await loadFavorites()
+                loadFavorites()
             }
             .alert("Route Replay Unavailable", isPresented: $showingRouteUnavailableAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Saved routes can't be replayed yet. Tap a stop favorite to see live departures.")
+                Text("Saved routes can't be replayed yet. Tap a stop to see live departures.")
             }
         }
     }
-    
-    private func loadFavorites() async {
-        let favoritesService = FavoritesService(modelContext: modelContext)
-        self.favoritesService = favoritesService
 
-        do {
-            let loadedFavorites = try favoritesService.loadFavorites()
-            favorites = loadedFavorites
-            isLoading = false
-        } catch {
-            errorMessage = "Failed to load favorites: \(error.localizedDescription)"
-            isLoading = false
-        }
+    private func loadFavorites() {
+        let service = FavoritesService(modelContext: modelContext)
+        favorites = (try? service.loadFavorites()) ?? []
     }
-    
+
     private func handleSelectFavorite(_ favorite: Favorite) {
         switch favorite.type {
         case .stop:
-            if let stopId = favorite.stopId {
-                let stop = TransportStop(
-                    id: stopId,
-                    name: favorite.name,
-                    latitude: favorite.latitude ?? 52.52, // Default to Berlin center if no coordinates
-                    longitude: favorite.longitude ?? 13.405
-                )
-                onSelectStop(stop)
-            }
+            guard let stopId = favorite.stopId else { return }
+            let stop = TransportStop(
+                id: stopId,
+                name: favorite.name,
+                latitude: favorite.latitude ?? 52.52,
+                longitude: favorite.longitude ?? 13.405
+            )
+            onSelectStop(stop)
+            onClose()
         case .route:
             showingRouteUnavailableAlert = true
-            return
         }
-        onClose()
     }
-    
+
     private func deleteFavorite(_ favorite: Favorite) {
-        guard let favoritesService = favoritesService else { return }
-        do {
-            try favoritesService.deleteFavorite(favorite)
-            favorites.removeAll { $0.id == favorite.id }
-        } catch {
-            errorMessage = "Failed to delete favorite: \(error.localizedDescription)"
-        }
+        let service = FavoritesService(modelContext: modelContext)
+        try? service.deleteFavorite(favorite)
+        favorites.removeAll { $0.id == favorite.id }
     }
 }
-
