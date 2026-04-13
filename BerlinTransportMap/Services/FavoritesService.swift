@@ -18,6 +18,10 @@ final class FavoritesService {
     }
     
     func saveStopFavorite(name: String, stop: TransportStop) throws {
+        // Deduplicate: skip if a stop favorite with this stopId already exists.
+        let stopId = stop.id
+        let existing = try modelContext.fetch(FetchDescriptor<Favorite>(predicate: #Predicate { $0.stopId == stopId }))
+        guard existing.isEmpty else { return }
         let favorite = Favorite(name: name, type: .stop, stopId: stop.id, latitude: stop.latitude, longitude: stop.longitude)
         try saveFavorite(favorite)
     }
