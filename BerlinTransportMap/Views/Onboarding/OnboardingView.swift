@@ -227,7 +227,7 @@ struct OnboardingView: View {
             }
         }
         .animation(reduceMotion ? .none : .smooth(duration: 0.35), value: step)
-        .task(id: processingComplete) {
+        .task(id: step) {
             if step == 6 && !processingComplete {
                 try? await Task.sleep(for: .seconds(2.5))
                 processingComplete = true
