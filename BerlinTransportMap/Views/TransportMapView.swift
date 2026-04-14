@@ -360,6 +360,17 @@ struct TransportMapView: View {
                 activeSheet = .settings
             }
 #endif
+            .onReceive(NotificationCenter.default.publisher(for: .showDeparturesForStop)) { note in
+                guard let stopId = note.userInfo?["stopId"] as? String,
+                      let stopName = note.userInfo?["stopName"] as? String else { return }
+                let stop = TransportStop(
+                    id: stopId,
+                    name: stopName,
+                    latitude: 52.52,
+                    longitude: 13.405
+                )
+                openDepartures(for: stop)
+            }
     }
 
     private var mainContent: some View {

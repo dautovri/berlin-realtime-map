@@ -13,5 +13,11 @@
 	<!-- Location access for showing nearby stops and vehicles -->
 	<key>com.apple.security.personal-information.location</key>
 	<true/>
+
+	<!-- Shared App Group for widget data exchange -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.dautov.berlintransportmap</string>
+	</array>
 </dict>
 </plist>

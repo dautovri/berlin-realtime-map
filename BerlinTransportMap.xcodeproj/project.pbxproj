@@ -7,41 +7,40 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2212D64ECE55BFD3A40EFB3A /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */; };
+		2F6C1D4A7B8E9F0011223344 /* ActivationMetricsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6C1D4A7B8E9F0011223345 /* ActivationMetricsServiceTests.swift */; };
+		4289A52DC2741FCBB66C7B3D /* DepartureWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C14E68B9E0A439FD0DCEEE8 /* DepartureWidgetBundle.swift */; };
+		54121F970ADBF6F059D89691 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 558A033196C309FD80A31A68 /* WidgetKit.framework */; };
+		6E27A6CECB9A2FC404338D12 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */; };
+		705F2747056DF1D62ACE66A7 /* DepartureWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8EF5C0F8679A8014D2FF6518 /* DepartureWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		773801C74768494CCB185641 /* ServiceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */; };
+		8B41F6852DEDD25C001A66F9 /* TripKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* TripKit */; };
+		92301B7FD12954661243D56C /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC9253024FB9504BBC11323 /* WeatherServiceTests.swift */; };
 		A1B200000000000000000001 /* SnapshotHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B200000000000000000011 /* SnapshotHelper.swift */; };
 		A1B200000000000000000002 /* ScreenshotUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B200000000000000000012 /* ScreenshotUITests.swift */; };
 		A1B200000000000000000003 /* MapInteractionPerformanceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */; };
-		14DA0AF43D838C1E01605EAE /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBC1FC51390C7A591880A694 /* TransportErrorTests.swift */; };
-		2212D64ECE55BFD3A40EFB3A /* TransportErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */; };
-		2730672A7ACF5C0EA1754D02 /* ConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7778AD79403ECE20067F38 /* ConfigTests.swift */; };
-		2F6C1D4A7B8E9F0011223344 /* ActivationMetricsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6C1D4A7B8E9F0011223345 /* ActivationMetricsServiceTests.swift */; };
-		4832E1A8D31B41745E5C4D58 /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */; };
-		6E27A6CECB9A2FC404338D12 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */; };
-		720F1631A753713FE3DCCCF6 /* ServiceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9417CA4A80E9CEAB2DE87D60 /* ServiceContainerTests.swift */; };
-		773801C74768494CCB185641 /* ServiceContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */; };
-		852A43A86BAA8F63E8A9A474 /* ThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD9E31AE6D7249912A137C5E /* ThemeTests.swift */; };
-		8B41F6852DEDD25C001A66F9 /* TripKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8B41F6842DEDD25C001A66F9 /* TripKit */; };
-		8E13C156FF23F5628ADA0A8B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */; };
-		92301B7FD12954661243D56C /* WeatherServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC9253024FB9504BBC11323 /* WeatherServiceTests.swift */; };
+		A75585218612322A5B4C3280 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EEE2B55D77FDEDBBFAFFB9F0 /* Foundation.framework */; };
 		C4DBEDE269B9E9A8F5CA269A /* ThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6B7D741FA9A7257A7F4230A /* ThemeTests.swift */; };
 		C5D6C34BEF236E7ED60F4ECB /* PredictiveLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946402C6B8924A87D17F257B /* PredictiveLoaderTests.swift */; };
+		D5F2BC5F843D0BF546C71BE1 /* DepartureWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69382ED21F17E3861F0C46E3 /* DepartureWidget.swift */; };
 		F5DCC86239DD831595DE6734 /* ConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3075E41C04F8DCF7EECB037D /* ConfigTests.swift */; };
-		F5F5F1D0E352A8898ABA4A9C /* PredictiveLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D465407D8B3F7FB2439B44AE /* PredictiveLoaderTests.swift */; };
+		F9B12B29F523AC1D856F2A03 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B6487225FBDF64813930199A /* SwiftUI.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		179F412413E29E06F2503F75 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8B41F63D2DEDD0D5001A66F9 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8B41F6442DEDD0D5001A66F9;
-			remoteInfo = BerlinTransportMap;
-		};
 		A1B200000000000000000010 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 8B41F63D2DEDD0D5001A66F9 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 8B41F6442DEDD0D5001A66F9;
 			remoteInfo = BerlinTransportMap;
+		};
+		DA20915314194B031E53C4F9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8B41F63D2DEDD0D5001A66F9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0868D723FFF536663FFC9D6;
+			remoteInfo = DepartureWidget;
 		};
 		FEB97CDC19FDDA91149C0098 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,21 +51,41 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		9CE764D4808FDA1843966617 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				705F2747056DF1D62ACE66A7 /* DepartureWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		A1B200000000000000000011 /* SnapshotHelper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
-		A1B200000000000000000012 /* ScreenshotUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScreenshotUITests.swift; sourceTree = "<group>"; };
-		A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapInteractionPerformanceUITests.swift; sourceTree = "<group>"; };
-		A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BerlinTransportMapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C14E68B9E0A439FD0DCEEE8 /* DepartureWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DepartureWidgetBundle.swift; sourceTree = "<group>"; };
+		106B657230D16304A0F3F9C3 /* DepartureWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DepartureWidget.entitlements; sourceTree = "<group>"; };
 		2F6C1D4A7B8E9F0011223345 /* ActivationMetricsServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ActivationMetricsServiceTests.swift; sourceTree = SOURCE_ROOT; };
 		3075E41C04F8DCF7EECB037D /* ConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ConfigTests.swift; sourceTree = SOURCE_ROOT; };
+		558A033196C309FD80A31A68 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		576EE093FDADFF76C2FFCA51 /* ServiceContainerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ServiceContainerTests.swift; sourceTree = SOURCE_ROOT; };
+		69382ED21F17E3861F0C46E3 /* DepartureWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DepartureWidget.swift; sourceTree = "<group>"; };
 		6CF4F276A40A1DFC6EBFC063 /* WeatherServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/WeatherServiceTests.swift; sourceTree = SOURCE_ROOT; };
 		6ECEDC7EE9C39E3BFCF25BB6 /* BerlinTransportMapTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BerlinTransportMapTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D7778AD79403ECE20067F38 /* ConfigTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ConfigTests.swift; sourceTree = SOURCE_ROOT; };
 		8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BerlinTransportMap.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8EF5C0F8679A8014D2FF6518 /* DepartureWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DepartureWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		9417CA4A80E9CEAB2DE87D60 /* ServiceContainerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ServiceContainerTests.swift; sourceTree = SOURCE_ROOT; };
 		946402C6B8924A87D17F257B /* PredictiveLoaderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/PredictiveLoaderTests.swift; sourceTree = SOURCE_ROOT; };
 		A0FE26834088E4A721B4F951 /* TransportErrorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/TransportErrorTests.swift; sourceTree = SOURCE_ROOT; };
+		A1B200000000000000000011 /* SnapshotHelper.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
+		A1B200000000000000000012 /* ScreenshotUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScreenshotUITests.swift; sourceTree = "<group>"; };
+		A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MapInteractionPerformanceUITests.swift; sourceTree = "<group>"; };
+		A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BerlinTransportMapUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B6487225FBDF64813930199A /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		B6B7D741FA9A7257A7F4230A /* ThemeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ThemeTests.swift; sourceTree = SOURCE_ROOT; };
 		BD9E31AE6D7249912A137C5E /* ThemeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ThemeTests.swift; sourceTree = SOURCE_ROOT; };
 		CAC9253024FB9504BBC11323 /* WeatherServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/WeatherServiceTests.swift; sourceTree = SOURCE_ROOT; };
@@ -87,13 +106,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A1B200000000000000000015 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		82CAA2B102F0E8C7400CA54D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -107,6 +119,23 @@
 			buildActionMask = 2147483647;
 			files = (
 				8B41F6852DEDD25C001A66F9 /* TripKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B200000000000000000015 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A69290F537DE8FAB8A3D5603 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A75585218612322A5B4C3280 /* Foundation.framework in Frameworks */,
+				54121F970ADBF6F059D89691 /* WidgetKit.framework in Frameworks */,
+				F9B12B29F523AC1D856F2A03 /* SwiftUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,16 +163,6 @@
 			path = Tests;
 			sourceTree = SOURCE_ROOT;
 		};
-		A1B200000000000000000016 /* BerlinTransportMapUITests */ = {
-			isa = PBXGroup;
-			children = (
-				A1B200000000000000000011 /* SnapshotHelper.swift */,
-				A1B200000000000000000012 /* ScreenshotUITests.swift */,
-				A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */,
-			);
-			path = BerlinTransportMapUITests;
-			sourceTree = "<group>";
-		};
 		74A0867C3D2452B39EAD498E /* iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -160,6 +179,7 @@
 				8B41F6462DEDD0D5001A66F9 /* Products */,
 				0358A27CF83A96BEF6073B8E /* Tests */,
 				A1B200000000000000000016 /* BerlinTransportMapUITests */,
+				BD3627913CB85963FC520170 /* DepartureWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -170,6 +190,7 @@
 				A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */,
 				6ECEDC7EE9C39E3BFCF25BB6 /* BerlinTransportMapTests.xctest */,
 				E5F7B9C2F1EA953C1F2769C7 /* BerlinTransportMapTests.xctest */,
+				8EF5C0F8679A8014D2FF6518 /* DepartureWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -178,13 +199,61 @@
 			isa = PBXGroup;
 			children = (
 				74A0867C3D2452B39EAD498E /* iOS */,
+				558A033196C309FD80A31A68 /* WidgetKit.framework */,
+				B6487225FBDF64813930199A /* SwiftUI.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A1B200000000000000000016 /* BerlinTransportMapUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A1B200000000000000000011 /* SnapshotHelper.swift */,
+				A1B200000000000000000012 /* ScreenshotUITests.swift */,
+				A1B200000000000000000013 /* MapInteractionPerformanceUITests.swift */,
+			);
+			path = BerlinTransportMapUITests;
+			sourceTree = "<group>";
+		};
+		BD3627913CB85963FC520170 /* DepartureWidget */ = {
+			isa = PBXGroup;
+			children = (
+				69382ED21F17E3861F0C46E3 /* DepartureWidget.swift */,
+				0C14E68B9E0A439FD0DCEEE8 /* DepartureWidgetBundle.swift */,
+				106B657230D16304A0F3F9C3 /* DepartureWidget.entitlements */,
+			);
+			name = DepartureWidget;
+			path = DepartureWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8B41F6662DEDD0D6001A66F9 /* Build configuration list for PBXNativeTarget "BerlinTransportMap" */;
+			buildPhases = (
+				8B41F6412DEDD0D5001A66F9 /* Sources */,
+				8B41F6422DEDD0D5001A66F9 /* Frameworks */,
+				8B41F6432DEDD0D5001A66F9 /* Resources */,
+				9CE764D4808FDA1843966617 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				982D4982477A8902517BFCA9 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				8B41F6472DEDD0D5001A66F9 /* BerlinTransportMap */,
+			);
+			name = BerlinTransportMap;
+			packageProductDependencies = (
+				8B41F6842DEDD25C001A66F9 /* TripKit */,
+			);
+			productName = BerlinTransportMap;
+			productReference = 8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */;
+			productType = "com.apple.product-type.application";
+		};
 		A1B200000000000000000017 /* BerlinTransportMapUITests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A1B200000000000000000023 /* Build configuration list for PBXNativeTarget "BerlinTransportMapUITests" */;
@@ -203,28 +272,22 @@
 			productReference = A1B200000000000000000014 /* BerlinTransportMapUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */ = {
+		F0868D723FFF536663FFC9D6 /* DepartureWidget */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8B41F6662DEDD0D6001A66F9 /* Build configuration list for PBXNativeTarget "BerlinTransportMap" */;
+			buildConfigurationList = CFB81CC08D3B081291FA555F /* Build configuration list for PBXNativeTarget "DepartureWidget" */;
 			buildPhases = (
-				8B41F6412DEDD0D5001A66F9 /* Sources */,
-				8B41F6422DEDD0D5001A66F9 /* Frameworks */,
-				8B41F6432DEDD0D5001A66F9 /* Resources */,
+				120B573376F0F3298D2CC208 /* Sources */,
+				A69290F537DE8FAB8A3D5603 /* Frameworks */,
+				9A14ED81B9EFF77CEF705D79 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				8B41F6472DEDD0D5001A66F9 /* BerlinTransportMap */,
-			);
-			name = BerlinTransportMap;
-			packageProductDependencies = (
-				8B41F6842DEDD25C001A66F9 /* TripKit */,
-			);
-			productName = BerlinTransportMap;
-			productReference = 8B41F6452DEDD0D5001A66F9 /* BerlinTransportMap.app */;
-			productType = "com.apple.product-type.application";
+			name = DepartureWidget;
+			productName = DepartureWidget;
+			productReference = 8EF5C0F8679A8014D2FF6518 /* DepartureWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		FF717E24F98FF676AE193423 /* BerlinTransportMapTests */ = {
 			isa = PBXNativeTarget;
@@ -254,12 +317,12 @@
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					8B41F6442DEDD0D5001A66F9 = {
+						CreatedOnToolsVersion = 16.3;
+					};
 					A1B200000000000000000017 = {
 						CreatedOnToolsVersion = 16.3;
 						TestTargetID = 8B41F6442DEDD0D5001A66F9;
-					};
-					8B41F6442DEDD0D5001A66F9 = {
-						CreatedOnToolsVersion = 16.3;
 					};
 				};
 			};
@@ -284,18 +347,12 @@
 				8B41F6442DEDD0D5001A66F9 /* BerlinTransportMap */,
 				FF717E24F98FF676AE193423 /* BerlinTransportMapTests */,
 				A1B200000000000000000017 /* BerlinTransportMapUITests */,
+				F0868D723FFF536663FFC9D6 /* DepartureWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A1B200000000000000000018 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		154B06650D36B304E6479C16 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -310,16 +367,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9A14ED81B9EFF77CEF705D79 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B200000000000000000018 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A1B200000000000000000019 /* Sources */ = {
+		120B573376F0F3298D2CC208 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1B200000000000000000003 /* MapInteractionPerformanceUITests.swift in Sources */,
-				A1B200000000000000000002 /* ScreenshotUITests.swift in Sources */,
-				A1B200000000000000000001 /* SnapshotHelper.swift in Sources */,
+				D5F2BC5F843D0BF546C71BE1 /* DepartureWidget.swift in Sources */,
+				4289A52DC2741FCBB66C7B3D /* DepartureWidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,9 +414,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1B200000000000000000019 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B200000000000000000003 /* MapInteractionPerformanceUITests.swift in Sources */,
+				A1B200000000000000000002 /* ScreenshotUITests.swift in Sources */,
+				A1B200000000000000000001 /* SnapshotHelper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		982D4982477A8902517BFCA9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DepartureWidget;
+			target = F0868D723FFF536663FFC9D6 /* DepartureWidget */;
+			targetProxy = DA20915314194B031E53C4F9 /* PBXContainerItemProxy */;
+		};
 		A1B200000000000000000020 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = BerlinTransportMap;
@@ -362,55 +448,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		A1B200000000000000000021 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 27EZNUVV57;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.uitests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = BerlinTransportMap;
-			};
-			name = Debug;
-		};
-		A1B200000000000000000022 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 27EZNUVV57;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.uitests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 6.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = BerlinTransportMap;
-			};
-			name = Release;
-		};
-		04080A2E0C17F9FE2BB4CF3E /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 27EZNUVV57;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 		3276908419A562612FF1A9D7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -647,34 +684,90 @@
 			};
 			name = Release;
 		};
-		E05A478A0143C5EBE009BAC2 /* Debug */ = {
+		A1B200000000000000000021 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 6.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BerlinTransportMap.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BerlinTransportMap";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BerlinTransportMap;
+			};
+			name = Debug;
+		};
+		A1B200000000000000000022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BerlinTransportMap;
+			};
+			name = Release;
+		};
+		A9F35A034249124FB8B24F37 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DepartureWidget/DepartureWidget.entitlements;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DepartureWidget;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.widget;
+				PRODUCT_NAME = DepartureWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D3D16A7636595286261497EF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DepartureWidget/DepartureWidget.entitlements;
+				DEVELOPMENT_TEAM = 27EZNUVV57;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = DepartureWidget;
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.widget;
+				PRODUCT_NAME = DepartureWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1B200000000000000000023 /* Build configuration list for PBXNativeTarget "BerlinTransportMapUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A1B200000000000000000021 /* Debug */,
-				A1B200000000000000000022 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		15BA2465B02D452ADA5DF3D7 /* Build configuration list for PBXNativeTarget "BerlinTransportMapTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -698,6 +791,24 @@
 			buildConfigurations = (
 				8B41F6672DEDD0D6001A66F9 /* Debug */,
 				8B41F6682DEDD0D6001A66F9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B200000000000000000023 /* Build configuration list for PBXNativeTarget "BerlinTransportMapUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B200000000000000000021 /* Debug */,
+				A1B200000000000000000022 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CFB81CC08D3B081291FA555F /* Build configuration list for PBXNativeTarget "DepartureWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9F35A034249124FB8B24F37 /* Release */,
+				D3D16A7636595286261497EF /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

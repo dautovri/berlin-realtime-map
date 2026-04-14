@@ -43,6 +43,20 @@ struct BerlinTransportMapApp: App {
 #if targetEnvironment(macCatalyst)
                 .frame(minWidth: 900, minHeight: 600)
 #endif
+                .onOpenURL { url in
+                    // Handle widget deep link: berlintransportmap://departures/STOP_ID?name=STOP_NAME
+                    guard url.scheme == "berlintransportmap",
+                          url.host == "departures" else { return }
+                    let stopId = String(url.path.dropFirst()) // remove leading "/"
+                    let stopName = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                        .queryItems?.first(where: { $0.name == "name" })?.value ?? stopId
+                    guard !stopId.isEmpty else { return }
+                    NotificationCenter.default.post(
+                        name: .showDeparturesForStop,
+                        object: nil,
+                        userInfo: ["stopId": stopId, "stopName": stopName]
+                    )
+                }
         }
 #if targetEnvironment(macCatalyst)
         .windowResizability(.contentMinSize)
@@ -136,3 +150,8 @@ extension Notification.Name {
     static let showSettingsSheet = Notification.Name("com.dautov.berlintransportmap.showSettings")
 }
 #endif
+
+extension Notification.Name {
+    // Widget deep-link: open departure board for a specific stop (all platforms)
+    static let showDeparturesForStop = Notification.Name("com.dautov.berlintransportmap.showDepartures")
+}
