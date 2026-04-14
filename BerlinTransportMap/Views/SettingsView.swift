@@ -27,7 +27,7 @@ struct SettingsView: View {
                 // MARK: Commute Alerts
                 Section {
                     switch alertManager.permissionStatus {
-                    case .denied, .provisional:
+                    case .denied:
                         permissionDeniedRow
                     case .notDetermined:
                         if alertManager.alerts.isEmpty {

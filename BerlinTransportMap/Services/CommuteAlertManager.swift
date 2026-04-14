@@ -74,7 +74,8 @@ final class CommuteAlertManager {
     }
 
     func removeAllAlerts() {
-        center.removeAllPendingNotificationRequests()
+        let identifiers = alerts.map { $0.id.uuidString }
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
         alerts.removeAll()
         save()
     }

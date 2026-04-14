@@ -34,6 +34,7 @@ struct DepartureEntry: TimelineEntry {
     let stopId: String
     let departures: [WidgetDeparture]
     let noStopsSaved: Bool
+    let fetchFailed: Bool
 }
 
 // MARK: - Timeline provider
@@ -53,7 +54,8 @@ struct DepartureProvider: TimelineProvider {
                 WidgetDeparture(lineName: "S5", lineColor: "#008C3C", lineForegroundColor: "#FFFFFF",
                                 direction: "Strausberg Nord", scheduledTime: Date().addingTimeInterval(120))
             ],
-            noStopsSaved: false
+            noStopsSaved: false,
+            fetchFailed: false
         )
     }
 
@@ -85,12 +87,17 @@ struct DepartureProvider: TimelineProvider {
         let stops = (try? JSONDecoder().decode([WidgetSavedStop].self, from: data ?? Data())) ?? []
 
         guard let top = stops.first else {
-            return DepartureEntry(date: Date(), stopName: "", stopId: "", departures: [], noStopsSaved: true)
+            return DepartureEntry(date: Date(), stopName: "", stopId: "", departures: [], noStopsSaved: true, fetchFailed: false)
         }
 
-        let departures = (try? await fetchDepartures(stopId: top.id)) ?? []
-        return DepartureEntry(date: Date(), stopName: top.name, stopId: top.id,
-                              departures: departures, noStopsSaved: false)
+        do {
+            let departures = try await fetchDepartures(stopId: top.id)
+            return DepartureEntry(date: Date(), stopName: top.name, stopId: top.id,
+                                  departures: departures, noStopsSaved: false, fetchFailed: false)
+        } catch {
+            return DepartureEntry(date: Date(), stopName: top.name, stopId: top.id,
+                                  departures: [], noStopsSaved: false, fetchFailed: true)
+        }
     }
 
     private func fetchDepartures(stopId: String) async throws -> [WidgetDeparture] {
@@ -102,6 +109,7 @@ struct DepartureProvider: TimelineProvider {
         let response = try JSONDecoder().decode(VBBDepsResponse.self, from: data)
 
         let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let now = Date()
 
         return response.departures
@@ -194,7 +202,11 @@ struct DepartureWidgetEntryView: View {
         VStack(alignment: .leading, spacing: 6) {
             stopHeader
             Spacer(minLength: 0)
-            if entry.departures.isEmpty {
+            if entry.fetchFailed {
+                Text("Couldn't load")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else if entry.departures.isEmpty {
                 Text("No departures")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -216,7 +228,11 @@ struct DepartureWidgetEntryView: View {
         VStack(alignment: .leading, spacing: 6) {
             stopHeader
             Spacer(minLength: 0)
-            if entry.departures.isEmpty {
+            if entry.fetchFailed {
+                Text("Couldn't load departures")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if entry.departures.isEmpty {
                 Text("No upcoming departures")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -261,10 +277,14 @@ struct DepartureRowView: View {
     let departure: WidgetDeparture
     let compact: Bool
 
-    private var timeString: String {
+    private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
-        return f.string(from: departure.scheduledTime)
+        return f
+    }()
+
+    private var timeString: String {
+        Self.timeFormatter.string(from: departure.scheduledTime)
     }
 
     var body: some View {
@@ -290,7 +310,7 @@ struct DepartureRowView: View {
             Text(timeString)
                 .font(compact ? .system(size: 10, weight: .semibold) : .caption.bold())
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
         }
     }
 }
