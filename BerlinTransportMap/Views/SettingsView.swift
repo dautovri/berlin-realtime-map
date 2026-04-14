@@ -78,7 +78,7 @@ struct SettingsView: View {
     }
 
     private var permissionDeniedRow: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Notifications are turned off")
                 .font(.subheadline)
                 .foregroundStyle(.primary)
@@ -102,7 +102,7 @@ struct SettingsView: View {
     private var alertRows: some View {
         ForEach(alertManager.alerts) { alert in
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(alert.stopName)
                         .font(.subheadline)
                         .fontDesign(.rounded)

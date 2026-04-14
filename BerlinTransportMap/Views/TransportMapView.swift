@@ -276,9 +276,9 @@ struct TransportMapView: View {
 
     private var cacheBadgeColor: Color {
         if !services.networkMonitor.isConnected {
-            return Color.red.opacity(0.9)
+            return Color(hex: "#C41E3A")
         }
-        return dataSource == .stale ? Color.orange.opacity(0.9) : Color(hex: "#00A550")
+        return dataSource == .stale ? Color(hex: "#8A8A8E") : Color(hex: "#00A550")
     }
 
     private var cacheInfoText: String {

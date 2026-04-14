@@ -7,6 +7,8 @@ struct FavoriteRow: View {
     @State private var departures: [RESTDeparture] = []
     @State private var isLoading = true
     @State private var fetchFailed = false
+    @State private var isPulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let services = ServiceContainer.shared
 
@@ -28,6 +30,12 @@ struct FavoriteRow: View {
                             Circle()
                                 .fill(Color(hex: "#00A550"))
                                 .frame(width: 6, height: 6)
+                                .scaleEffect(isPulsing ? 1.3 : 1.0)
+                                .animation(
+                                    reduceMotion ? nil : .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
+                                    value: isPulsing
+                                )
+                                .onAppear { isPulsing = true }
                             Text("Live")
                                 .font(.caption2.bold())
                                 .foregroundStyle(Color(hex: "#00A550"))
