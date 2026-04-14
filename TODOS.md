@@ -100,6 +100,12 @@
 
 ## App Store Submission
 
+### P0 — BLOCKING (ship before v1.7 work)
+
+- **Submit v1.5 to App Store — DO THIS FIRST**
+  App has 0 users. v1.7 widget is useless with no install base. Every day without shipping is a day without feedback informing feature decisions. Run the CLAUDE.md pre-submission checklist, archive, and submit.
+  **Escalated to P0 by:** /plan-eng-review (2026-04-14). Outside voice and eng review agree: shipping dominates in expected value over any feature work.
+
 ### P1 — Active (v1.5)
 
 - **Upload screenshots to App Store Connect**
@@ -134,6 +140,29 @@
 - **Portfolio consolidation: MyStop Berlin + Berlin Transport Map**
   Two apps in the same portfolio targeting Berlin transit. Consider whether to consolidate or differentiate more clearly (real-time positions vs stop departures). Bring to /office-hours.
   **Flagged by:** /autoplan CEO review (2026-04-11)
+
+## v1.7 Features
+
+### P1 — Active
+
+- **WidgetKit extension — DepartureWidget**
+  New Xcode extension target. App Group `group.com.dautov.berlintransportmap` on both targets. AppGroup SwiftData migration on first launch (4-step guard: open old store → copy Favorites → write to group store → verify count → delete old → set UserDefaults flag). `TimelineProvider` reads top saved stop, fetches departures, shows scheduled time (`HH:mm`) not relative minutes (WidgetKit throttle = 15-60min; relative minutes would be stale). `systemSmall` + `systemMedium`. Widget tap deep-links via `widgetURL` + `.onOpenURL` to `RESTDeparturesSheet`.
+  **Accepted by:** /plan-ceo-review (2026-04-13), architecture confirmed by /plan-eng-review (2026-04-14).
+
+- **Commute Alerts — CommuteAlertManager**
+  New class (not in ServiceContainer). `SettingsView` section: stop picker from saved Favorites + `DatePicker(.hourAndMinute)`. `UNCalendarNotificationTrigger(repeats: true)`. Notification body: "Time to check your {stop} departures." Tap opens departure board. Permission requested at configure time (not cold in onboarding). Permission denied: show Settings deep-link.
+  Unit tests: scheduling logic (correct trigger dates, cancellation, permission-denied path) + AppGroup smoke test.
+  **Accepted by:** /plan-ceo-review (2026-04-13), redesigned by /plan-eng-review (2026-04-14). No BGTaskScheduler — fixed-time local notifications only.
+
+### P2 — Followup
+
+- **Commute Alerts live-data upgrade**
+  Current v1.7 implementation uses fixed scheduled time as estimate. Upgrade: use URLSession background download task to fetch actual departure time the night before and update the notification content with the live departure time. This is what Transit App does.
+  **Deferred from:** /plan-eng-review (2026-04-14). Needs real users with saved Favorites before prioritizing.
+
+- **Events Map Card — find a valid data source**
+  `api.berlin.de/events/` is unreachable (confirmed 2026-04-14). `EventsService.swift` code exists and is correct. Need a valid Berlin events API (Eventbrite API, KulturnetzBerlin, or Berlin.de official). Once data source confirmed, UI build is ~2h.
+  **Dropped from v1.7 by:** /plan-eng-review (2026-04-14).
 
 ## Favorites
 
