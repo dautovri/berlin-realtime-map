@@ -24,6 +24,7 @@ struct StopAnnotationView: View {
             if showLabel {
                 Text(stop.name)
                     .font(.caption)
+                    .fontDesign(.rounded)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .padding(.horizontal, 4)
@@ -34,6 +35,7 @@ struct StopAnnotationView: View {
                     if let displayTime = next.displayTime {
                         Text(displayTime, style: .time)
                             .font(.caption2)
+                            .monospacedDigit()
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 4)
                             .background(.ultraThinMaterial.opacity(0.8))

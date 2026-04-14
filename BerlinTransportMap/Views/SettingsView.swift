@@ -102,7 +102,7 @@ struct SettingsView: View {
     private var alertRows: some View {
         ForEach(alertManager.alerts) { alert in
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(alert.stopName)
                         .font(.subheadline)
                         .fontDesign(.rounded)
