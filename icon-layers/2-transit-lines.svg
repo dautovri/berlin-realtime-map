@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Berlin Transit Map: Mid layer — transit lines (S/U-Bahn colors) -->
+  
+  <!-- S-Bahn green line (diagonal) -->
+  <line x1="140" y1="300" x2="884" y2="600" stroke="#00A550" stroke-width="32" stroke-linecap="round"/>
+  
+  <!-- U-Bahn blue line (horizontal) -->
+  <line x1="180" y1="520" x2="844" y2="520" stroke="#005DA6" stroke-width="32" stroke-linecap="round"/>
+  
+  <!-- Bus/Tram orange line (diagonal opposite) -->
+  <line x1="200" y1="700" x2="824" y2="380" stroke="#E8641A" stroke-width="28" stroke-linecap="round"/>
+  
+  <!-- U6 purple line (vertical) -->
+  <line x1="512" y1="160" x2="512" y2="864" stroke="#6B4E9E" stroke-width="28" stroke-linecap="round"/>
+  
+  <!-- Interchange dots at crossings -->
+  <circle cx="512" cy="520" r="24" fill="#FFFFFF" stroke="#333333" stroke-width="6"/>
+  <circle cx="620" cy="520" r="16" fill="#FFFFFF" stroke="#333333" stroke-width="4"/>
+  <circle cx="400" cy="520" r="16" fill="#FFFFFF" stroke="#333333" stroke-width="4"/>
+</svg>
