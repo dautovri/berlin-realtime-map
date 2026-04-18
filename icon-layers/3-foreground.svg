@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Berlin Transit Map: Foreground — location pin (your position) -->
+  <defs>
+    <linearGradient id="pin" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#FF3B30"/>
+      <stop offset="100%" stop-color="#CC2D26"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Map pin -->
+  <g filter="url(#shadow)">
+    <path d="M512 280 C448 280 396 332 396 396 C396 480 512 580 512 580 C512 580 628 480 628 396 C628 332 576 280 512 280Z"
+          fill="url(#pin)"/>
+    <circle cx="512" cy="392" r="44" fill="#FFFFFF"/>
+  </g>
+</svg>
