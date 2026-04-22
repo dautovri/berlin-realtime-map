@@ -1,14 +1,47 @@
 {
-  "fill-specializations" : [ { "value" : "automatic" } ],
-  "groups" : [
+  "groups": [
     {
-      "layers" : [
-        { "fill" : "automatic", "image-name" : "Background.png", "name" : "Background" },
-        { "fill" : "automatic", "image-name" : "Foreground.png", "name" : "Foreground" }
+      "layers": [
+        {
+          "image-name": "Background.png",
+          "name": "Background",
+          "glass": true
+        },
+        {
+          "image-name": "Foreground.png",
+          "name": "Foreground",
+          "glass": true
+        }
       ],
-      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
-      "translucency" : { "enabled" : true, "value" : 0.5 }
+      "name": "App Icon Layers",
+      "specular": true,
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.2
+      },
+      "blur-material": null
     }
   ],
-  "supported-platforms" : { "squares" : [ "iOS" ] }
+  "supported-platforms": {
+    "squares": [
+      "iOS",
+      "macOS",
+      "watchOS",
+      "tvOS",
+      "visionOS"
+    ]
+  },
+  "fill-specializations": [
+    {
+      "value": "automatic"
+    },
+    {
+      "appearance": "dark",
+      "value": "automatic"
+    },
+    {
+      "appearance": "tinted",
+      "value": "automatic"
+    }
+  ]
 }
