@@ -614,7 +614,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = BerlinTransportMap/BerlinTransportMap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -633,7 +633,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACCATALYST_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap;
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
@@ -653,7 +653,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = BerlinTransportMap/BerlinTransportMap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -672,7 +672,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACCATALYST_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap;
 				PRODUCT_DISPLAY_NAME = "Berlin Transport";
 				PRODUCT_NAME = BerlinTransportMap;
@@ -721,16 +721,18 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = DepartureWidget/DepartureWidget.entitlements;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DepartureWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DepartureWidget;
-				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.widget;
 				PRODUCT_NAME = DepartureWidget;
 				SDKROOT = iphoneos;
@@ -746,16 +748,18 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = DepartureWidget/DepartureWidget.entitlements;
+				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = 27EZNUVV57;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DepartureWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DepartureWidget;
-				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.widgetkit-extension";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				MARKETING_VERSION = 1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.dautov.berlintransportmap.widget;
 				PRODUCT_NAME = DepartureWidget;
 				SDKROOT = iphoneos;
