@@ -5,12 +5,22 @@
         {
           "image-name": "Background.png",
           "name": "Background",
-          "glass": true
+          "glass": true,
+          "appearances": {
+            "dark": {
+              "image-name": "Background-Dark.png"
+            }
+          }
         },
         {
           "image-name": "Foreground.png",
           "name": "Foreground",
-          "glass": true
+          "glass": true,
+          "appearances": {
+            "dark": {
+              "image-name": "Foreground-Dark.png"
+            }
+          }
         }
       ],
       "name": "App Icon Layers",
@@ -18,17 +28,12 @@
       "shadow": {
         "kind": "neutral",
         "opacity": 0.2
-      },
-      "blur-material": "ultra-thin"
+      }
     }
   ],
   "supported-platforms": {
     "squares": [
-      "iOS",
-      "macOS",
-      "watchOS",
-      "tvOS",
-      "visionOS"
+      "iOS"
     ]
   },
   "fill-specializations": [
