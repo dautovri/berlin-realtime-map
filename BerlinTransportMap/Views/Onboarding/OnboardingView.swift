@@ -920,6 +920,9 @@ private struct ValueDeliveryScreen: View {
     let saveSucceeded: Bool
     let onNext: () -> Void
 
+    @State private var liveDepartures: [String: [RESTDeparture]] = [:]
+    @State private var isLoading = true
+
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
@@ -941,11 +944,18 @@ private struct ValueDeliveryScreen: View {
             ScrollView {
                 VStack(spacing: 14) {
                     ForEach(stops) { stop in
-                        MiniDepartureBoard(stop: stop)
+                        MiniDepartureBoard(
+                            stop: stop,
+                            liveDepartures: liveDepartures[stop.id],
+                            isLoading: isLoading
+                        )
                     }
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
+            }
+            .task {
+                await fetchLiveDepartures()
             }
 
             VStack(spacing: 12) {
@@ -978,10 +988,43 @@ private struct ValueDeliveryScreen: View {
             .padding(.bottom, 32)
         }
     }
+
+    private func fetchLiveDepartures() async {
+        let service = ServiceContainer.shared.vehicleRadarService
+        await withTaskGroup(of: (String, [RESTDeparture]?).self) { group in
+            for stop in stops {
+                group.addTask {
+                    do {
+                        let departures = try await withThrowingTaskGroup(of: [RESTDeparture].self) { inner in
+                            inner.addTask {
+                                try await service.fetchDepartures(stopId: stop.id)
+                            }
+                            inner.addTask {
+                                try await Task.sleep(for: .seconds(8))
+                                throw CancellationError()
+                            }
+                            let result = try await inner.next()!
+                            inner.cancelAll()
+                            return result
+                        }
+                        return (stop.id, Array(departures.prefix(3)))
+                    } catch {
+                        return (stop.id, nil)
+                    }
+                }
+            }
+            for await (stopId, departures) in group {
+                liveDepartures[stopId] = departures
+            }
+        }
+        isLoading = false
+    }
 }
 
 private struct MiniDepartureBoard: View {
     let stop: OnboardingStop
+    let liveDepartures: [RESTDeparture]?
+    let isLoading: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -996,34 +1039,62 @@ private struct MiniDepartureBoard: View {
             }
 
             VStack(spacing: 6) {
-                ForEach(stop.sampleDepartures.prefix(3)) { dep in
+                if isLoading {
                     HStack {
-                        Text(dep.line)
-                            .font(.caption.bold())
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(dep.lineColor, in: .rect(cornerRadius: 5))
-                            .foregroundStyle(.white)
-
-                        Text(dep.direction)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-
                         Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                } else if let departures = liveDepartures, !departures.isEmpty {
+                    ForEach(departures) { dep in
+                        HStack {
+                            Text(dep.line?.displayName ?? "?")
+                                .font(.caption.bold())
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(
+                                    Color(hex: dep.line?.colorData?.bg ?? "#666666"),
+                                    in: .rect(cornerRadius: 5)
+                                )
+                                .foregroundStyle(.white)
 
-                        HStack(spacing: 4) {
-                            Text("\(dep.minutesAway) min")
-                                .font(.subheadline.bold())
-                                .monospacedDigit()
-                                .foregroundStyle(dep.delay > 0 ? Color(hex: "#E8641A") : Color(hex: "#00A550"))
-                            if dep.delay > 0 {
-                                Text("+\(dep.delay)")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(Color(hex: "#E8641A"))
+                            Text(dep.direction ?? "")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+
+                            Spacer()
+
+                            HStack(spacing: 4) {
+                                if let time = dep.displayTime {
+                                    Text(time, style: .relative)
+                                        .font(.subheadline.bold())
+                                        .monospacedDigit()
+                                        .foregroundStyle(
+                                            (dep.delayMinutes ?? 0) > 0
+                                                ? Color(hex: "#E8641A")
+                                                : Color(hex: "#00A550")
+                                        )
+                                }
+                                if let mins = dep.delayMinutes, mins > 0 {
+                                    Text("+\(mins)")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(Color(hex: "#E8641A"))
+                                }
                             }
                         }
                     }
+                } else {
+                    // Live data unavailable — show honest message
+                    HStack {
+                        Image(systemName: "wifi.slash")
+                            .foregroundStyle(.secondary)
+                        Text("Live departures will load in the app")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
                 }
             }
         }

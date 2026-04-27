@@ -19,7 +19,7 @@
         "kind": "neutral",
         "opacity": 0.2
       },
-      "blur-material": null
+      "blur-material": "ultra-thin"
     }
   ],
   "supported-platforms": {
