@@ -283,7 +283,7 @@ struct OnboardingView: View {
 
     @discardableResult
     private func saveSelectedStops() -> Bool {
-        let service = FavoritesService(modelContext: modelContext)
+        let service = FavoritesService(modelContext: modelContext, cityManager: ServiceContainer.shared.cityManager)
         let logger = Logger(subsystem: "BerlinTransportMap", category: "Onboarding")
         var allSucceeded = true
         for stop in selectedStops {

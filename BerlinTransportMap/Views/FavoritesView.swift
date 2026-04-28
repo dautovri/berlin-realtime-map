@@ -70,7 +70,7 @@ struct FavoritesView: View {
     }
 
     private func loadFavorites() {
-        let service = FavoritesService(modelContext: modelContext)
+        let service = FavoritesService(modelContext: modelContext, cityManager: ServiceContainer.shared.cityManager)
         favorites = (try? service.loadFavorites()) ?? []
     }
 
@@ -92,7 +92,7 @@ struct FavoritesView: View {
     }
 
     private func deleteFavorite(_ favorite: Favorite) {
-        let service = FavoritesService(modelContext: modelContext)
+        let service = FavoritesService(modelContext: modelContext, cityManager: ServiceContainer.shared.cityManager)
         try? service.deleteFavorite(favorite)
         favorites.removeAll { $0.id == favorite.id }
     }

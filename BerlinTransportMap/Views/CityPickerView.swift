@@ -24,9 +24,11 @@ struct CityPickerView: View {
                             city: city,
                             isSelected: city.id == services.cityManager.currentCity.id
                         ) {
-                            services.updateCity(city)
-                            if dismissOnSelection {
-                                dismiss()
+                            Task {
+                                await services.updateCity(city)
+                                if dismissOnSelection {
+                                    dismiss()
+                                }
                             }
                         }
                     }

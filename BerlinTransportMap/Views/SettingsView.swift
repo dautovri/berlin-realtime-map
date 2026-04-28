@@ -21,7 +21,7 @@ struct SettingsView: View {
                 Section {
                     ForEach(CityConfig.allCities) { city in
                         Button {
-                            services.updateCity(city)
+                            Task { await services.updateCity(city) }
                         } label: {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -165,7 +165,7 @@ struct SettingsView: View {
     // MARK: - Data
 
     private func loadStops() {
-        let service = FavoritesService(modelContext: modelContext)
+        let service = FavoritesService(modelContext: modelContext, cityManager: services.cityManager)
         let all = (try? service.loadFavorites()) ?? []
         savedStops = all.filter { $0.type == .stop }
     }
@@ -219,12 +219,14 @@ private struct AddCommuteAlertSheet: View {
                     Button("Save") {
                         guard let stop = selectedStop, let stopId = stop.stopId else { return }
                         let comps = Calendar.current.dateComponents([.hour, .minute], from: alertTime)
+                        let cityId = ServiceContainer.shared.cityManager.currentCity.id
                         Task {
                             await alertManager.addAlert(
                                 stopId: stopId,
                                 stopName: stop.name,
                                 hour: comps.hour ?? 8,
-                                minute: comps.minute ?? 0
+                                minute: comps.minute ?? 0,
+                                cityId: cityId
                             )
                         }
                         dismiss()

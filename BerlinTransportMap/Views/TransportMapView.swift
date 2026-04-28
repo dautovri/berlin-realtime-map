@@ -116,6 +116,7 @@ struct TransportMapView: View {
     var isOffline: Bool { !services.networkMonitor.isConnected }
 
     private var activeEventsCardEvent: Event? {
+        guard cityManager.currentCity.supportsEvents else { return nil }
         guard let center = currentRegion?.center else { return nil }
         let now = Date()
         let fourHoursLater = now.addingTimeInterval(4 * 3600)
@@ -347,6 +348,14 @@ struct TransportMapView: View {
                 }
             }
             .onChange(of: cityManager.currentCity) { _, newCity in
+                // Cancel any in-flight fetches first — they're using the OLD baseURL.
+                // If we don't, a stale Berlin response can land AFTER the clear-and-reload
+                // below and overwrite Munich data with Berlin data.
+                stopsLoadTask?.cancel()
+                stopsLoadTask = nil
+                vehiclesLoadTask?.cancel()
+                vehiclesLoadTask = nil
+
                 // Clear stale data from previous city
                 vehicles = []
                 stops = []
@@ -357,6 +366,8 @@ struct TransportMapView: View {
                 route = nil
                 selectedStop = nil
                 selectedVehicle = nil
+                events = []
+                dismissedEventsCard = false
 
                 let region = MKCoordinateRegion(
                     center: newCity.centerCoordinate,
@@ -364,6 +375,11 @@ struct TransportMapView: View {
                 )
                 withAnimation(.easeInOut(duration: 0.5)) {
                     cameraPosition = .region(region)
+                }
+
+                // Reload events for the new city if it supports them.
+                Task { @MainActor in
+                    await loadEvents()
                 }
             }
             .onChange(of: locationManager.location) { _, newLocation in
@@ -387,13 +403,25 @@ struct TransportMapView: View {
             .onReceive(NotificationCenter.default.publisher(for: .showDeparturesForStop)) { note in
                 guard let stopId = note.userInfo?["stopId"] as? String,
                       let stopName = note.userInfo?["stopName"] as? String else { return }
-                let stop = TransportStop(
-                    id: stopId,
-                    name: stopName,
-                    latitude: 52.52,
-                    longitude: 13.405
-                )
-                openDepartures(for: stop)
+                let cityId = (note.userInfo?["cityId"] as? String) ?? "berlin"
+                // If the deep link points to a different city, switch FIRST and only then
+                // open the departures sheet. Otherwise the fetch fires against the OLD
+                // baseURL (Berlin) with a Munich stopId — empty/error sheet.
+                Task { @MainActor in
+                    if let target = CityConfig.city(forId: cityId),
+                       target.id != cityManager.currentCity.id {
+                        await services.updateCity(target)
+                    }
+                    let center = CityConfig.city(forId: cityId)?.centerCoordinate
+                        ?? cityManager.currentCity.centerCoordinate
+                    let stop = TransportStop(
+                        id: stopId,
+                        name: stopName,
+                        latitude: center.latitude,
+                        longitude: center.longitude
+                    )
+                    openDepartures(for: stop)
+                }
             }
     }
 
@@ -707,6 +735,14 @@ struct TransportMapView: View {
 
     @MainActor
     private func loadVehicles(for region: MKCoordinateRegion) async {
+        // Hard short-circuit: cities without validated radar support never fire the request.
+        // Otherwise we'd serve a transient empty response as if it were live data, then
+        // flicker the UI when subsequent fetches return non-empty (or worse, never do).
+        guard cityManager.currentCity.supportsRadar else {
+            vehicles = []
+            return
+        }
+
         let now = Date()
         if let last = lastVehiclesLoadTime, now.timeIntervalSince(last) < 1.0 {
             return
@@ -1051,6 +1087,10 @@ struct TransportMapView: View {
 
     @MainActor
     private func loadEvents() async {
+        guard cityManager.currentCity.supportsEvents else {
+            events = []
+            return
+        }
         do {
             events = try await services.eventsService.fetchEvents()
         } catch {
@@ -1491,7 +1531,10 @@ struct RESTDeparturesSheet: View {
             }
             .task(id: stop.id) {
                 let stopId = stop.id
-                let existing = try? modelContext.fetch(FetchDescriptor<Favorite>(predicate: #Predicate { $0.stopId == stopId }))
+                let cityId = ServiceContainer.shared.cityManager.currentCity.id
+                let existing = try? modelContext.fetch(FetchDescriptor<Favorite>(predicate: #Predicate<Favorite> { f in
+                    f.stopId == stopId && (f.cityId == cityId || (f.cityId == nil && cityId == "berlin"))
+                }))
                 isFavorite = !(existing?.isEmpty ?? true)
             }
         }
@@ -1499,7 +1542,7 @@ struct RESTDeparturesSheet: View {
 
     private func addFavorite() {
         do {
-            let service = FavoritesService(modelContext: modelContext)
+            let service = FavoritesService(modelContext: modelContext, cityManager: ServiceContainer.shared.cityManager)
             try service.saveStopFavorite(name: stop.name, stop: stop)
             favoriteMessage = "Added to Favorites"
             isFavorite = true
