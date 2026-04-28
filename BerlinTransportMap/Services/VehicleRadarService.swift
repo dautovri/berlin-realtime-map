@@ -46,8 +46,11 @@ actor VehicleRadarService {
         return d
     }()
 
+    private(set) var cityId: String = "berlin"
+
     init(city: CityConfig = .berlin) {
         self.baseURL = Env.resolvedBaseURL(for: city)
+        self.cityId = city.id
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
@@ -55,8 +58,10 @@ actor VehicleRadarService {
     }
 
     /// Switch the service to a different city at runtime.
+    /// Note: callers own their fetch Tasks and must cancel them on city change.
     func updateCity(_ city: CityConfig) {
         baseURL = Env.resolvedBaseURL(for: city)
+        cityId = city.id
     }
 
     static func parseISO8601(_ string: String) -> Date? {
