@@ -20,6 +20,14 @@ struct CityConfig: Identifiable, Codable, Hashable {
     let accentColorHex: String
     let supportedProducts: [TransportProduct]
 
+    // Per-city capability flags.
+    // True means the endpoint has been validated for this city; false means the
+    // service must short-circuit and the UI must hide the corresponding affordance.
+    // Only Berlin is validated until the API endpoint matrix runs (see scripts/validate-city-endpoints.sh).
+    let supportsRadar: Bool
+    let supportsEvents: Bool
+    let supportsRoutes: Bool
+
     // MARK: - Computed properties
 
     var centerCoordinate: CLLocationCoordinate2D {
@@ -44,6 +52,57 @@ struct CityConfig: Identifiable, Codable, Hashable {
         case centerLatitude, centerLongitude, defaultZoom
         case spanLatitude, spanLongitude
         case accentColorHex, supportedProducts
+        case supportsRadar, supportsEvents, supportsRoutes
+    }
+
+    init(
+        id: String,
+        name: String,
+        transitAuthority: String,
+        apiBaseURL: String,
+        centerLatitude: Double,
+        centerLongitude: Double,
+        defaultZoom: Double,
+        spanLatitude: Double,
+        spanLongitude: Double,
+        accentColorHex: String,
+        supportedProducts: [TransportProduct],
+        supportsRadar: Bool = false,
+        supportsEvents: Bool = false,
+        supportsRoutes: Bool = true
+    ) {
+        self.id = id
+        self.name = name
+        self.transitAuthority = transitAuthority
+        self.apiBaseURL = apiBaseURL
+        self.centerLatitude = centerLatitude
+        self.centerLongitude = centerLongitude
+        self.defaultZoom = defaultZoom
+        self.spanLatitude = spanLatitude
+        self.spanLongitude = spanLongitude
+        self.accentColorHex = accentColorHex
+        self.supportedProducts = supportedProducts
+        self.supportsRadar = supportsRadar
+        self.supportsEvents = supportsEvents
+        self.supportsRoutes = supportsRoutes
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(String.self, forKey: .id)
+        self.name = try c.decode(String.self, forKey: .name)
+        self.transitAuthority = try c.decode(String.self, forKey: .transitAuthority)
+        self.apiBaseURL = try c.decode(String.self, forKey: .apiBaseURL)
+        self.centerLatitude = try c.decode(Double.self, forKey: .centerLatitude)
+        self.centerLongitude = try c.decode(Double.self, forKey: .centerLongitude)
+        self.defaultZoom = try c.decode(Double.self, forKey: .defaultZoom)
+        self.spanLatitude = try c.decode(Double.self, forKey: .spanLatitude)
+        self.spanLongitude = try c.decode(Double.self, forKey: .spanLongitude)
+        self.accentColorHex = try c.decode(String.self, forKey: .accentColorHex)
+        self.supportedProducts = try c.decode([TransportProduct].self, forKey: .supportedProducts)
+        self.supportsRadar = try c.decodeIfPresent(Bool.self, forKey: .supportsRadar) ?? false
+        self.supportsEvents = try c.decodeIfPresent(Bool.self, forKey: .supportsEvents) ?? false
+        self.supportsRoutes = try c.decodeIfPresent(Bool.self, forKey: .supportsRoutes) ?? true
     }
 
     // MARK: - Hashable
@@ -73,7 +132,10 @@ extension CityConfig {
         spanLatitude: 0.25,
         spanLongitude: 0.35,
         accentColorHex: "#115D97",
-        supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .ferry, .regionalTrain]
+        supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .ferry, .regionalTrain],
+        supportsRadar: true,
+        supportsEvents: true,
+        supportsRoutes: true
     )
 
     /// Munich — MVG
