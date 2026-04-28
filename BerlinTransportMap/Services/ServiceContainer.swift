@@ -1,10 +1,12 @@
 import Foundation
 import CoreLocation
+import Observation
 
 @MainActor
 final class ServiceContainer {
     static let shared = ServiceContainer()
-    
+
+    let cityManager: CityManager
     let transportService: TransportService
     let routeService: RouteService
     let vehicleRadarService: VehicleRadarService
@@ -13,11 +15,14 @@ final class ServiceContainer {
     let networkMonitor: NetworkMonitor
     let eventsService: EventsService
     let predictiveLoader: PredictiveLoader
-    
+
     private init() {
-        self.transportService = TransportService()
-        self.routeService = RouteService()
-        self.vehicleRadarService = VehicleRadarService()
+        let cityManager = CityManager()
+        let city = cityManager.currentCity
+        self.cityManager = cityManager
+        self.transportService = TransportService(city: city)
+        self.routeService = RouteService(city: city)
+        self.vehicleRadarService = VehicleRadarService(city: city)
         self.cacheService = CacheService()
         self.predictionService = PredictionService()
         self.networkMonitor = NetworkMonitor()
@@ -28,5 +33,15 @@ final class ServiceContainer {
             cacheService: cacheService,
             networkMonitor: networkMonitor
         )
+    }
+
+    /// Propagate a city change to all city-aware services.
+    func updateCity(_ city: CityConfig) {
+        cityManager.selectCity(city)
+        transportService.updateCity(city)
+        routeService.updateCity(city)
+        Task {
+            await vehicleRadarService.updateCity(city)
+        }
     }
 }

@@ -12,9 +12,40 @@ struct SettingsView: View {
     @State private var savedStops: [Favorite] = []
     @State private var showingAddAlert = false
 
+    private let services = ServiceContainer.shared
+
     var body: some View {
         NavigationStack {
             Form {
+                // MARK: City
+                Section {
+                    ForEach(CityConfig.allCities) { city in
+                        Button {
+                            services.updateCity(city)
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(city.name)
+                                        .font(.subheadline)
+                                        .fontDesign(.rounded)
+                                        .foregroundStyle(.primary)
+                                    Text(city.transitAuthority)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if city.id == services.cityManager.currentCity.id {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(Color.accentColor)
+                                        .font(.subheadline.bold())
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("City")
+                }
+
                 // MARK: Appearance
                 Section {
                     Toggle("Follow System", isOn: $useSystemTheme)

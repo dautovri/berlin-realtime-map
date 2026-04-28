@@ -108,7 +108,9 @@ struct TransportMapView: View {
 
     private let services = ServiceContainer.shared
     private let offlineDatabase = OfflineStopsDatabase.shared
-    
+
+    private var cityManager: CityManager { services.cityManager }
+
     var isOffline: Bool { !services.networkMonitor.isConnected }
 
     private var activeEventsCardEvent: Event? {
@@ -342,6 +344,26 @@ struct TransportMapView: View {
                     break
                 }
             }
+            .onChange(of: cityManager.currentCity) { _, newCity in
+                // Clear stale data from previous city
+                vehicles = []
+                stops = []
+                vehicleRenderedPositions = [:]
+                vehicleMotionPlans = [:]
+                vehicleHeadings = [:]
+                vehicleTrails = [:]
+                route = nil
+                selectedStop = nil
+                selectedVehicle = nil
+
+                let region = MKCoordinateRegion(
+                    center: newCity.centerCoordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                )
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    cameraPosition = .region(region)
+                }
+            }
             .onChange(of: locationManager.location) { _, newLocation in
                 if let location = newLocation {
                     lastLocationUpdate = Date()
@@ -428,7 +450,7 @@ struct TransportMapView: View {
             }
             .animation(.easeInOut(duration: 0.3), value: isOffline)
             .animation(.easeInOut(duration: 0.3), value: activeEventsCardEvent?.id)
-            .navigationTitle("Berlin Transport")
+            .navigationTitle("\(cityManager.currentCity.name) Transport")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
