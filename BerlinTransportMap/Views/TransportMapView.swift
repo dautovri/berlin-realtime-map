@@ -276,6 +276,12 @@ struct TransportMapView: View {
         if !services.networkMonitor.isConnected {
             return "Offline"
         }
+        // Cities without radar can't show "Live" — there's no live vehicle stream
+        // to be live or stale about. Show "Departures" so the badge is honest about
+        // what the user is actually getting (stop search + departure boards only).
+        if !cityManager.currentCity.supportsRadar {
+            return "Departures"
+        }
         return dataSource == .stale ? "Stale" : "Live"
     }
 
@@ -283,12 +289,20 @@ struct TransportMapView: View {
         if !services.networkMonitor.isConnected {
             return Color(hex: "#C41E3A")
         }
+        if !cityManager.currentCity.supportsRadar {
+            // Use the app's primary blue so "Departures" reads as info, not as a status
+            // alert — the city is working as designed, not stale or broken.
+            return Color(hex: "#115D97")
+        }
         return dataSource == .stale ? Color(hex: "#8A8A8E") : Color(hex: "#00A550")
     }
 
     private var cacheInfoText: String {
         if !services.networkMonitor.isConnected {
             return "You're currently offline. Showing last known vehicle positions."
+        }
+        if !cityManager.currentCity.supportsRadar {
+            return "Live vehicle map is only available in Berlin right now. Other cities show stop search and live departure boards."
         }
         if dataSource == .stale {
             return "Last known positions shown. Waiting for next update."
