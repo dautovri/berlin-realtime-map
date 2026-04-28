@@ -9,7 +9,7 @@ enum DataSource {
 }
 
 private enum MapSheet: Identifiable {
-    case about, help, settings, favorites, developerInfo, journeyPlanner
+    case about, help, settings, favorites, developerInfo, journeyPlanner, cityPicker
     var id: Self { self }
 }
 
@@ -55,12 +55,14 @@ private func projectCoordinate(
 }
 
 struct TransportMapView: View {
-    private static let berlinCenter = CLLocationCoordinate2D(latitude: 52.520008, longitude: 13.404954)
     private static let nearbySpan = MKCoordinateSpan(latitudeDelta: 0.008, longitudeDelta: 0.008)
     private static let defaultSpan = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
 
     @State private var cameraPosition: MapCameraPosition = .region(
-        MKCoordinateRegion(center: berlinCenter, span: defaultSpan)
+        MKCoordinateRegion(
+            center: ServiceContainer.shared.cityManager.currentCity.centerCoordinate,
+            span: defaultSpan
+        )
     )
 
     @State private var locationManager = LocationManager()
@@ -478,6 +480,11 @@ struct TransportMapView: View {
                     Spacer()
                     Menu {
                         Button {
+                            activeSheet = .cityPicker
+                        } label: {
+                            Label("Change City", systemImage: "building.2")
+                        }
+                        Button {
                             activeSheet = .settings
                         } label: {
                             Label("Settings", systemImage: "gear")
@@ -558,6 +565,8 @@ struct TransportMapView: View {
                             activeSheet = nil
                         }
                     )
+                case .cityPicker:
+                    CityPickerView()
                 }
             }
     }
