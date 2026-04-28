@@ -219,7 +219,10 @@ private struct AddCommuteAlertSheet: View {
                     Button("Save") {
                         guard let stop = selectedStop, let stopId = stop.stopId else { return }
                         let comps = Calendar.current.dateComponents([.hour, .minute], from: alertTime)
-                        let cityId = ServiceContainer.shared.cityManager.currentCity.id
+                        // Use the favorite's own city, not the active city — picking a Berlin
+                        // favorite while in Munich must save the alert with cityId="berlin",
+                        // otherwise the notification opens Munich's API with a Berlin stopId.
+                        let cityId = stop.effectiveCityId
                         Task {
                             await alertManager.addAlert(
                                 stopId: stopId,
