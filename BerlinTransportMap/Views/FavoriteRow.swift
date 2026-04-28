@@ -87,7 +87,7 @@ struct FavoriteRow: View {
             longitude: favorite.longitude ?? 13.405
         )
         do {
-            let deps = try await services.vehicleRadarService.fetchDepartures(stopId: stop.vbbStopId)
+            let deps = try await services.vehicleRadarService.fetchDepartures(stopId: stop.stopId)
             departures = deps
             fetchFailed = false
         } catch {

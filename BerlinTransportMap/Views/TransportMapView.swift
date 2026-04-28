@@ -583,7 +583,7 @@ struct TransportMapView: View {
     @MainActor
     private func loadDepartures(for stop: TransportStop) async {
         do {
-            let departures = try await services.vehicleRadarService.fetchDepartures(stopId: stop.vbbStopId)
+            let departures = try await services.vehicleRadarService.fetchDepartures(stopId: stop.stopId)
             guard selectedStop?.id == stop.id else { isLoadingDepartures = false; return }
             restDepartures = departures
         } catch {

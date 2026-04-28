@@ -2,11 +2,11 @@ import CoreLocation
 import Foundation
 import Observation
 
-/// Transport service using VBB REST API (https://v6.vbb.transport.rest)
+/// Transport service using HAFAS REST API (VBB or DB endpoints).
 @MainActor
 @Observable
 final class TransportService {
-    private let baseURL = "https://v6.vbb.transport.rest"
+    private var baseURL: String
     private let session: URLSession
     private let offlineDatabase = OfflineStopsDatabase.shared
     private let decoder = JSONDecoder()
@@ -15,12 +15,18 @@ final class TransportService {
         d.dateDecodingStrategy = .iso8601
         return d
     }()
-    
-    init() {
+
+    init(city: CityConfig = .berlin) {
+        self.baseURL = Env.resolvedBaseURL(for: city)
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
+    }
+
+    /// Switch the service to a different city at runtime.
+    func updateCity(_ city: CityConfig) {
+        baseURL = Env.resolvedBaseURL(for: city)
     }
 
     func queryNearbyStops(latitude: Double, longitude: Double, maxDistance: Int = 2000, maxLocations: Int = 50) async throws -> [TransportStop] {
