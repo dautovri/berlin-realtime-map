@@ -80,7 +80,7 @@ final class TransportModelBehaviorTests: XCTestCase {
             longitude: 13.4132
         )
 
-        XCTAssertEqual(stop.vbbStopId, "900000100003")
+        XCTAssertEqual(stop.stopId, "900000100003")
     }
 
     func testVbbStopIdParsesColonSeparatedFormat() {
@@ -91,7 +91,7 @@ final class TransportModelBehaviorTests: XCTestCase {
             longitude: 13.4132
         )
 
-        XCTAssertEqual(stop.vbbStopId, "900100003")
+        XCTAssertEqual(stop.stopId, "900100003")
     }
 
     func testTransportProductUnknownFallbackUsesNeutralPresentation() {

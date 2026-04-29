@@ -104,10 +104,10 @@ final class PredictiveLoader {
                              group.addTask {
                                  do {
                                      let deps = try await self.transportService.queryDepartures(
-                                         stationId: stop.vbbStopId,
+                                         stationId: stop.stopId,
                                          maxDepartures: 10
                                      )
-                                     return (stop.vbbStopId, deps)
+                                     return (stop.stopId, deps)
                                  } catch {
                                      print("Failed to preload departures for \(stop.name): \(error)")
                                      return nil

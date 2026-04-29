@@ -1,9 +1,9 @@
 import Foundation
 import CoreLocation
 
-/// Service for fetching real-time vehicle positions from VBB REST API (Berlin-Brandenburg region)
+/// Service for fetching real-time vehicle positions from HAFAS REST API (VBB or DB endpoints).
 actor VehicleRadarService {
-    private let baseURL = "https://v6.vbb.transport.rest"
+    private var baseURL: String
     private let session: URLSession
 
     nonisolated(unsafe) private static let dateFormatterFull: ISO8601DateFormatter = {
@@ -46,11 +46,22 @@ actor VehicleRadarService {
         return d
     }()
 
-    init() {
+    private(set) var cityId: String = "berlin"
+
+    init(city: CityConfig = .berlin) {
+        self.baseURL = Env.resolvedBaseURL(for: city)
+        self.cityId = city.id
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
+    }
+
+    /// Switch the service to a different city at runtime.
+    /// Note: callers own their fetch Tasks and must cancel them on city change.
+    func updateCity(_ city: CityConfig) {
+        baseURL = Env.resolvedBaseURL(for: city)
+        cityId = city.id
     }
 
     static func parseISO8601(_ string: String) -> Date? {

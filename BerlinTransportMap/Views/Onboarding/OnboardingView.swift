@@ -192,6 +192,7 @@ struct OnboardingView: View {
 
     private let primaryBlue = Color(hex: "#115D97")
     private let totalProgressScreens = 8
+    private let cityName = ServiceContainer.shared.cityManager.currentCity.name
 
     var body: some View {
         ZStack {
@@ -282,7 +283,7 @@ struct OnboardingView: View {
 
     @discardableResult
     private func saveSelectedStops() -> Bool {
-        let service = FavoritesService(modelContext: modelContext)
+        let service = FavoritesService(modelContext: modelContext, cityManager: ServiceContainer.shared.cityManager)
         let logger = Logger(subsystem: "BerlinTransportMap", category: "Onboarding")
         var allSucceeded = true
         for stop in selectedStops {
@@ -353,7 +354,7 @@ private struct WelcomeScreen: View {
                     .multilineTextAlignment(.center)
                     .fontDesign(.rounded)
 
-                Text("Live positions for every U-Bahn, S-Bahn,\ntram, and bus in Berlin.")
+                Text("Live positions for every U-Bahn, S-Bahn,\ntram, and bus in \(ServiceContainer.shared.cityManager.currentCity.name).")
                     .font(.body)
                     .foregroundStyle(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
@@ -397,7 +398,7 @@ private struct GoalScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("How do you get\naround Berlin?")
+                    Text("How do you get\naround \(ServiceContainer.shared.cityManager.currentCity.name)?")
                         .font(.system(size: 30, weight: .bold))
                         .fontDesign(.rounded)
                         .foregroundStyle(.white)
@@ -448,7 +449,7 @@ private struct PainScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("What drives you\ncrazy about\nBerlin transit?")
+                    Text("What drives you\ncrazy about\n\(ServiceContainer.shared.cityManager.currentCity.name) transit?")
                         .font(.system(size: 30, weight: .bold))
                         .fontDesign(.rounded)
                         .foregroundStyle(.white)
@@ -732,11 +733,13 @@ private struct ProcessingScreen: View {
     let onComplete: () -> Void
     let locationManager: CLLocationManager
 
-    private let steps = [
-        "Loading Berlin transit network",
-        "Applying your preferences",
-        "Fetching live departures",
-    ]
+    private var steps: [String] {
+        [
+            "Loading \(ServiceContainer.shared.cityManager.currentCity.name) transit network",
+            "Applying your preferences",
+            "Fetching live departures",
+        ]
+    }
     @State private var completedSteps: Set<Int> = []
     @State private var pulse = false
     @State private var animationTask: Task<Void, Never>?

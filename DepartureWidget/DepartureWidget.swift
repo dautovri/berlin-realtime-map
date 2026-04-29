@@ -13,6 +13,13 @@ extension UserDefaults {
 struct WidgetSavedStop: Codable {
     let id: String
     let name: String
+    // Multi-city fields. Older app versions wrote payloads without these,
+    // so they decode as nil and are treated as Berlin (apiBaseURL falls back to VBB).
+    let cityId: String?
+    let apiBaseURL: String?
+
+    var effectiveCityId: String { cityId ?? "berlin" }
+    var effectiveAPIBaseURL: String { apiBaseURL ?? "https://v6.vbb.transport.rest" }
 }
 
 // MARK: - Widget departure model
@@ -32,6 +39,7 @@ struct DepartureEntry: TimelineEntry {
     let date: Date
     let stopName: String
     let stopId: String
+    let cityId: String
     let departures: [WidgetDeparture]
     let noStopsSaved: Bool
     let fetchFailed: Bool
@@ -46,6 +54,7 @@ struct DepartureProvider: TimelineProvider {
             date: Date(),
             stopName: "U Alexanderplatz",
             stopId: "",
+            cityId: "berlin",
             departures: [
                 WidgetDeparture(lineName: "U2", lineColor: "#005CA9", lineForegroundColor: "#FFFFFF",
                                 direction: "Pankow", scheduledTime: Date().addingTimeInterval(300)),
@@ -87,22 +96,23 @@ struct DepartureProvider: TimelineProvider {
         let stops = (try? JSONDecoder().decode([WidgetSavedStop].self, from: data ?? Data())) ?? []
 
         guard let top = stops.first else {
-            return DepartureEntry(date: Date(), stopName: "", stopId: "", departures: [], noStopsSaved: true, fetchFailed: false)
+            return DepartureEntry(date: Date(), stopName: "", stopId: "", cityId: "berlin",
+                                  departures: [], noStopsSaved: true, fetchFailed: false)
         }
 
         do {
-            let departures = try await fetchDepartures(stopId: top.id)
-            return DepartureEntry(date: Date(), stopName: top.name, stopId: top.id,
+            let departures = try await fetchDepartures(stopId: top.id, apiBaseURL: top.effectiveAPIBaseURL)
+            return DepartureEntry(date: Date(), stopName: top.name, stopId: top.id, cityId: top.effectiveCityId,
                                   departures: departures, noStopsSaved: false, fetchFailed: false)
         } catch {
-            return DepartureEntry(date: Date(), stopName: top.name, stopId: top.id,
+            return DepartureEntry(date: Date(), stopName: top.name, stopId: top.id, cityId: top.effectiveCityId,
                                   departures: [], noStopsSaved: false, fetchFailed: true)
         }
     }
 
-    private func fetchDepartures(stopId: String) async throws -> [WidgetDeparture] {
+    private func fetchDepartures(stopId: String, apiBaseURL: String) async throws -> [WidgetDeparture] {
         guard let encodedId = stopId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              let url = URL(string: "https://v6.vbb.transport.rest/stops/\(encodedId)/departures?duration=60&results=6&linesOfStops=false&remarks=false")
+              let url = URL(string: "\(apiBaseURL)/stops/\(encodedId)/departures?duration=60&results=6&linesOfStops=false&remarks=false")
         else { return [] }
 
         let (data, _) = try await URLSession.shared.data(from: url)
@@ -268,7 +278,10 @@ struct DepartureWidgetEntryView: View {
         components.scheme = "berlintransportmap"
         components.host = "departures"
         components.path = "/\(entry.stopId)"
-        components.queryItems = [URLQueryItem(name: "name", value: entry.stopName)]
+        components.queryItems = [
+            URLQueryItem(name: "name", value: entry.stopName),
+            URLQueryItem(name: "city", value: entry.cityId)
+        ]
         return components.url
     }
 }

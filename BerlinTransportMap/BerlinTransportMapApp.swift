@@ -27,13 +27,16 @@ struct BerlinTransportMapApp: App {
 
     init() {
         ActivationMetricsService.shared.recordSession()
-        // Eagerly preload stops database on app launch
-        Task(priority: .userInitiated) {
+        // Eagerly preload stops database for the active city.
+        Task(priority: .userInitiated) { @MainActor in
+            let city = ServiceContainer.shared.cityManager.currentCity
+            await OfflineStopsDatabase.shared.switchCity(city)
             await OfflineStopsDatabase.shared.loadIfNeeded()
         }
-        // Warm up MapKit tile cache for Berlin's core area
+        // Warm up MapKit tile cache for the active city's core area.
         Task { @MainActor in
-            MapTilePreloader.shared.preloadBerlinTiles()
+            let city = ServiceContainer.shared.cityManager.currentCity
+            MapTilePreloader.shared.preloadTiles(for: city)
         }
     }
 
@@ -44,17 +47,18 @@ struct BerlinTransportMapApp: App {
                 .frame(minWidth: 900, minHeight: 600)
 #endif
                 .onOpenURL { url in
-                    // Handle widget deep link: berlintransportmap://departures/STOP_ID?name=STOP_NAME
+                    // Handle widget/alert deep link: berlintransportmap://departures/STOP_ID?name=STOP_NAME&city=CITY_ID
                     guard url.scheme == "berlintransportmap",
                           url.host == "departures" else { return }
                     let stopId = String(url.path.dropFirst()) // remove leading "/"
-                    let stopName = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                        .queryItems?.first(where: { $0.name == "name" })?.value ?? stopId
+                    let comps = URLComponents(url: url, resolvingAgainstBaseURL: false)
+                    let stopName = comps?.queryItems?.first(where: { $0.name == "name" })?.value ?? stopId
+                    let cityId = comps?.queryItems?.first(where: { $0.name == "city" })?.value ?? "berlin"
                     guard !stopId.isEmpty else { return }
                     NotificationCenter.default.post(
                         name: .showDeparturesForStop,
                         object: nil,
-                        userInfo: ["stopId": stopId, "stopName": stopName]
+                        userInfo: ["stopId": stopId, "stopName": stopName, "cityId": cityId]
                     )
                 }
         }
@@ -70,32 +74,32 @@ struct BerlinTransportMapApp: App {
 
 // MARK: - Map Tile Preloader
 
-/// Preloads MapKit tiles for Berlin's core area at common zoom levels
-/// so the map appears instantly without white tiles on first launch
+/// Preloads MapKit tiles for the active city's core area at common zoom levels
+/// so the map appears instantly without white tiles on first launch.
 @MainActor
 final class MapTilePreloader {
     static let shared = MapTilePreloader()
-    private var hasPreloaded = false
+    private var preloadedCityIds: Set<String> = []
     private var activeSnapshotters: [MKMapSnapshotter] = []
 
     private init() {}
 
-    func preloadBerlinTiles() {
-        guard !hasPreloaded else { return }
-        hasPreloaded = true
+    func preloadTiles(for city: CityConfig) {
+        guard !preloadedCityIds.contains(city.id) else { return }
+        preloadedCityIds.insert(city.id)
 
-        let berlinCenter = CLLocationCoordinate2D(latitude: 52.520008, longitude: 13.404954)
+        let center = city.centerCoordinate
 
         // Preload at two zoom levels: city overview and neighborhood
         let regions: [(MKCoordinateRegion, CGSize)] = [
             // City overview (~10km span)
             (MKCoordinateRegion(
-                center: berlinCenter,
+                center: center,
                 span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
             ), CGSize(width: 512, height: 512)),
             // Neighborhood level (~2km span)
             (MKCoordinateRegion(
-                center: berlinCenter,
+                center: center,
                 span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
             ), CGSize(width: 512, height: 512))
         ]

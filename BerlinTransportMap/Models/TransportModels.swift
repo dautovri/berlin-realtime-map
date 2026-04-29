@@ -26,7 +26,8 @@ struct TransportStop: Identifiable, Hashable, Codable {
         self.products = products
     }
 
-    var vbbStopId: String {
+    /// Extracts a usable stop ID from various API ID formats.
+    var stopId: String {
         if let lRange = id.range(of: "L=") {
             let startIndex = lRange.upperBound
             let remaining = id[startIndex...]
@@ -44,12 +45,16 @@ struct TransportStop: Identifiable, Hashable, Codable {
         return id
     }
 
-    init(from vbbLocation: VBBSimpleLocation) {
-        self.id = vbbLocation.id ?? UUID().uuidString
-        self.name = vbbLocation.name ?? "Unknown"
+    /// Backward-compatible alias for `stopId`.
+    @available(*, deprecated, renamed: "stopId")
+    var vbbStopId: String { stopId }
+
+    init(from location: TransitLocation) {
+        self.id = location.id ?? UUID().uuidString
+        self.name = location.name ?? "Unknown"
         self.place = nil
-        self.latitude = vbbLocation.location?.latitude ?? 0
-        self.longitude = vbbLocation.location?.longitude ?? 0
+        self.latitude = location.location?.latitude ?? 0
+        self.longitude = location.location?.longitude ?? 0
         self.products = []
     }
 
@@ -159,11 +164,11 @@ struct TransportLine: Codable {
         label
     }
 
-    init(from vbbLine: VBBDeparture.VBBLine?) {
-        self.id = vbbLine?.id
-        self.label = vbbLine?.publicCode ?? vbbLine?.name ?? "?"
-        self.name = vbbLine?.name
-        self.product = TransportProductCoding.decode(vbbLine?.product ?? "")
+    init(from transitLine: TransitDepartureRaw.TransitLine?) {
+        self.id = transitLine?.id
+        self.label = transitLine?.publicCode ?? transitLine?.name ?? "?"
+        self.name = transitLine?.name
+        self.product = TransportProductCoding.decode(transitLine?.product ?? "")
         self.color = nil
         self.foregroundColor = nil
     }
@@ -343,36 +348,42 @@ extension TransportError {
     }
 }
 
-// MARK: - VBB API Types (for TransportService)
+// MARK: - Transit API Types (generic, works with both VBB and DB REST APIs)
 
-struct VBBSimpleLocation: Decodable {
+struct TransitLocation: Decodable {
     let id: String?
     let name: String?
-    let location: VBBLocation?
+    let location: TransitCoordinate?
 
-    struct VBBLocation: Decodable {
+    struct TransitCoordinate: Decodable {
         let latitude: Double
         let longitude: Double
     }
 }
 
-struct VBBLocation: Decodable {
+/// Backward-compatible alias.
+typealias VBBSimpleLocation = TransitLocation
+
+struct TransitCoordinate: Decodable {
     let latitude: Double
     let longitude: Double
 }
 
-struct VBBDeparture: Decodable {
+/// Backward-compatible alias.
+typealias VBBLocation = TransitCoordinate
+
+struct TransitDepartureRaw: Decodable {
     let tripId: String?
-    let line: VBBLine?
+    let line: TransitLine?
     let direction: String?
     let plannedWhen: String?
     let when: String?
     let platform: String?
-    let stop: VBBStop?
+    let stop: TransitStop?
     let delay: Int?
-    let remarks: [VBBCustomValue]?
+    let remarks: [TransitRemark]?
 
-    struct VBBLine: Decodable {
+    struct TransitLine: Decodable {
         let id: String?
         let name: String?
         let publicCode: String?
@@ -382,16 +393,19 @@ struct VBBDeparture: Decodable {
         let mode: String?
     }
 
-    struct VBBStop: Decodable {
+    struct TransitStop: Decodable {
         let id: String?
         let name: String?
-        let location: VBBLocation?
+        let location: TransitCoordinate?
     }
 
-    struct VBBCustomValue: Decodable {
+    struct TransitRemark: Decodable {
         let id: String?
         let type: String?
         let summary: String?
         let content: String?
     }
 }
+
+/// Backward-compatible alias.
+typealias VBBDeparture = TransitDepartureRaw

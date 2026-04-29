@@ -29,5 +29,22 @@ Key rules for all SwiftUI work:
 - Station names: always `.fontDesign(.rounded)`
 - Spacing: 8pt base grid (8 / 16 / 24 / 32 / 48)
 - Animations: respect `@Environment(\.accessibilityReduceMotion)`
-- Line badges: authentic VBB/BVG colors only — never approximate
+- Line badges: authentic transit-authority colors only (VBB/BVG for Berlin, each city's own palette elsewhere) — never approximate
 - No hardcoded font sizes except the hero ETA (42pt bold monospaced in departure sheets)
+
+## Multi-City Architecture
+
+The app supports multiple German cities via a city-config system. Berlin is the default and only fully validated city; other cities are gated by capability flags until each city's API endpoint matrix is validated.
+
+Key types:
+- `CityConfig` (`BerlinTransportMap/Models/CityConfig.swift`) — per-city transit authority, API base URL, map region, accent color, supported transport products, and capability flags (`supportsRadar`, `supportsEvents`, `supportsRoutes`).
+- `CityManager` (`BerlinTransportMap/Services/CityManager.swift`) — `@MainActor @Observable` singleton holding the active `CityConfig`. Persists selection via `UserDefaults` under key `selectedCityId`. Defaults to `.berlin`.
+- `ServiceContainer` — owns the per-city service instances (`TransportService`, `VehicleRadarService`, `RouteService`, etc.) and exposes an async `updateCity(_:)` that rebuilds them when the user switches cities.
+- `Favorite` and `CommuteAlert` carry a `cityId` field so per-city saved data is scoped correctly. A migration backfills missing `cityId` to `"berlin"` for legacy entries.
+
+Rules for multi-city work:
+- Always read the active city via `CityManager.currentCity` — never hardcode `.berlin` outside the default fallback.
+- Before exposing a city-specific feature in the UI, check the relevant capability flag (`supportsRadar`, `supportsEvents`, `supportsRoutes`). If false, hide the affordance — do not just disable it. The "Live" badge in `TransportMapView` and the radar widget gate on `supportsRadar`.
+- New cities go in `CityConfig.allCities` with `supportsRadar: false` until validated by `scripts/validate-city-endpoints.sh`.
+- When adding a service that hits a city-scoped endpoint, take `CityConfig` (or the API base URL) as a constructor argument and let `ServiceContainer.updateCity` rebuild it on city switch — do not read `CityManager` directly inside the service.
+- Tests for city-aware code live in `Tests/CityConfigTests.swift`, `Tests/CityManagerTests.swift`, `Tests/FavoriteCityIdMigrationTests.swift`, `Tests/OfflineStopsDatabaseCityTests.swift`, and `Tests/ServiceContainerUpdateCityTests.swift`.

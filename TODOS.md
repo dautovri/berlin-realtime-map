@@ -145,14 +145,22 @@
 
 ### P1 — Active
 
-- **WidgetKit extension — DepartureWidget**
-  New Xcode extension target. App Group `group.com.dautov.berlintransportmap` on both targets. AppGroup SwiftData migration on first launch (4-step guard: open old store → copy Favorites → write to group store → verify count → delete old → set UserDefaults flag). `TimelineProvider` reads top saved stop, fetches departures, shows scheduled time (`HH:mm`) not relative minutes (WidgetKit throttle = 15-60min; relative minutes would be stale). `systemSmall` + `systemMedium`. Widget tap deep-links via `widgetURL` + `.onOpenURL` to `RESTDeparturesSheet`.
-  **Accepted by:** /plan-ceo-review (2026-04-13), architecture confirmed by /plan-eng-review (2026-04-14).
+(none — multi-city foundation shipped in v1.7; see ## Completed)
 
-- **Commute Alerts — CommuteAlertManager**
-  New class (not in ServiceContainer). `SettingsView` section: stop picker from saved Favorites + `DatePicker(.hourAndMinute)`. `UNCalendarNotificationTrigger(repeats: true)`. Notification body: "Time to check your {stop} departures." Tap opens departure board. Permission requested at configure time (not cold in onboarding). Permission denied: show Settings deep-link.
-  Unit tests: scheduling logic (correct trigger dates, cancellation, permission-denied path) + AppGroup smoke test.
-  **Accepted by:** /plan-ceo-review (2026-04-13), redesigned by /plan-eng-review (2026-04-14). No BGTaskScheduler — fixed-time local notifications only.
+### P1 — Deferred to v1.8 (multi-city follow-ups)
+
+- **Map header city pill** — Spec'd in autoplan design review (decision row 29) as ship-blocking but deferred to v1.8 since the navigation-bar title already shows the city name. Pattern: `[8pt accent dot] [City name (.fontDesign(.rounded))] [chevron.down]` floating top-leading below safe area. Tap opens picker.
+- **API endpoint validation matrix** — `scripts/validate-city-endpoints.sh` to curl every endpoint type for Munich + Hamburg before flipping their `supportsRadar`/`supportsEvents` to `true` in CityConfig. Currently all non-Berlin cities run in departures-only mode.
+- **Onboarding multi-city pass** — Welcome overlay still says "Watch Berlin transit", demo stops are Berlin-named, testimonials Berlin-specific. Codex/subagent flagged 11 hardcoded surfaces. Best done after API matrix runs and city pill ships.
+- **Departures Mode visual taxonomy** — Non-radar cities should look deliberately different from Berlin (no live pulse, no vehicle layer, capability chip in pill, slightly larger stop dots). Currently they look like Berlin with missing data.
+- **Trademark review on transit authority colors** — BVG/MVG/HVV/RMV/KVB/VVS/VRR/DVB/LVB/VAG accent colors ship without licenses. Functional color usage is hard to claim trademark on, but worth a legal pass before promoting non-Berlin cities.
+- **TransportMapView extraction** — 1874 lines and growing. Extract `MapHeaderPill`, `EventsCard`, `WelcomeOverlay` integration, and the `onChange(cityManager)` data-clearing block. Mechanical not architectural.
+
+### P1 — Active (legacy, completed in earlier release)
+
+- **WidgetKit extension — DepartureWidget** (shipped in v1.7)
+
+- **Commute Alerts — CommuteAlertManager** (shipped in v1.7)
 
 ### P2 — Followup
 
@@ -173,6 +181,8 @@
 
 ## Completed
 
+- **Multi-city foundation (10 German cities)** — Shipped in v1.7 (2026-04-28). `CityConfig` model with per-city `supportsRadar`/`supportsEvents`/`supportsRoutes` flags; `CityManager` persists selection; `ServiceContainer.updateCity` is async + propagates to `TransportService`/`RouteService`/`VehicleRadarService`/`OfflineStopsDatabase`/`PredictiveLoader`/`MapTilePreloader`/widget; `OfflineStopsDatabase` is per-city actor with namespaced cache + per-city grid + searchLocations cityId guard; `Favorite` carries `cityId` with per-`(stopId,cityId)` dedup; `WidgetSavedStop` carries `cityId+apiBaseURL` for per-stop API resolution; `CommuteAlert` carries `cityId`; deep links carry `?city=` and switch city before opening. `PRODUCT_DISPLAY_NAME` changed to "Transit Map". 22 new unit tests pass. **Completed:** v1.7 (2026-04-28).
+- **Multi-city race fixes** — Shipped in v1.7 (2026-04-28). City switch now cancels in-flight `vehiclesLoadTask`/`stopsLoadTask` in `TransportMapView.onChange`; deep-link city switch awaits `updateCity` before opening departures sheet; `OfflineStopsDatabase.downloadAndCache` snapshots `currentCity` and aborts if it changes mid-download (prevents Berlin stops from being written to Munich cache); `searchLocations` short-circuit guarded by `activeCityId`. **Completed:** v1.7 (2026-04-28).
 - **Stop-tap async race fix** — Implemented on main (2026-04-13). `guard selectedStop?.id == stop.id` guard at TransportMapView.swift:576 discards stale responses on rapid stop-tap.
 - **vehicleFetchCount cap (bloat prevention)** — Implemented on main (2026-04-13). `if vehicleFetchCount < 21 { vehicleFetchCount += 1 }` at TransportMapView.swift:706.
 - **FavoriteRow dead tap zone** — Fixed by /qa on main (2026-04-13), commit `bd9f39f`. `.contentShape(Rectangle())` added to HStack; `.accessibilityElement(children: .combine)` removed from VStack (was intercepting accessibility taps before the Button action).

@@ -4,14 +4,25 @@ import CoreLocation
 @MainActor
 @Observable
 final class RouteService {
-    private let baseURL = "https://v6.vbb.transport.rest"
+    private var baseURL: String
+    private(set) var cityId: String
     private let session: URLSession
 
-    init() {
+    init(city: CityConfig = .berlin) {
+        self.baseURL = Env.resolvedBaseURL(for: city)
+        self.cityId = city.id
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
         self.session = URLSession(configuration: config)
+    }
+
+    /// Switch the service to a different city at runtime.
+    /// Note: callers (the route planner views) own their fetch Tasks and must cancel
+    /// them on city change. The service can't own task lifetimes across callers.
+    func updateCity(_ city: CityConfig) {
+        baseURL = Env.resolvedBaseURL(for: city)
+        cityId = city.id
     }
 
     func planRoute(start: TransportStop, end: TransportStop, mode: TransportMode, includeBikes: Bool = false) async throws -> Route {

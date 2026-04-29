@@ -29,6 +29,8 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
 
     /// Handle notification tap: extract stopId from userInfo and open departure board.
+    /// Forwards `cityId` (added in v1.7) so the receiver can switch cities before
+    /// fetching — otherwise a Munich alert opens Berlin's API with a Munich stopId.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
@@ -38,11 +40,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         if let stopId = userInfo["stopId"] as? String,
            let stopName = userInfo["stopName"] as? String,
            !stopId.isEmpty {
+            let cityId = (userInfo["cityId"] as? String) ?? "berlin"
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
                     name: .showDeparturesForStop,
                     object: nil,
-                    userInfo: ["stopId": stopId, "stopName": stopName]
+                    userInfo: ["stopId": stopId, "stopName": stopName, "cityId": cityId]
                 )
             }
         }

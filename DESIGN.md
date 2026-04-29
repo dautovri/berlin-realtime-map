@@ -7,9 +7,9 @@ Established: 2026-04-09
 
 ## Direction
 
-**Berliner Precision.** Every competitor (Transit App, DB Navigator, Moovit, Citymapper) uses generic international design language. Berlin Transport Map is Berlin-only. The design leans into that: the clarity and graphic confidence of Berlin's Bauhaus heritage, expressed through a transit information system.
+**Berliner Precision.** Every competitor (Transit App, DB Navigator, Moovit, Citymapper) uses generic international design language. Berlin Transport Map leads with Berlin and expands across Germany. The design leans into that: the clarity and graphic confidence of Berlin's Bauhaus heritage, expressed through a transit information system.
 
-The result is a UI that feels like it belongs on a BVG platform — not a startup's growth dashboard.
+The result is a UI that feels like it belongs on a BVG platform — not a startup's growth dashboard. Multi-city support (added in v1.7) is **additive**: Berliner Precision remains the master spec, and each additional German city inherits the same typographic system, spacing grid, status colors, and motion language. Only the line-badge palette swaps to that city's authentic transit-authority colors.
 
 ---
 
@@ -37,9 +37,9 @@ Four colors. Every departure state maps to exactly one of them. No other colors 
 
 ### Line Badges
 
-Authentic VBB/BVG colors. Never approximate — these are the exact colors commuters recognize.
+Authentic transit-authority colors. Never approximate — these are the exact colors commuters recognize. The table below is Berlin (VBB/BVG); when shipping additional German cities (Hamburg HVV, Munich MVV, etc.), use that city's official line-color palette and keep the same badge shape and typography.
 
-| Line type | Color source |
+| Line type | Color source (Berlin) |
 |-----------|-------------|
 | U-Bahn | BVG U-line colors (U1 green, U2 red, U3 olive, U5 dark blue, U6 purple, U7 orange, U8 blue, U9 orange-red) |
 | S-Bahn | S-Bahn Berlin green (#006F35) |

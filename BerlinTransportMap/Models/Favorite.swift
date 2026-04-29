@@ -12,8 +12,10 @@ final class Favorite {
     var routeName: String?
     var routeCoordinates: Data?
     var createdAt: Date
-    
-    init(name: String, type: FavoriteType, stopId: String? = nil, latitude: Double? = nil, longitude: Double? = nil, routeName: String? = nil, routeCoordinates: Data? = nil) {
+    // City the favorite belongs to. nil = legacy pre-multi-city data, treated as Berlin.
+    var cityId: String?
+
+    init(name: String, type: FavoriteType, stopId: String? = nil, latitude: Double? = nil, longitude: Double? = nil, routeName: String? = nil, routeCoordinates: Data? = nil, cityId: String? = nil) {
         self.id = UUID()
         self.name = name
         self.type = type
@@ -22,8 +24,12 @@ final class Favorite {
         self.longitude = longitude
         self.routeName = routeName
         self.routeCoordinates = routeCoordinates
+        self.cityId = cityId
         self.createdAt = Date()
     }
+
+    /// Effective city id, treating nil (legacy data) as Berlin.
+    var effectiveCityId: String { cityId ?? "berlin" }
 }
 
 enum FavoriteType: String, Codable {

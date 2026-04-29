@@ -9,18 +9,23 @@ struct CommuteAlert: Codable, Identifiable, Equatable {
     let stopName: String
     let hour: Int
     let minute: Int
+    // City the alert belongs to. nil = legacy pre-multi-city, treated as Berlin.
+    let cityId: String?
 
-    init(stopId: String, stopName: String, hour: Int, minute: Int) {
+    init(stopId: String, stopName: String, hour: Int, minute: Int, cityId: String? = nil) {
         self.id = UUID()
         self.stopId = stopId
         self.stopName = stopName
         self.hour = hour
         self.minute = minute
+        self.cityId = cityId
     }
 
     var displayTime: String {
         String(format: "%02d:%02d", hour, minute)
     }
+
+    var effectiveCityId: String { cityId ?? "berlin" }
 }
 
 // MARK: - Manager
@@ -60,8 +65,8 @@ final class CommuteAlertManager {
 
     // MARK: - CRUD
 
-    func addAlert(stopId: String, stopName: String, hour: Int, minute: Int) async {
-        let alert = CommuteAlert(stopId: stopId, stopName: stopName, hour: hour, minute: minute)
+    func addAlert(stopId: String, stopName: String, hour: Int, minute: Int, cityId: String? = nil) async {
+        let alert = CommuteAlert(stopId: stopId, stopName: stopName, hour: hour, minute: minute, cityId: cityId)
         alerts.append(alert)
         save()
         await schedule(alert)
@@ -94,8 +99,12 @@ final class CommuteAlertManager {
         content.title = alert.stopName
         content.body = "Time to check your departures"
         content.sound = .default
-        // Deep link: berlintransportmap://departures/STOP_ID?name=STOP_NAME
-        content.userInfo = ["stopId": alert.stopId, "stopName": alert.stopName]
+        // Deep link: berlintransportmap://departures/STOP_ID?name=STOP_NAME&city=CITY_ID
+        content.userInfo = [
+            "stopId": alert.stopId,
+            "stopName": alert.stopName,
+            "cityId": alert.effectiveCityId
+        ]
 
         let request = UNNotificationRequest(identifier: alert.id.uuidString, content: content, trigger: trigger)
 

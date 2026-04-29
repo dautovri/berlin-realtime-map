@@ -12,9 +12,40 @@ struct SettingsView: View {
     @State private var savedStops: [Favorite] = []
     @State private var showingAddAlert = false
 
+    private let services = ServiceContainer.shared
+
     var body: some View {
         NavigationStack {
             Form {
+                // MARK: City
+                Section {
+                    ForEach(CityConfig.allCities) { city in
+                        Button {
+                            Task { await services.updateCity(city) }
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(city.name)
+                                        .font(.subheadline)
+                                        .fontDesign(.rounded)
+                                        .foregroundStyle(.primary)
+                                    Text(city.transitAuthority)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if city.id == services.cityManager.currentCity.id {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(Color.accentColor)
+                                        .font(.subheadline.bold())
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("City")
+                }
+
                 // MARK: Appearance
                 Section {
                     Toggle("Follow System", isOn: $useSystemTheme)
@@ -134,7 +165,7 @@ struct SettingsView: View {
     // MARK: - Data
 
     private func loadStops() {
-        let service = FavoritesService(modelContext: modelContext)
+        let service = FavoritesService(modelContext: modelContext, cityManager: services.cityManager)
         let all = (try? service.loadFavorites()) ?? []
         savedStops = all.filter { $0.type == .stop }
     }
@@ -188,12 +219,17 @@ private struct AddCommuteAlertSheet: View {
                     Button("Save") {
                         guard let stop = selectedStop, let stopId = stop.stopId else { return }
                         let comps = Calendar.current.dateComponents([.hour, .minute], from: alertTime)
+                        // Use the favorite's own city, not the active city — picking a Berlin
+                        // favorite while in Munich must save the alert with cityId="berlin",
+                        // otherwise the notification opens Munich's API with a Berlin stopId.
+                        let cityId = stop.effectiveCityId
                         Task {
                             await alertManager.addAlert(
                                 stopId: stopId,
                                 stopName: stop.name,
                                 hour: comps.hour ?? 8,
-                                minute: comps.minute ?? 0
+                                minute: comps.minute ?? 0,
+                                cityId: cityId
                             )
                         }
                         dismiss()

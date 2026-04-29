@@ -1,5 +1,5 @@
 ## App Overview
-- **App Name:** Berlin Transport Map
+- **App Name:** German Transit Map
 - **App ID (Apple):** 6757723208
 - **App ID (Google Play):** N/A
 - **Category:** Travel
@@ -7,96 +7,132 @@
 - **Platform:** iOS
 - **Price Model:** Free with optional tip jar
 - **Launch Date:** Live on App Store
-- **Current Version:** See Xcode build settings / App Store Connect
+- **Current Version:** 2.0 (PREPARE_FOR_SUBMISSION)
+- **Previous Name:** Berlin Transit Map: Live BVG
 
 ## Value Proposition
-- **Problem:** Berlin transit riders want to know where their U-Bahn, tram, or bus actually is right now — not just what the schedule says. Most apps show timetables, not live vehicle positions.
-- **Target Audience:** Berlin residents, daily commuters, tourists, and transit fans who want live vehicle tracking on a real interactive map. Covers the full VBB Berlin-Brandenburg network.
-- **Unique Differentiator:** Real-time vehicle positions on a MapKit map, not just departure boards. Live delay data, full VBB network, no account, no tracking.
-- **Elevator Pitch:** Watch Berlin's trains, trams, and buses move live on a real map. Tap any stop for departures with live delays.
+- **Problem:** Public transit riders in Germany want to know where their U-Bahn, tram, or bus actually is right now — not just what the schedule says. Most apps show timetables, not live vehicle positions.
+- **Target Audience:** Residents of Berlin, München, Hamburg, Frankfurt, Köln, and Stuttgart; daily commuters, tourists, and transit fans who want live vehicle tracking on a real interactive map.
+- **Unique Differentiator:** Real-time vehicle positions on a MapKit map across all major German cities, not just departure boards. Live delay data, multi-city coverage (BVG, MVG, HVV, RMV, KVB, VVS), no account, no tracking.
+- **Elevator Pitch:** Watch trains, trams, and buses move live on a real map — across Germany's biggest cities. Tap any stop for departures with live delays.
+
+## Supported Cities & Transit Authorities
+| City | Authority | Transit Types |
+|------|-----------|---------------|
+| Berlin | BVG / VBB | U-Bahn, S-Bahn, Tram, Bus, Ferry |
+| München | MVG | U-Bahn, S-Bahn, Tram, Bus |
+| Hamburg | HVV | U-Bahn, S-Bahn, Bus, Ferry |
+| Frankfurt | RMV | U-Bahn, S-Bahn, Tram, Bus |
+| Köln | KVB | Stadtbahn, S-Bahn, Bus |
+| Stuttgart | VVS | Stadtbahn, S-Bahn, Bus |
 
 ## Competitors
 | App | App ID | Strengths | Weaknesses |
 |-----|--------|-----------|------------|
-| BVG Jelbi | BVG official | Ticketing, authority data | No live vehicle map, heavyweight app |
-| DB Navigator | Deutsche Bahn | National coverage | Complex UI, not Berlin-focused |
+| BVG Jelbi | BVG official | Ticketing, authority data | No live vehicle map, heavyweight, Berlin only |
+| DB Navigator | Deutsche Bahn | National coverage | Complex UI, no live vehicle map |
 | Transit | 493867874 | Real-time tracking, multi-city | Subscription model, North American focus |
-| Fahrinfo Berlin | BVG official | Deep BVG integration | No live vehicle locations, aging UI |
+| MVG Fahrinfo | MVG official | Deep MVG integration | München only, no live map |
 | Google Maps | N/A | Familiar interface, broad coverage | Not transit-specific, privacy concerns |
 
-## Current ASO State
-- **Title:** Berlin Transport Map  ← 20 chars ✓ keep — strong keyword presence
-- **Subtitle:** Live U-Bahn, S-Bahn & Bus Map  ← 29 chars ✓ keep — excellent
-- **Keyword Field:** transit,VBB,BVG,realtime,departures,tram,ferry,schedule,route,fahrplan,delay,station  ← 84 chars ✓ OPTIMIZED
-- **Keyword Field notes:** Removed 5 redundant terms: berlin (title), u-bahn (subtitle), s-bahn (subtitle), bus (subtitle), live map (live in subtitle, map in title). Freed 34 chars. Added: ferry, schedule, route, fahrplan, delay, station.
-- **Rating:** Check App Store Connect — verify current star average and review count
-- **Primary Keywords:** Berlin transit, BVG live map, U-Bahn departures, Berlin bus tracker, VBB real-time
-- **Localization action:** Verify DE and FR keyword fields are also optimized (may differ from EN)
+## Current ASO State (v2.0 — PREPARE_FOR_SUBMISSION)
+
+### en-US
+- **Title:** German Transit Map (18 chars)
+- **Subtitle:** Live S-Bahn U-Bahn Tram & Bus (30 chars)
+- **Keywords:** BVG,MVG,HVV,RMV,KVB,VVS,VBB,München,Hamburg,Frankfurt,Köln,Stuttgart,departures,delay,realtime (96 bytes)
+- **Promotional Text:** Now covering Berlin, München, Hamburg, Frankfurt, Köln & Stuttgart. Live transit tracking for all major German cities.
+
+### de-DE
+- **Title:** Deutsche Nahverkehr Karte (25 chars)
+- **Subtitle:** Echtzeit S-Bahn U-Bahn & Bus (29 chars)
+- **Keywords:** öpnv,bvg,mvg,hvv,rmv,kvb,vvs,vbb,berlin,münchen,hamburg,frankfurt,köln,stuttgart,fahrplan (92 bytes)
+
+### es-ES
+- **Title:** Mapa Tránsito Alemania (22 chars)
+- **Subtitle:** Tren Tranvía y Bus en Vivo (26 chars)
+- **Keywords:** bvg,mvg,hvv,rmv,kvb,vvs,vbb,múnich,hamburgo,fráncfort,colonia,stuttgart,metro,salida,retraso (94 bytes)
+
+### fr-FR
+- **Title:** Carte Transit Allemagne (23 chars)
+- **Subtitle:** S-Bahn U-Bahn Tram & Bus Live (30 chars)
+- **Keywords:** bvg,mvg,hvv,rmv,kvb,vvs,vbb,berlin,munich,hambourg,francfort,cologne,stuttgart,métro,départ (93 bytes)
+
+### ja
+- **Title:** ドイツ交通マップ (8 chars)
+- **Subtitle:** 全都市のリアルタイム時刻表 (12 chars)
+- **Keywords:** BVG,MVG,HVV,RMV,KVB,VVS,VBB,ベルリン,ミュンヘン,ケルン,出発,遅延,駅,電車 (91 bytes)
+
+### Keyword Strategy Notes
+- Terms already in title/subtitle are auto-indexed by Apple, so NOT repeated in keyword field: german, transit, map, live, s-bahn, u-bahn, tram, bus
+- All 6 transit authority codes (BVG, MVG, HVV, RMV, KVB, VVS) included in every locale
+- City names localized per locale (e.g., München/Múnich/Munich)
+- Complementary high-value terms added per locale: departures, delay, realtime (en-US); öpnv, fahrplan (de-DE); etc.
 
 ## Goals
-1. Rank for "Berlin transit map" and "Berlin live departures" on the App Store
-2. Convert Berlin tourists through strong map-first screenshots that immediately show live tracking
-3. Build a repeat-use base of daily commuters who open the app each morning
+1. Rank for "German transit map", "live departures Germany", and city-specific terms across all 6 cities
+2. Convert tourists and expats in any major German city through strong map-first screenshots
+3. Build a repeat-use base of daily commuters across all supported cities
+4. Expand from Berlin-only to pan-German positioning as a differentiated multi-city live tracker
 
 ## Resources
 - **Budget:** Solo / lean indie budget
 - **Team:** Solo developer
-- **Tools:** Xcode, App Store Connect, Fastlane, TripKit (VBB HAFAS)
-- **Constraints:** Dependent on VBB HAFAS API availability, TripKit third-party dependency
+- **Tools:** Xcode, App Store Connect, asc CLI, TripKit (HAFAS)
+- **Constraints:** Dependent on per-city HAFAS API availability
 
 ## Markets
-- **Primary:** Germany, specifically Berlin; German-language users
-- **Secondary:** English-speaking tourists and expats in Berlin; French-speaking visitors (French localization exists in app)
-- **Languages:** English, German, French
+- **Primary:** Germany — Berlin, München, Hamburg, Frankfurt, Köln, Stuttgart
+- **Secondary:** English-speaking tourists and expats in Germany; French-speaking visitors
+- **Languages:** English, German, Spanish, French, Japanese
 
 ## Screenshot Strategy
 
 ### First screen (hero)
-Live map view with multiple colored vehicle dots moving across a Berlin map — real stop names, authentic line colors (U2 red, S-Bahn green, M-Tram blue). Message: **"See Berlin transit live."**
+City selector showing all 6 supported cities with a live map behind it. Message: **"All of Germany's transit, live."**
 
 ### Screen 2
-Stop detail popover open on a real station (e.g., Alexanderplatz) showing departures: U2, S5, M10 with live countdown timers and delay badges. Message: **"Tap any stop. See live departures."**
+Live map view with multiple colored vehicle dots moving across a city map — showing the new city selector. Message: **"Watch trains & buses move in real time."**
 
 ### Screen 3
-Favorites or nearby-stops list with well-known Berlin stop names. Message: **"Your Berlin stops, always at hand."**
+Stop detail popover open on a real station showing departures with live countdown timers and delay badges. Message: **"Tap any stop. See live departures."**
 
 ### Screen 4
-Privacy / no-account emphasis — clean splash or settings screen. Message: **"No account. No tracking. Just Berlin."**
+Split view showing 2-3 different cities side by side. Message: **"Berlin. München. Hamburg. And more."**
+
+### Screen 5
+Privacy / no-account emphasis. Message: **"No account. No tracking. Just transit."**
 
 ### Logo note
-App icon asset in `BerlinTransportMap/AppIcon.icon`. No standalone SVG brand source found in this repository. If marketing artwork beyond the App Store icon is needed, export a 1024×1024 PNG from the icon catalog for use in screenshot backgrounds and promo images.
+App icon asset in `BerlinTransportMap/AppIcon.icon`. If marketing artwork beyond the App Store icon is needed, export a 1024x1024 PNG from the icon catalog.
 
-## App Store Description
+## App Store Description (en-US)
 
 ### Short description (first 3 lines — shown before "more")
-Watch Berlin's U-Bahn, S-Bahn, trams, and buses move in real time on a live interactive map. Tap any stop to see upcoming departures with live delay information.
+Track public transit across Germany's biggest cities — live on the map, every second.
 
-Covers the full VBB Berlin-Brandenburg network. No account, no tracking — just Berlin transit data on a fast, native map.
+German Transit Map shows you where your train, tram, or bus actually is right now. Not just schedules — real vehicles, moving in real time. Now covering Berlin, München, Hamburg, Frankfurt, Köln, and Stuttgart.
 
 ### Full description
-Berlin Transport Map shows you where your train actually is — not just what the timetable says.
+(See ASC version localization for full text — updated for v2.0 with all-cities messaging.)
 
-**Live Vehicle Tracking**
-Watch vehicles move across an interactive MapKit map in real time. U-Bahn, S-Bahn, Bus, Tram, and Ferry — the full VBB network.
+### Promotional text (170 chars max)
+Now covering Berlin, München, Hamburg, Frankfurt, Köln & Stuttgart. Live transit tracking for all major German cities.
 
-**Real-Time Departures**
-Tap any stop to see upcoming departures with live delay badges. Know before you leave whether your U2 is running on time.
+### What's New (v2.0)
+German Transit Map 2.0 — now covering all major German cities!
 
-**Stop Search & Favourites**
-Search any station in Berlin. Save your regular stops for one-tap access.
+NEW CITIES: München (MVG), Hamburg (HVV), Frankfurt (RMV), Köln (KVB), Stuttgart (VVS)
 
-**Privacy First**
-No account required. No tracking. No third-party analytics. Location access is optional and used only to find nearby stops.
+IMPROVEMENTS: Redesigned city selector, faster map rendering, Liquid Glass app icon, departure widget with live data.
 
-**Multi-Language**
-Available in English, German, and French.
-
-Made for Berlin. See you at the platform.
-
-### Promotional text (70 chars max)
-Watch Berlin transit live. Real stops, real delays. No account.
-
-### What's New template
-Improved map performance and stop annotation rendering.
-
-
+## Version History
+| Version | Key Changes |
+|---------|------------|
+| 1.0 | Initial release — Berlin only |
+| 1.1 | Bug fixes |
+| 1.2 | Performance improvements |
+| 1.3 | macOS support added |
+| 1.4 | Additional improvements |
+| 1.5 | Live departures onboarding, Liquid Glass icon, departure widget |
+| 2.0 | Multi-city expansion: München, Hamburg, Frankfurt, Köln, Stuttgart (PREPARING) |

@@ -2,11 +2,12 @@ import CoreLocation
 import Foundation
 import Observation
 
-/// Transport service using VBB REST API (https://v6.vbb.transport.rest)
+/// Transport service using HAFAS REST API (VBB or DB endpoints).
 @MainActor
 @Observable
 final class TransportService {
-    private let baseURL = "https://v6.vbb.transport.rest"
+    private var baseURL: String
+    private(set) var cityId: String
     private let session: URLSession
     private let offlineDatabase = OfflineStopsDatabase.shared
     private let decoder = JSONDecoder()
@@ -15,12 +16,23 @@ final class TransportService {
         d.dateDecodingStrategy = .iso8601
         return d
     }()
-    
-    init() {
+
+    init(city: CityConfig = .berlin) {
+        self.baseURL = Env.resolvedBaseURL(for: city)
+        self.cityId = city.id
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15
         config.timeoutIntervalForResource = 30
         self.session = URLSession(configuration: config)
+    }
+
+    /// Switch the service to a different city at runtime.
+    /// Note: views that hold their own load Tasks are responsible for cancelling them
+    /// on city change (see TransportMapView's onChange handler) — the service can't
+    /// own task lifetimes because callers are the ones still alive after a fetch returns.
+    func updateCity(_ city: CityConfig) {
+        baseURL = Env.resolvedBaseURL(for: city)
+        cityId = city.id
     }
 
     func queryNearbyStops(latitude: Double, longitude: Double, maxDistance: Int = 2000, maxLocations: Int = 50) async throws -> [TransportStop] {
@@ -89,12 +101,15 @@ final class TransportService {
     func searchLocations(query: String, maxLocations: Int = 20) async throws -> [TransportStop] {
         try Task.checkCancellation()
 
-        // Try offline database first for instant results
+        // Only short-circuit to the offline DB when it actually represents the active city.
+        // Otherwise we'd serve Berlin matches to a Munich query.
         await offlineDatabase.loadIfNeeded()
-        let offlineResults = await offlineDatabase.searchStops(query: query)
-        
-        if !offlineResults.isEmpty {
-            return Array(offlineResults.prefix(maxLocations))
+        let activeOfflineCity = await offlineDatabase.activeCityId()
+        if activeOfflineCity == cityId {
+            let offlineResults = await offlineDatabase.searchStops(query: query)
+            if !offlineResults.isEmpty {
+                return Array(offlineResults.prefix(maxLocations))
+            }
         }
 
         // Fallback to API if offline DB has no results
