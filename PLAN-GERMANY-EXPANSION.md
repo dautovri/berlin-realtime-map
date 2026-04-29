@@ -1,4 +1,4 @@
-<!-- /autoplan restore point: /Users/rd/.gstack/projects/dautovri-berlin-realtime-map/feat-germany-expansion-autoplan-restore-20260428-170430.md -->
+<!-- /autoplan restore point: /Users/rd/.gstack/projects/dautovri-berlin-realtime-map/feat-germany-expansion-autoplan-restore-20260429-090331.md -->
 # German Transit Map — Expansion Plan
 
 ## Goal
@@ -262,6 +262,18 @@ If radar returns empty/error for non-VBB cities, the app degrades to departures-
 | 45 | Eng (re-run) | Minimum 5 test files (~150 lines) become ship gate: `CityConfigTests`, `CityManagerTests`, `ServiceContainerUpdateCityTests`, `FavoriteCityIdMigrationTests`, `OfflineStopsDatabaseCityTests` | Mechanical | P1 (completeness) | Zero coverage of new abstraction; race conditions need regression tests | Skip new tests |
 | 46 | Eng (re-run) | TransportMapView extraction (MapHeaderPill, EventsCard, etc.) deferred to v2.1 | Pragmatic | P3 (pragmatic) | 1874 lines is large but mechanical not architectural; ship the v2.0 city work first | Refactor in v2.0 |
 | 47 | Gate | Final gate: APPROVED AS-IS by user; T1=Berliner Precision, T2=PRODUCT_DISPLAY_NAME→"Transit Map", T3=flat favorites with city label, T4=audit ios/TransportWidget.swift | User decision | — | Plan ready to drive v2.0 implementation. /ship when work is done. | Override / interrogate / revise |
+| 48 | Gate (pass 3) | Land v1.7 (PR #6) and shift v1.8 axis to distribution sprint | User decision | — | All ship-blockers closed; capability gates protect Berlin. Subagent: 96 dl/mo is demand-discovery failure, all product axes are premature optimization | Validate Munich (A), deepen Berlin (B), polish multi-city first (D) |
+| 49 | CEO (pass 3) | Land v1.7 now — capability gates make it safe; ASO equity preserved; pooled-rating risk neutralized | Mechanical | P6 (action) + P3 (pragmatic) | 4 review rounds + 2 adversarial passes + on-simulator QA + 62/62 tests; Berlin behavior unchanged | Hold for additional polish |
+| 50 | CEO (pass 3) | v1.8 = distribution sprint (ASO audit + Apple Search Ads $300 test + Featured submission + landing page) | Mechanical (after gate 48) | P6 (action) + P5 (explicit) | Without distribution data every product axis is guessing; end-of-v1.8 branch point produces actionable decision | Continue building features without traffic data |
+| 51 | Design (pass 3) | Landing page becomes v1.8 ship-gate before Featured submission — Cloudflare Pages, Berliner Precision aesthetic, ~4h | Mechanical | P1 (completeness) | Apple Editorial reviewers click marketingUrl; current value is GitHub repo (signals hobbyist not Featured-eligible) | Use existing GitHub repo URL |
+| 52 | Design (pass 3) | Screenshot 5 = `CityPickerView` with capability chips; keep screenshots 1-4 Berlin-led | Mechanical | P3 (pragmatic) | Differentiator for Editorial curators scanning portfolio breadth, but Berlin ASO equity preserved on the lead | Full multi-city refresh (dilutes Berlin equity) |
+| 53 | Eng (pass 3) | `FavoriteRow` per-stop API resolution: mirror widget's `WidgetSavedStop {cityId, apiBaseURL}` pattern | Mechanical | P1 (completeness) | Multi-city favorites currently break in-app same way widget would have pre-v1.7; loudest first-week trust break for paid-traffic Munich install | Filter rows by currentCity (loses cross-city favorites) |
+| 54 | Eng (pass 3) | De-Berlinify the first 60 seconds: `WelcomeOverlayView.swift:100`, `TransportMapView.swift:1785`, `OnboardingView.swift:501,582,588,956` use `cityManager.currentCity.name`/`transitAuthority` | Mechanical | P5 (explicit) | A Munich-keyword installer reading "Berlin" 3× in 30 seconds bounces — directly torches the conversion the distribution sprint is measuring | Defer to v1.9 (full onboarding inversion) |
+| 55 | Eng (pass 3) | Lightweight privacy-preserving instrumentation: local UserDefaults counters + anonymous POST to self-hosted Cloudflare Worker on activation milestones (`app_open`, `onboarding_complete`, `city_picked`, `first_favorite_saved`) | Mechanical | P1 (completeness) | "Did the campaign convert" question can't be answered by ASC Analytics alone; preserves no-tracking positioning | Skip instrumentation (campaign data is unactionable noise) |
+| 56 | Eng (pass 3) | Map header city pill DEFERRED to v1.9 — nav title carries the load while v1.8 paid traffic targets Berlin keywords | Pragmatic | P3 (pragmatic) | Pill becomes mandatory once ASO targets generic German keywords; v1.8 doesn't | Build pill now (premature for v1.8 traffic mix) |
+| 57 | Eng (pass 3) | API endpoint validation matrix DEFERRED to v1.9 — Munich live vehicles aren't shipping in v1.8 | Pragmatic | P3 (pragmatic) | The script is the gate to flip flags, not the gate to ship distribution-focused v1.8 | Run matrix now (no v1.8 user impact) |
+| 58 | Eng (pass 3) | About / Help / Welcome copy: gate "Live vehicle positions" / "BVG" claims on `currentCity.supportsRadar` / `transitAuthority` | Mechanical | P1 (completeness) | First-screen honesty for non-Berlin installs; pairs with eng task 54 (de-Berlinify) | Defer to v1.9 |
+| 59 | Eng (pass 3) | FavoritesView mixed-city indicator DEFERRED to v1.9 — multi-city favorites only emerge after switching cities + saving on both, vanishingly rare in v1.8 traffic | Pragmatic | P3 (pragmatic) | Eng task 53 (per-stop API) prevents the actually-broken case; indicator is polish | Build indicator now |
 
 ---
 
@@ -467,6 +479,73 @@ Full test plan at: `~/.gstack/projects/dautovri-berlin-realtime-map/feat-germany
 | autoplan-voices (CEO re-run) | complete | 6/6 confirmed (User Challenge surfaced + resolved at gate) | codex+subagent |
 | autoplan-voices (Design re-run) | complete | 6/7 confirmed, 1 disagree (brand-name evolution = taste) | codex+subagent |
 | autoplan-voices (Eng re-run) | partial | subagent-only — codex hit usage limit | subagent-only |
+
+---
+
+## /autoplan Pass 3 (2026-04-29T09:00Z) — Land v1.7 + v1.8 axis
+
+**Context:** PR #6 open with 12 commits + 22 new tests. v1.7 multi-city foundation through 2 review rounds + 2 adversarial passes. All ship-blockers closed. Codex still hitting usage limit (resets Apr 30) — this pass is **subagent-only**.
+
+### Pass-3 questions
+
+1. **Should v1.7 land?** YES — capability gates protect Berlin, ASO unchanged, all known ship-blockers closed.
+2. **What's the v1.8 axis?** **C) Distribution sprint** (user-confirmed at premise gate). The 6 prior months of work shipped foundation; the next 6 sell what was built. 96 dl/mo is a demand-discovery failure, not a coverage failure.
+
+### v1.8 plan (concrete, sequenced)
+
+**Week 1-2 — ASO baseline:**
+1. Run `/aso-audit` skill on current Berlin Transport Map listing
+2. Test subtitle/keyword variants on Berlin terms
+3. Get baseline conversion rate from impressions → downloads
+4. Build a landing page on Cloudflare Pages (Berliner Precision aesthetic) — replaces current GitHub repo URL as `marketingUrl` in `metadata/version/1.7/`
+
+**Week 2-3 — Paid traffic test:**
+5. $300 Apple Search Ads on Berlin transit keywords
+6. Goal: learn baseline CAC + impression→download conversion (data we don't have)
+
+**Week 3 — Featured submission:**
+7. Submit to App Store Featured (Made in Germany / Built for Berlin angle)
+8. Pitch deck: 5 screenshots + 30s preview
+   - Screenshots 1-4: Berlin-led (Hero ETA, live U-Bahn, departure sheet, favorites)
+   - Screenshot 5: `CityPickerView` with capability chips (the "and 9 more" reveal)
+   - 30s preview: silent Berlin commute, no UI chrome, closing card "No ads. No accounts. No tracking."
+
+**Throughout — eng polish (background, ~10h total):**
+9. **De-Berlinify first 60 seconds** for non-Berlin installs (`WelcomeOverlayView.swift:100`, `OnboardingView.swift:501,582,588,956`, `TransportMapView.swift:1785`) — use `cityManager.currentCity.name`/`transitAuthority`
+10. **`FavoriteRow` per-stop API resolution** — mirror `WidgetSavedStop {cityId, apiBaseURL}` pattern
+11. **Lightweight distribution instrumentation** — local UserDefaults counters + anonymous Cloudflare Worker POST on activation milestones (`app_open`, `onboarding_complete`, `city_picked`, `first_favorite_saved`); preserves no-tracking positioning while answering "did the campaign convert"
+
+### Pass-3 explicitly DEFERRED to v1.9
+
+- Map header city pill (autoplan row 29) — nav title carries the load while v1.8 paid traffic targets Berlin keywords
+- API endpoint validation matrix script — Munich live vehicles aren't shipping in v1.8
+- FavoritesView mixed-city indicator — vanishingly rare in v1.8 traffic mix
+- TransportMapView extraction (1900+ lines) — mechanical not architectural
+- Test backfill for round-2 fixes (AppDelegate cityId, alert sheet cityId) — manual coverage exists, low regression risk
+- Full onboarding inversion (11 hardcoded surfaces) — task 9 covers the 5 highest-impact surfaces; rest stay default-Berlin
+
+### v1.8 branch point (end of sprint)
+
+End of v1.8 produces a real decision:
+- **(a)** ASO + ads convert 96 → 200+ dl/mo with stable CAC → product is fine, distribution was the bottleneck → scale spend, return to product axes (A: Munich, B: Watch, etc.)
+- **(b)** Impressions flat or conversion broken → product itself isn't what people search for → `/office-hours` for positioning rethink
+
+Either outcome is actionable. Building Munich live vehicles or a Watch app produces no decision.
+
+### Pass-3 review log
+
+| Skill | Status | Findings | Source |
+|-------|--------|----------|--------|
+| plan-ceo-review (pass 3) | clean | Land v1.7 + v1.8=distribution recommended; user confirmed | subagent-only |
+| plan-design-review (pass 3) | issues_found | 3 v1.8 design tasks (landing page, screenshot 5, widget per-stop) | subagent-only |
+| plan-eng-review (pass 3) | issues_found | 3 v1.8 eng tasks (de-Berlinify 60s, FavoriteRow per-stop, instrumentation) | subagent-only |
+| autoplan-voices (CEO pass 3) | partial | subagent-only — codex usage limit | subagent-only |
+| autoplan-voices (Design pass 3) | partial | subagent-only — codex usage limit | subagent-only |
+| autoplan-voices (Eng pass 3) | partial | subagent-only — codex usage limit | subagent-only |
+
+### Cross-phase theme (pass 3)
+
+**"De-Berlinify the first 60 seconds before sending paid traffic."** Both design subagent (onboarding hygiene minimum 2 surfaces) and eng subagent (top priority eng task: hardcoded Berlin strings) independently flagged the same thing: a Munich-keyword paid installer reads "Berlin" 3× in 30 seconds and bounces. This is the highest-leverage single fix protecting v1.8 spend. Sequence: ship before Apple Search Ads goes live, or the campaign data is contaminated.
 
 ---
 
