@@ -156,6 +156,32 @@
 - **Trademark review on transit authority colors** — BVG/MVG/HVV/RMV/KVB/VVS/VRR/DVB/LVB/VAG accent colors ship without licenses. Functional color usage is hard to claim trademark on, but worth a legal pass before promoting non-Berlin cities.
 - **TransportMapView extraction** — 1874 lines and growing. Extract `MapHeaderPill`, `EventsCard`, `WelcomeOverlay` integration, and the `onChange(cityManager)` data-clearing block. Mechanical not architectural.
 
+### P3 — v1.9+ (gated on distribution data)
+
+- **Re-enable Stuttgart, Düsseldorf, Dresden via alternative APIs** — v1.7 hides these 3 cities (`supportsDepartures: false`) because `v6.db.transport.rest` returns HTTP 500 on every `/stops/{id}/departures` call for VVS, VRR, and DVB. The community-maintained API does not proxy those HAFAS backends reliably. Per-city probe (commit `a00cf11`) confirmed every sampled stop fails.
+
+  **Alternative APIs verified working (probed 2026-05-02):**
+
+  | City | API | Format | Sample endpoint |
+  |------|-----|--------|-----------------|
+  | Stuttgart (VVS) | EFA-BW | XSLT JSON | `https://www.efa-bw.de/nvbw/XSLT_DM_REQUEST?type_dm=stop&...&outputFormat=JSON&useRealtime=1` |
+  | Stuttgart (VVS) — alt | `www3.vvs.de` | XSLT JSON | `https://www3.vvs.de/mngvvs/XSLT_DM_REQUEST?...` |
+  | Düsseldorf (VRR) | EFA-VRR | XSLT JSON | `https://efa.vrr.de/standard/XSLT_DM_REQUEST?...` |
+  | Dresden (DVB) | DVB widgets | DVB JSON | `https://webapi.vvo-online.de/dm?stopid=...` |
+
+  **Engineering scope (~7 solo days):**
+  - EFA protocol adapter (Stuttgart + Düsseldorf share format) — 2 days
+  - DVB widget adapter (Dresden) — 1 day
+  - Response normalization to `TransportStop`/`TransportDeparture` — 1 day
+  - Per-city protocol routing in `TransportService` — 0.5 day
+  - Per-protocol search + departures (radar where available) — 1 day
+  - Tests + per-city smoke tests + extend `scripts/validate-city-endpoints.sh` — 1.5 days
+  - Total ~1,400 LOC
+
+  **Decision gate:** invest only if v1.8 distribution sprint shows non-Berlin demand ≥ 30 dl/mo for 60 days (per pass-3 audit row 25). 96 dl/mo at v1.7 ship gives no evidence Stuttgart/Düsseldorf/Dresden specifically have demand. Building a week of code for cities no one is asking for is exactly the premature optimization pass-3 CEO review warned against.
+
+  **Cheaper interim recovery:** `scripts/validate-city-endpoints.sh` runs weekly during v1.8. If `v6.db.transport.rest` recovers for any of the 3, flip `supportsDepartures: true` — zero code change.
+
 ### P1 — Active (legacy, completed in earlier release)
 
 - **WidgetKit extension — DepartureWidget** (shipped in v1.7)

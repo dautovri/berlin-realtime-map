@@ -19,7 +19,7 @@ struct CityPickerView: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(CityConfig.allCities) { city in
+                    ForEach(CityConfig.availableCities) { city in
                         CityCard(
                             city: city,
                             isSelected: city.id == services.cityManager.currentCity.id

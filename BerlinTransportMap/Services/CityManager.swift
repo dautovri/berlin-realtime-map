@@ -15,17 +15,23 @@ final class CityManager {
     }
 
     init() {
+        // Restore the saved city, but fall back to Berlin if the saved city's
+        // backend has been disabled (e.g. supportsDepartures flipped to false in
+        // a later release). Otherwise the user lands on a city whose primary
+        // feature 500s on every interaction.
         if let savedId = UserDefaults.standard.string(forKey: Self.selectedCityKey),
-           let city = CityConfig.city(forId: savedId) {
+           let city = CityConfig.city(forId: savedId),
+           city.supportsDepartures {
             self.currentCity = city
         } else {
             self.currentCity = .berlin
         }
     }
 
-    /// All available cities.
+    /// Cities the user can pick today. Filters out cities whose backend is
+    /// currently broken (`supportsDepartures == false`).
     var availableCities: [CityConfig] {
-        CityConfig.allCities
+        CityConfig.availableCities
     }
 
     /// Switch to a different city.

@@ -1,5 +1,5 @@
 ## App Overview
-- **App Name:** German Transit Map
+- **App Name (live):** Berlin Transit Map: Live BVG
 - **App ID (Apple):** 6757723208
 - **App ID (Google Play):** N/A
 - **Category:** Travel
@@ -7,8 +7,21 @@
 - **Platform:** iOS
 - **Price Model:** Free with optional tip jar
 - **Launch Date:** Live on App Store
-- **Current Version:** 2.0 (PREPARE_FOR_SUBMISSION)
-- **Previous Name:** Berlin Transit Map: Live BVG
+- **Current Version (live):** 1.5
+- **Next Version (in flight):** 1.7 — multi-city foundation, Berlin-led identity preserved
+- **Future rename to "German Transit Map":** v1.9+ aspirational; gated by /autoplan pass-3 row 25 — defer until non-Berlin downloads ≥ 30/mo for 60 days
+
+## Naming policy (v1.7-v1.8)
+
+The pass-3 /autoplan decision (2026-04-29) defers the "German Transit Map" rename
+until distribution data validates non-Berlin demand. v1.7 ships the multi-city
+*foundation* under capability gates (only Berlin shows live vehicle map; other
+cities show live departures + stop search). The App Store listing keeps
+"Berlin Transit Map: Live BVG" as the title. v1.8's distribution sprint runs
+ASO + Apple Search Ads + App Store Featured against this Berlin-led identity.
+
+The v2.0 metadata sketch below (German Transit Map, all-cities messaging) is
+preserved as the v1.9+ target. Do not push it to ASC until the rename gate fires.
 
 ## Value Proposition
 - **Problem:** Public transit riders in Germany want to know where their U-Bahn, tram, or bus actually is right now — not just what the schedule says. Most apps show timetables, not live vehicle positions.
@@ -35,7 +48,24 @@
 | MVG Fahrinfo | MVG official | Deep MVG integration | München only, no live map |
 | Google Maps | N/A | Familiar interface, broad coverage | Not transit-specific, privacy concerns |
 
-## Current ASO State (v2.0 — PREPARE_FOR_SUBMISSION)
+## v1.7 ASO State (current — Berlin-led, multi-city foundation)
+
+### Live (v1.5, all locales)
+- **Title (en-US):** Berlin Transit Map: Live BVG (28 chars)
+- **Subtitle (en-US):** Live S-Bahn, U-Bahn, Tram & Bus (30 chars) — updated v1.7
+- **Title (de-DE):** Berlin Nahverkehr Live (22 chars)
+- **Title (es-ES):** Mapa Tránsito Berlín: BVG (25 chars)
+- **Title (fr-FR):** Berlin Transit: Carte Live BVG (30 chars)
+- **Title (ja):** ベルリン交通マップ: BVGライブ (16 chars)
+
+### v1.7 metadata changes (in `metadata/version/1.7/`)
+- en-US subtitle changed from "U-Bahn S-Bahn Tram & Bus Times" → "Live S-Bahn, U-Bahn, Tram & Bus" (leads with differentiator "Live"; 30 chars)
+- All 5 locales: keyword field trimmed under 100 UTF-8 bytes (es/fr/ja were silently truncated by ASC pre-v1.7)
+- Added münchen/hamburg (and equivalents per locale) to keyword field — primes city-name searches without committing to rename
+- Removed redundant terms (transport, tracker, bvg) that already appear in title/subtitle and were wasting bytes
+- whatsNew rewritten for v1.7 multi-city foundation announcement, Berlin-led tone
+
+### v1.9+ aspirational (German Transit Map rename — DO NOT push until rename gate fires)
 
 ### en-US
 - **Title:** German Transit Map (18 chars)

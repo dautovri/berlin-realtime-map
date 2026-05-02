@@ -19,7 +19,7 @@ struct SettingsView: View {
             Form {
                 // MARK: City
                 Section {
-                    ForEach(CityConfig.allCities) { city in
+                    ForEach(CityConfig.availableCities) { city in
                         Button {
                             Task { await services.updateCity(city) }
                         } label: {
