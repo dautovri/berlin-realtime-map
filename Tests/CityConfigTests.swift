@@ -99,6 +99,46 @@ final class CityConfigTests: XCTestCase {
         }
     }
 
+    // MARK: - supportsDepartures (per-city HAFAS departures health)
+
+    func testCitiesWithBrokenDeparturesAreFlagged() {
+        // Verified 2026-05-02 via scripts/validate-city-endpoints.sh:
+        // VVS (Stuttgart), VRR (Düsseldorf), DVB (Dresden) return HTTP 500
+        // on every /stops/{id}/departures call. Flip these to true once the
+        // upstream community API recovers + the script confirms.
+        let brokenCityIds = Set(["stuttgart", "dusseldorf", "dresden"])
+        for city in CityConfig.allCities where brokenCityIds.contains(city.id) {
+            XCTAssertFalse(
+                city.supportsDepartures,
+                "\(city.id) must stay supportsDepartures=false — backend was returning HTTP 500. Re-validate via scripts/validate-city-endpoints.sh before flipping."
+            )
+        }
+    }
+
+    func testAvailableCitiesFiltersOutDisabledBackends() {
+        let available = CityConfig.availableCities
+        XCTAssertFalse(available.isEmpty, "availableCities must include at least Berlin")
+        for city in available {
+            XCTAssertTrue(
+                city.supportsDepartures,
+                "\(city.id) is in availableCities but has supportsDepartures=false"
+            )
+        }
+        // Specifically: known-broken cities must be excluded
+        XCTAssertNil(available.first { $0.id == "stuttgart" })
+        XCTAssertNil(available.first { $0.id == "dusseldorf" })
+        XCTAssertNil(available.first { $0.id == "dresden" })
+    }
+
+    func testCityForIdStillResolvesDisabledCities() {
+        // Lookups must succeed even for disabled cities — legacy favorites and
+        // commute alerts may reference them. Caller checks supportsDepartures
+        // before showing a UI affordance.
+        XCTAssertNotNil(CityConfig.city(forId: "stuttgart"))
+        XCTAssertNotNil(CityConfig.city(forId: "dusseldorf"))
+        XCTAssertNotNil(CityConfig.city(forId: "dresden"))
+    }
+
     // MARK: - Color hex invariants
 
     func testEveryCityHasSixDigitHexAccent() {

@@ -37,11 +37,27 @@ final class CityManagerTests: XCTestCase {
         XCTAssertEqual(UserDefaults.standard.string(forKey: Self.savedCityKey), "hamburg")
     }
 
-    func testAvailableCitiesMatchesAllCities() {
+    func testAvailableCitiesMatchesPickerEligibleCities() {
+        // availableCities filters out cities whose backend is broken
+        // (supportsDepartures=false). This is intentional per the v1.7 QA finding —
+        // see CityConfigTests.testCitiesWithBrokenDeparturesAreFlagged.
         let manager = CityManager()
         XCTAssertEqual(
             manager.availableCities.map { $0.id },
-            CityConfig.allCities.map { $0.id }
+            CityConfig.availableCities.map { $0.id }
         )
+        // Sanity: no disabled city leaks through
+        for city in manager.availableCities {
+            XCTAssertTrue(city.supportsDepartures, "\(city.id) should not be in picker list")
+        }
+    }
+
+    func testInitFallsBackToBerlinIfSavedCityNowDisabled() {
+        // User picked Stuttgart in a prior version (when it worked), then v1.7
+        // disabled it. New launch should NOT keep Stuttgart selected — fall back
+        // to Berlin so the app's primary feature isn't broken on launch.
+        UserDefaults.standard.set("stuttgart", forKey: Self.savedCityKey)
+        let manager = CityManager()
+        XCTAssertEqual(manager.currentCity.id, "berlin", "Disabled saved city should fall back to Berlin")
     }
 }

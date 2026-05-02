@@ -27,6 +27,13 @@ struct CityConfig: Identifiable, Codable, Hashable {
     let supportsRadar: Bool
     let supportsEvents: Bool
     let supportsRoutes: Bool
+    // True means /stops/{id}/departures returns valid data on the v6.db.transport.rest
+    // proxy. Some HAFAS backends (VVS for Stuttgart, VRR for Düsseldorf, DVB for
+    // Dresden) currently return HTTP 500 for every stop. Cities with this flag false
+    // must be hidden from the city picker — there is no graceful UX for an app whose
+    // primary feature ("see live departures") is broken.
+    // Re-validate via scripts/validate-city-endpoints.sh and flip when backends recover.
+    let supportsDepartures: Bool
 
     // MARK: - Computed properties
 
@@ -52,7 +59,7 @@ struct CityConfig: Identifiable, Codable, Hashable {
         case centerLatitude, centerLongitude, defaultZoom
         case spanLatitude, spanLongitude
         case accentColorHex, supportedProducts
-        case supportsRadar, supportsEvents, supportsRoutes
+        case supportsRadar, supportsEvents, supportsRoutes, supportsDepartures
     }
 
     init(
@@ -69,7 +76,8 @@ struct CityConfig: Identifiable, Codable, Hashable {
         supportedProducts: [TransportProduct],
         supportsRadar: Bool = false,
         supportsEvents: Bool = false,
-        supportsRoutes: Bool = true
+        supportsRoutes: Bool = true,
+        supportsDepartures: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -85,6 +93,7 @@ struct CityConfig: Identifiable, Codable, Hashable {
         self.supportsRadar = supportsRadar
         self.supportsEvents = supportsEvents
         self.supportsRoutes = supportsRoutes
+        self.supportsDepartures = supportsDepartures
     }
 
     init(from decoder: Decoder) throws {
@@ -103,6 +112,7 @@ struct CityConfig: Identifiable, Codable, Hashable {
         self.supportsRadar = try c.decodeIfPresent(Bool.self, forKey: .supportsRadar) ?? false
         self.supportsEvents = try c.decodeIfPresent(Bool.self, forKey: .supportsEvents) ?? false
         self.supportsRoutes = try c.decodeIfPresent(Bool.self, forKey: .supportsRoutes) ?? true
+        self.supportsDepartures = try c.decodeIfPresent(Bool.self, forKey: .supportsDepartures) ?? true
     }
 
     // MARK: - Hashable
@@ -198,7 +208,9 @@ extension CityConfig {
         supportedProducts: [.suburbanTrain, .tram, .bus, .regionalTrain]
     )
 
-    /// Stuttgart — VVS
+    /// Stuttgart — VVS. /stops/{id}/departures returns HTTP 500 universally on
+    /// v6.db.transport.rest as of v1.7 QA (2026-05-02). Hidden from city picker
+    /// via supportsDepartures=false until upstream backend recovers.
     static let stuttgart = CityConfig(
         id: "stuttgart",
         name: "Stuttgart",
@@ -210,10 +222,11 @@ extension CityConfig {
         spanLatitude: 0.18,
         spanLongitude: 0.22,
         accentColorHex: "#ffc20e",
-        supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .regionalTrain]
+        supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .regionalTrain],
+        supportsDepartures: false
     )
 
-    /// Düsseldorf — VRR
+    /// Düsseldorf — VRR. Same as Stuttgart — backend currently broken.
     static let dusseldorf = CityConfig(
         id: "dusseldorf",
         name: "Düsseldorf",
@@ -225,10 +238,11 @@ extension CityConfig {
         spanLatitude: 0.16,
         spanLongitude: 0.20,
         accentColorHex: "#009fe3",
-        supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .regionalTrain]
+        supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .regionalTrain],
+        supportsDepartures: false
     )
 
-    /// Dresden — DVB
+    /// Dresden — DVB. Same as Stuttgart — backend currently broken.
     static let dresden = CityConfig(
         id: "dresden",
         name: "Dresden",
@@ -240,7 +254,8 @@ extension CityConfig {
         spanLatitude: 0.16,
         spanLongitude: 0.20,
         accentColorHex: "#fdc500",
-        supportedProducts: [.suburbanTrain, .tram, .bus, .ferry, .regionalTrain]
+        supportedProducts: [.suburbanTrain, .tram, .bus, .ferry, .regionalTrain],
+        supportsDepartures: false
     )
 
     /// Leipzig — LVB
@@ -273,13 +288,27 @@ extension CityConfig {
         supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .regionalTrain]
     )
 
-    /// All supported cities, sorted by population (largest first).
+    /// Every defined city, including ones currently disabled by capability flags.
+    /// Used for `city(forId:)` lookups that must succeed even for disabled cities
+    /// (legacy favorite restoration, deep links written before a flag flipped, etc.)
+    /// — the lookup tells you the city is still real even if the picker hides it.
     static let allCities: [CityConfig] = [
         .berlin, .hamburg, .munich, .cologne, .frankfurt,
         .stuttgart, .dusseldorf, .leipzig, .dresden, .nuremberg
     ]
 
-    /// Look up a city by its `id`.
+    /// Cities that the user can actually pick today. A city is excluded when its
+    /// HAFAS departures endpoint is broken upstream — the app's primary feature
+    /// ("see live departures") would 500 for every stop, which is worse than
+    /// pretending the city doesn't exist yet.
+    /// Re-validate via `scripts/validate-city-endpoints.sh` and flip
+    /// `supportsDepartures` on the affected `CityConfig` to re-enable.
+    static var availableCities: [CityConfig] {
+        allCities.filter { $0.supportsDepartures }
+    }
+
+    /// Look up a city by its `id`. Returns even cities currently hidden from the
+    /// picker (callers that need only-pickable cities should check `supportsDepartures`).
     static func city(forId id: String) -> CityConfig? {
         allCities.first { $0.id == id }
     }
