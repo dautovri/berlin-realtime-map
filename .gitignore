@@ -74,3 +74,6 @@ marketing/demo/realtime-demo.mov
 marketing/demo/realtime-demo-v2.mov
 simulator_screenshot.png
 .gstack/
+
+# asc CLI artifacts (archives, IPAs, ExportOptions)
+.asc/artifacts/

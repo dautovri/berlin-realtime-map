@@ -5,56 +5,6 @@ import OSLog
 
 // MARK: - Onboarding Data Models
 
-enum OnboardingGoal: String, CaseIterable, Hashable {
-    case commuter, tourist, explorer, hurried, multimodal
-
-    var emoji: String {
-        switch self {
-        case .commuter: return "🚇"
-        case .tourist: return "✈️"
-        case .explorer: return "🗺️"
-        case .hurried: return "🏃"
-        case .multimodal: return "🚲"
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .commuter: return "Daily commuter — same lines, every day"
-        case .tourist: return "Visiting Berlin — exploring the city"
-        case .explorer: return "Transit explorer — I love knowing how it all connects"
-        case .hurried: return "Always in a hurry — I hate missing trains"
-        case .multimodal: return "Multimodal — mix of transit and bike/walk"
-        }
-    }
-}
-
-enum OnboardingPain: String, CaseIterable, Hashable {
-    case delays, unknownLocation, missedConnections, wrongSchedule, noSignal, waitingBlind
-
-    var emoji: String {
-        switch self {
-        case .delays: return "⏱️"
-        case .unknownLocation: return "📍"
-        case .missedConnections: return "🔀"
-        case .wrongSchedule: return "📋"
-        case .noSignal: return "📶"
-        case .waitingBlind: return "🌧️"
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .delays: return "Delays with no explanation"
-        case .unknownLocation: return "Not knowing where my bus actually is"
-        case .missedConnections: return "Missing connections at transfer points"
-        case .wrongSchedule: return "Schedules that don't match reality"
-        case .noSignal: return "No signal underground to check apps"
-        case .waitingBlind: return "Waiting at the stop not knowing if it's coming"
-        }
-    }
-}
-
 struct OnboardingStop: Identifiable, Hashable {
     let id: String
     let name: String
@@ -63,7 +13,44 @@ struct OnboardingStop: Identifiable, Hashable {
     let latitude: Double
     let longitude: Double
 
-    static let demos: [OnboardingStop] = [
+    /// Demo stops for the user's current city. Berlin has a curated list of 8
+    /// landmark stops with known-good VBB IDs. Other cities currently fall back
+    /// to a single Hauptbahnhof entry — populating their picks is v1.8 work
+    /// (see TODOS.md "v1.8 onboarding polish").
+    static func demos(for cityId: String) -> [OnboardingStop] {
+        switch cityId {
+        case "berlin":
+            return berlinDemos
+        case "munich":
+            return [OnboardingStop(id: "8000261", name: "München Hauptbahnhof",
+                                   lines: "S · U · Tram · Bus", badgeColor: Color(hex: "#0d5c2e"),
+                                   latitude: 48.140229, longitude: 11.558339)]
+        case "hamburg":
+            return [OnboardingStop(id: "8002549", name: "Hamburg Hauptbahnhof",
+                                   lines: "S · U · Bus", badgeColor: Color(hex: "#e2001a"),
+                                   latitude: 53.552736, longitude: 10.006909)]
+        case "frankfurt":
+            return [OnboardingStop(id: "8000105", name: "Frankfurt (Main) Hbf",
+                                   lines: "S · U · Tram · Bus", badgeColor: Color(hex: "#00428a"),
+                                   latitude: 50.107149, longitude: 8.663785)]
+        case "cologne":
+            return [OnboardingStop(id: "8000207", name: "Köln Hauptbahnhof",
+                                   lines: "S · Stadtbahn · Bus", badgeColor: Color(hex: "#ed1c24"),
+                                   latitude: 50.943029, longitude: 6.958749)]
+        case "leipzig":
+            return [OnboardingStop(id: "8010205", name: "Leipzig Hauptbahnhof",
+                                   lines: "S · Tram · Bus", badgeColor: Color(hex: "#004e9e"),
+                                   latitude: 51.345172, longitude: 12.381541)]
+        case "nuremberg":
+            return [OnboardingStop(id: "8000284", name: "Nürnberg Hauptbahnhof",
+                                   lines: "S · U · Tram · Bus", badgeColor: Color(hex: "#e30613"),
+                                   latitude: 49.445544, longitude: 11.082813)]
+        default:
+            return berlinDemos
+        }
+    }
+
+    private static let berlinDemos: [OnboardingStop] = [
         OnboardingStop(id: "900100003", name: "Alexanderplatz", lines: "U2 · U5 · S5 · S7 · S9", badgeColor: Color(hex: "#005A99"), latitude: 52.5219, longitude: 13.4132),
         OnboardingStop(id: "900003201", name: "Hauptbahnhof", lines: "S5 · S7 · S9 · RE1 · RE2", badgeColor: Color(hex: "#006F35"), latitude: 52.5251, longitude: 13.3694),
         OnboardingStop(id: "900012104", name: "Hermannplatz", lines: "U7 · U8", badgeColor: Color(hex: "#005A99"), latitude: 52.4872, longitude: 13.4249),
@@ -100,6 +87,13 @@ extension OnboardingStop {
                 SampleDeparture(line: "RE1", lineColor: Color(hex: "#C0392B"), direction: "Frankfurt (Oder)", minutesAway: 8, delay: 3),
                 SampleDeparture(line: "S7", lineColor: Color(hex: "#006F35"), direction: "Potsdam Hbf", minutesAway: 11, delay: 0),
             ]
+        // Other-city Hauptbahnhof fallback — generic plausible departures
+        case "8000261", "8002549", "8000105", "8000207", "8010205", "8000284":
+            return [
+                SampleDeparture(line: "S1", lineColor: Color(hex: "#006F35"), direction: "City centre", minutesAway: 2, delay: 0),
+                SampleDeparture(line: "U2", lineColor: Color(hex: "#005A99"), direction: "Outbound", minutesAway: 5, delay: 1),
+                SampleDeparture(line: "Bus", lineColor: Color(hex: "#8B0000"), direction: "Local", minutesAway: 7, delay: 0),
+            ]
         default:
             return [
                 SampleDeparture(line: "U7", lineColor: Color(hex: "#005A99"), direction: "Spandau", minutesAway: 3, delay: 0),
@@ -113,8 +107,8 @@ extension OnboardingStop {
 // MARK: - Progress Bar
 
 private struct OnboardingProgressBar: View {
-    let current: Int  // 0-based index of progress screens (screens 2-11)
-    let total: Int    // = 10
+    let current: Int  // 1..total — the position of the current screen in the progress arc
+    let total: Int    // total number of progress screens (Location, Demo, Value)
 
     var progress: Double { Double(current) / Double(total) }
 
@@ -135,39 +129,6 @@ private struct OnboardingProgressBar: View {
     }
 }
 
-// MARK: - Selectable Row
-
-private struct SelectableRow: View {
-    let emoji: String
-    let label: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Text(emoji)
-                    .font(.title3)
-                Text(label)
-                    .font(.body)
-                    .fontDesign(.rounded)
-                    .foregroundStyle(isSelected ? .white : .primary)
-                    .multilineTextAlignment(.leading)
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.white)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(isSelected ? Color(hex: "#115D97") : Color(.systemGray6), in: .rect(cornerRadius: 14))
-        }
-        .buttonStyle(.plain)
-        .animation(.spring(duration: 0.25), value: isSelected)
-    }
-}
-
 // MARK: - Main Onboarding View
 
 struct OnboardingView: View {
@@ -176,23 +137,22 @@ struct OnboardingView: View {
 
     var onDismiss: () -> Void
 
-    // Navigation
-    @State private var step = 0  // 0 = welcome, 1-11 = questionnaire, 12 = dismissed
+    /// Lean 5-screen flow:
+    ///   0 = Welcome
+    ///   1 = Location priming
+    ///   2 = Demo (pick 3 stops)
+    ///   3 = Value delivery (live departures preview)
+    ///   4 = Tip nudge → finish()
+    @State private var step = 0
 
-    // User selections
-    @State private var selectedGoal: OnboardingGoal? = nil
-    @State private var selectedPains: Set<OnboardingPain> = []
     @State private var selectedStops: [OnboardingStop] = []
     @State private var locationManager = CLLocationManager()
-
-    // Processing
-    @State private var processingProgress: Double = 0
-    @State private var processingComplete = false
     @State private var saveSucceeded = true
 
     private let primaryBlue = Color(hex: "#115D97")
-    private let totalProgressScreens = 8
-    private let cityName = ServiceContainer.shared.cityManager.currentCity.name
+    /// Progress arc spans Location / Demo / Value (steps 1..3). Welcome and Tip
+    /// don't count toward progress.
+    private let totalProgressScreens = 3
 
     var body: some View {
         ZStack {
@@ -200,8 +160,8 @@ struct OnboardingView: View {
             primaryBlue.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Progress bar (screens 1–10, i.e. steps 1–10)
-                if step > 0 && step <= 8 {
+                // Progress bar visible on Location, Demo, Value Delivery (steps 1-3)
+                if step >= 1 && step <= totalProgressScreens {
                     OnboardingProgressBar(current: step, total: totalProgressScreens)
                         .padding(.top, 16)
                         .padding(.bottom, 8)
@@ -211,14 +171,9 @@ struct OnboardingView: View {
                 Group {
                     switch step {
                     case 0:  WelcomeScreen(onNext: { advance() })
-                    case 1:  GoalScreen(selected: $selectedGoal, onNext: { advance() })
-                    case 2:  PainScreen(selected: $selectedPains, onNext: { advance() })
-                    case 3:  SocialProofScreen(onNext: { advance() })
-                    case 4:  SolutionScreen(pains: selectedPains, onNext: { advance() })
-                    case 5:  LocationPrimingScreen(locationManager: locationManager, onNext: { advance() })
-                    case 6:  ProcessingScreen(isComplete: $processingComplete, onComplete: { advance() }, locationManager: locationManager)
-                    case 7:  DemoScreen(selected: $selectedStops, onNext: { advance() })
-                    case 8:  ValueDeliveryScreen(stops: selectedStops, saveSucceeded: saveSucceeded, onNext: { advance() })
+                    case 1:  LocationPrimingScreen(locationManager: locationManager, onNext: { advance() })
+                    case 2:  DemoScreen(selected: $selectedStops, onNext: { advance() })
+                    case 3:  ValueDeliveryScreen(stops: selectedStops, saveSucceeded: saveSucceeded, onNext: { advance() })
                     default: TipNudgeScreen(onDismiss: { finish() })
                     }
                 }
@@ -228,21 +183,12 @@ struct OnboardingView: View {
                 ))
             }
 
-            // Back button — shown on all steps except Welcome (0) and Processing (6)
-            if step > 0 && step != 6 {
+            // Back button — shown on all steps except Welcome
+            if step > 0 {
                 VStack {
                     HStack {
                         Button {
-                            withAnimation {
-                                if step == 7 {
-                                    // Skip step 6 (ProcessingScreen) going back, and reset so it
-                                    // re-runs the 2.5s auto-advance next time step 6 is entered.
-                                    step = 5
-                                    processingComplete = false
-                                } else {
-                                    step -= 1
-                                }
-                            }
+                            withAnimation { step -= 1 }
                         } label: {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 17, weight: .semibold))
@@ -259,20 +205,12 @@ struct OnboardingView: View {
             }
         }
         .animation(reduceMotion ? .none : .smooth(duration: 0.35), value: step)
-        .task(id: step) {
-            if step == 6 && !processingComplete {
-                try? await Task.sleep(for: .seconds(2.5))
-                processingComplete = true
-            }
-        }
     }
 
     private func advance() {
-        withAnimation {
-            step += 1
-        }
+        withAnimation { step += 1 }
         // Save demo stops to Favorites when advancing to ValueDeliveryScreen
-        if step == 8 {
+        if step == 3 {
             saveSucceeded = saveSelectedStops()
         }
     }
@@ -308,6 +246,7 @@ struct OnboardingView: View {
 
 private struct WelcomeScreen: View {
     let onNext: () -> Void
+    private var cityName: String { ServiceContainer.shared.cityManager.currentCity.name }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -354,7 +293,7 @@ private struct WelcomeScreen: View {
                     .multilineTextAlignment(.center)
                     .fontDesign(.rounded)
 
-                Text("Live positions for every U-Bahn, S-Bahn,\ntram, and bus in \(ServiceContainer.shared.cityManager.currentCity.name).")
+                Text("Live positions for every U-Bahn, S-Bahn,\ntram, and bus in \(cityName).")
                     .font(.body)
                     .foregroundStyle(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
@@ -388,258 +327,7 @@ private struct WelcomeScreen: View {
     }
 }
 
-// MARK: - Screen 2: Goal
-
-private struct GoalScreen: View {
-    @Binding var selected: OnboardingGoal?
-    let onNext: () -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("How do you get\naround \(ServiceContainer.shared.cityManager.currentCity.name)?")
-                        .font(.system(size: 30, weight: .bold))
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.white)
-                    Text("We'll set up your map to match.")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.75))
-                }
-                .padding(.top, 24)
-
-                VStack(spacing: 10) {
-                    ForEach(OnboardingGoal.allCases, id: \.self) { goal in
-                        SelectableRow(
-                            emoji: goal.emoji,
-                            label: goal.label,
-                            isSelected: selected == goal
-                        ) {
-                            selected = goal
-                        }
-                    }
-                }
-
-                if selected != nil {
-                    Button(action: onNext) {
-                        Text("Continue")
-                            .font(.headline)
-                            .foregroundStyle(Color(hex: "#115D97"))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 17)
-                            .background(.white, in: .rect(cornerRadius: 16))
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
-        }
-        .animation(.spring(duration: 0.3), value: selected)
-    }
-}
-
-// MARK: - Screen 3: Pain Points
-
-private struct PainScreen: View {
-    @Binding var selected: Set<OnboardingPain>
-    let onNext: () -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("What drives you\ncrazy about\n\(ServiceContainer.shared.cityManager.currentCity.name) transit?")
-                        .font(.system(size: 30, weight: .bold))
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.white)
-                    Text("Pick everything that applies.")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.75))
-                }
-                .padding(.top, 24)
-
-                VStack(spacing: 10) {
-                    ForEach(OnboardingPain.allCases, id: \.self) { pain in
-                        SelectableRow(
-                            emoji: pain.emoji,
-                            label: pain.label,
-                            isSelected: selected.contains(pain)
-                        ) {
-                            if selected.contains(pain) {
-                                selected.remove(pain)
-                            } else {
-                                selected.insert(pain)
-                            }
-                        }
-                    }
-                }
-
-                Button(action: onNext) {
-                    Text("Continue")
-                        .font(.headline)
-                        .foregroundStyle(Color(hex: "#115D97"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 17)
-                        .background(.white, in: .rect(cornerRadius: 16))
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
-        }
-    }
-}
-
-// MARK: - Screen 4: Social Proof
-
-private struct SocialProofScreen: View {
-    let onNext: () -> Void
-    private let testimonials = [
-        (name: "Mia K.", tag: "Daily commuter · Prenzlauer Berg",
-         quote: "I used to guess when to leave the house. Now I check the map and walk out at exactly the right moment."),
-        (name: "James T.", tag: "Tourist · Visiting from London",
-         quote: "I had no idea how to navigate Berlin transit. This showed me exactly where every bus and train was."),
-        (name: "Farrukh D.", tag: "Commuter · Mitte → Kreuzberg",
-         quote: "The delay info is the best part. I know before I reach the stop if something's running late."),
-    ]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Berliner approved.")
-                            .font(.system(size: 30, weight: .bold))
-                            .fontDesign(.rounded)
-                            .foregroundStyle(.white)
-                        Text("From commuters who switched to live tracking.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.75))
-                    }
-                    .padding(.top, 24)
-
-                    VStack(spacing: 12) {
-                        ForEach(testimonials, id: \.name) { t in
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Circle()
-                                        .fill(Color.white.opacity(0.2))
-                                        .frame(width: 36, height: 36)
-                                        .overlay {
-                                            Text(String(t.name.prefix(1)))
-                                                .font(.headline)
-                                                .foregroundStyle(.white)
-                                        }
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(t.name)
-                                            .font(.subheadline.bold())
-                                            .foregroundStyle(.white)
-                                        Text(t.tag)
-                                            .font(.caption)
-                                            .foregroundStyle(.white.opacity(0.65))
-                                    }
-                                }
-                                Text("\u{201C}\(t.quote)\u{201D}")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.white.opacity(0.9))
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(16)
-                            .background(Color.white.opacity(0.12), in: .rect(cornerRadius: 16))
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-            }
-
-            Button(action: onNext) {
-                Text("Continue")
-                    .font(.headline)
-                    .foregroundStyle(Color(hex: "#115D97"))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 17)
-                    .background(.white, in: .rect(cornerRadius: 16))
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
-        }
-    }
-}
-
-// MARK: - Screen 5: Solution
-
-private struct SolutionScreen: View {
-    let pains: Set<OnboardingPain>
-    let onNext: () -> Void
-
-    private var solutions: [(pain: String, fix: String)] {
-        var items: [(String, String)] = []
-        if pains.contains(.unknownLocation) || pains.isEmpty {
-            items.append(("I don't know where my bus is", "Live dot on the map. Every vehicle. Updated every second."))
-        }
-        if pains.contains(.wrongSchedule) || pains.isEmpty {
-            items.append(("The board never matches reality", "Departure data pulled directly from BVG — not timetables. Live."))
-        }
-        if pains.contains(.missedConnections) || pains.isEmpty {
-            items.append(("I miss connections", "Tap any stop, anywhere. See what's coming in the next 20 minutes."))
-        }
-        if pains.contains(.delays) || pains.isEmpty {
-            items.append(("Delays with no warning", "Delay info appears the second BVG knows. You always know first."))
-        }
-        return Array(items.prefix(4))
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Berlin Transit\nfixes all of that.")
-                            .font(.system(size: 30, weight: .bold))
-                            .fontDesign(.rounded)
-                            .foregroundStyle(.white)
-                        Text("Here's exactly how.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.75))
-                    }
-                    .padding(.top, 24)
-
-                    VStack(spacing: 12) {
-                        ForEach(solutions, id: \.0) { item in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(item.pain)
-                                    .font(.caption)
-                                    .foregroundStyle(.white.opacity(0.55))
-                                Text(item.fix)
-                                    .font(.subheadline.bold())
-                                    .foregroundStyle(.white)
-                            }
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white.opacity(0.12), in: .rect(cornerRadius: 14))
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-            }
-
-            Button(action: onNext) {
-                Text("That's what I need →")
-                    .font(.headline)
-                    .foregroundStyle(Color(hex: "#115D97"))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 17)
-                    .background(.white, in: .rect(cornerRadius: 16))
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
-        }
-    }
-}
-
-// MARK: - Screen 6: Location Priming
+// MARK: - Screen 2: Location Priming
 
 private struct LocationPrimingScreen: View {
     let locationManager: CLLocationManager
@@ -726,124 +414,28 @@ private struct LocationBullet: View {
     }
 }
 
-// MARK: - Screen 9: Processing
-
-private struct ProcessingScreen: View {
-    @Binding var isComplete: Bool
-    let onComplete: () -> Void
-    let locationManager: CLLocationManager
-
-    private var steps: [String] {
-        [
-            "Loading \(ServiceContainer.shared.cityManager.currentCity.name) transit network",
-            "Applying your preferences",
-            "Fetching live departures",
-        ]
-    }
-    @State private var completedSteps: Set<Int> = []
-    @State private var pulse = false
-    @State private var animationTask: Task<Void, Never>?
-
-    private var locationDenied: Bool {
-        locationManager.authorizationStatus == .denied
-            || locationManager.authorizationStatus == .restricted
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            VStack(spacing: 32) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(pulse ? 0.15 : 0.08))
-                        .frame(width: 120, height: 120)
-                        .scaleEffect(pulse ? 1.15 : 1.0)
-
-                    Image(systemName: "tram.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.white)
-                }
-                .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: pulse)
-                .onAppear { pulse = true }
-
-                VStack(spacing: 0) {
-                    Text("Building your personal\ntransit map…")
-                        .font(.system(size: 26, weight: .bold))
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                }
-
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(Array(steps.enumerated()), id: \.offset) { idx, step in
-                        HStack(spacing: 12) {
-                            Image(systemName: completedSteps.contains(idx) ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(completedSteps.contains(idx) ? .white : .white.opacity(0.4))
-                                .animation(.spring(duration: 0.3), value: completedSteps.contains(idx))
-                            Text(step)
-                                .font(.subheadline)
-                                .foregroundStyle(completedSteps.contains(idx) ? .white : .white.opacity(0.5))
-                        }
-                    }
-                }
-
-                if locationDenied {
-                    HStack(spacing: 8) {
-                        Image(systemName: "location.slash.fill")
-                            .font(.subheadline)
-                        Text("Location off — map starts at Alexanderplatz.\nEnable in Settings → Privacy anytime.")
-                            .font(.caption)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .foregroundStyle(.white.opacity(0.75))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.white.opacity(0.12), in: .rect(cornerRadius: 10))
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
-            }
-            .padding(.horizontal, 32)
-
-            Spacer()
-        }
-        .animation(.easeInOut(duration: 0.3), value: locationDenied)
-        .onAppear { animateSteps() }
-        .onDisappear { animationTask?.cancel() }
-        .onChange(of: isComplete) { _, done in
-            if done { onComplete() }
-        }
-    }
-
-    private func animateSteps() {
-        animationTask = Task { @MainActor in
-            for idx in 0..<steps.count {
-                try? await Task.sleep(for: .seconds(Double(idx) * 0.7 + 0.3))
-                guard !Task.isCancelled else { return }
-                withAnimation { _ = completedSteps.insert(idx) }
-            }
-        }
-    }
-}
-
-// MARK: - Screen 10: App Demo
+// MARK: - Screen 3: App Demo
 
 private struct DemoScreen: View {
     @Binding var selected: [OnboardingStop]
     let onNext: () -> Void
     private let targetCount = 3
 
-    var remaining: Int { max(0, targetCount - selected.count) }
-    var isDone: Bool { selected.count >= targetCount }
+    private var cityId: String { ServiceContainer.shared.cityManager.currentCity.id }
+    private var availableStops: [OnboardingStop] { OnboardingStop.demos(for: cityId) }
+    private var minimumPickable: Int { min(targetCount, availableStops.count) }
+
+    var remaining: Int { max(0, minimumPickable - selected.count) }
+    var isDone: Bool { selected.count >= minimumPickable }
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Pick 3 stops to track.")
+                Text(headlineText)
                     .font(.system(size: 30, weight: .bold))
                     .fontDesign(.rounded)
                     .foregroundStyle(.white)
-                Text(isDone ? "These go straight to your Favorites." : (selected.isEmpty ? "Pick 3 stops to continue" : "Pick \(remaining) more \(remaining == 1 ? "stop" : "stops")"))
+                Text(subheadlineText)
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.8))
                     .animation(.spring(duration: 0.3), value: remaining)
@@ -855,12 +447,12 @@ private struct DemoScreen: View {
 
             ScrollView {
                 VStack(spacing: 10) {
-                    ForEach(OnboardingStop.demos) { stop in
+                    ForEach(availableStops) { stop in
                         let isSelected = selected.contains(stop)
                         Button {
                             if isSelected {
                                 selected.removeAll { $0.id == stop.id }
-                            } else if selected.count < targetCount {
+                            } else if selected.count < minimumPickable {
                                 selected.append(stop)
                             }
                         } label: {
@@ -890,8 +482,8 @@ private struct DemoScreen: View {
                         }
                         .buttonStyle(.plain)
                         .animation(.spring(duration: 0.25), value: isSelected)
-                        .disabled(!isSelected && selected.count >= targetCount)
-                        .opacity(!isSelected && selected.count >= targetCount ? 0.45 : 1)
+                        .disabled(!isSelected && selected.count >= minimumPickable)
+                        .opacity(!isSelected && selected.count >= minimumPickable ? 0.45 : 1)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -914,14 +506,30 @@ private struct DemoScreen: View {
         }
         .animation(.spring(duration: 0.35), value: isDone)
     }
+
+    private var headlineText: String {
+        minimumPickable == 1 ? "Pick your stop." : "Pick \(minimumPickable) stops to track."
+    }
+
+    private var subheadlineText: String {
+        if isDone { return "These go straight to your Favorites." }
+        if selected.isEmpty {
+            return minimumPickable == 1
+                ? "Tap one to continue"
+                : "Pick \(minimumPickable) stops to continue"
+        }
+        return "Pick \(remaining) more \(remaining == 1 ? "stop" : "stops")"
+    }
 }
 
-// MARK: - Screen 11: Value Delivery
+// MARK: - Screen 4: Value Delivery
 
 private struct ValueDeliveryScreen: View {
     let stops: [OnboardingStop]
     let saveSucceeded: Bool
     let onNext: () -> Void
+
+    private var cityName: String { ServiceContainer.shared.cityManager.currentCity.name }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -953,8 +561,8 @@ private struct ValueDeliveryScreen: View {
 
             VStack(spacing: 12) {
                 ShareLink(
-                    item: "Tracking Berlin transit live with Berlin Transport Map",
-                    subject: Text("My Berlin Transit Map"),
+                    item: "Tracking \(cityName) transit live",
+                    subject: Text("My \(cityName) Transit Map"),
                     message: Text("I set up live tracking for \(stops.map(\.name).joined(separator: ", ")) — check it out!")
                 ) {
                     HStack(spacing: 8) {
@@ -1035,7 +643,7 @@ private struct MiniDepartureBoard: View {
     }
 }
 
-// MARK: - Screen 12: Tip Nudge
+// MARK: - Screen 5: Tip Nudge
 
 private struct TipNudgeScreen: View {
     let onDismiss: () -> Void
@@ -1051,7 +659,7 @@ private struct TipNudgeScreen: View {
                     .foregroundStyle(.white)
 
                 VStack(spacing: 12) {
-                    Text("Keep Berlin Transit free.")
+                    Text("Keep this app free.")
                         .font(.system(size: 28, weight: .bold))
                         .fontDesign(.rounded)
                         .foregroundStyle(.white)
@@ -1107,4 +715,3 @@ private struct TipNudgeScreen: View {
         .task { await store.loadProducts() }
     }
 }
-
