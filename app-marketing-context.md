@@ -1,5 +1,5 @@
 ## App Overview
-- **App Name (live):** Berlin Transit Map: Live BVG
+- **App Name (live):** German Transit Map  *(renamed from "Berlin Transit Map: Live BVG" in v1.8 on 2026-05-04 — pass-3 rename gate overridden by founder)*
 - **App ID (Apple):** 6757723208
 - **App ID (Google Play):** N/A
 - **Category:** Travel
@@ -7,21 +7,24 @@
 - **Platform:** iOS
 - **Price Model:** Free with optional tip jar
 - **Launch Date:** Live on App Store
-- **Current Version (live):** 1.5
-- **Next Version (in flight):** 1.7 — multi-city foundation, Berlin-led identity preserved
-- **Future rename to "German Transit Map":** v1.9+ aspirational; gated by /autoplan pass-3 row 25 — defer until non-Berlin downloads ≥ 30/mo for 60 days
+- **Current Version (live):** 1.7 (multi-city foundation, Berlin-led identity)
+- **Next Version (in flight):** 1.8 — German Transit Map rename, AFTER_APPROVAL auto-release; submitted 2026-05-04
+- **Localized names:** German Transit Map (en), Deutsche Nahverkehr Karte (de), Mapa Tránsito Alemania (es), Carte Transit Allemagne (fr), ドイツ交通マップ (ja)
 
-## Naming policy (v1.7-v1.8)
+## Naming policy (v1.8 — rename live)
 
-The pass-3 /autoplan decision (2026-04-29) defers the "German Transit Map" rename
-until distribution data validates non-Berlin demand. v1.7 ships the multi-city
-*foundation* under capability gates (only Berlin shows live vehicle map; other
-cities show live departures + stop search). The App Store listing keeps
-"Berlin Transit Map: Live BVG" as the title. v1.8's distribution sprint runs
-ASO + Apple Search Ads + App Store Featured against this Berlin-led identity.
+Pass-3 /autoplan deferred the rename until non-Berlin downloads ≥ 30/mo for 60
+days. The founder overrode that gate on 2026-05-04 (immediately after v1.7
+shipped) on the basis that the multi-city foundation is now real and the
+"Berlin" framing actively misleads non-Berlin users. v1.8 carries the rename to
+"German Transit Map" plus all-cities messaging across en-US / de-DE / es-ES /
+fr-FR / ja.
 
-The v2.0 metadata sketch below (German Transit Map, all-cities messaging) is
-preserved as the v1.9+ target. Do not push it to ASC until the rename gate fires.
+Risk acknowledged at decision time: existing Berlin-led ASO authority on
+"BVG"/"Berlin" terms gets diluted. Mitigation: the v1.8 distribution sprint
+(ASO + Apple Search Ads + App Store Featured) runs against the new German-led
+identity instead of validating demand under the old name first. Re-evaluate
+ranking impact 30 days post-release.
 
 ## Value Proposition
 - **Problem:** Public transit riders in Germany want to know where their U-Bahn, tram, or bus actually is right now — not just what the schedule says. Most apps show timetables, not live vehicle positions.
@@ -48,7 +51,22 @@ preserved as the v1.9+ target. Do not push it to ASC until the rename gate fires
 | MVG Fahrinfo | MVG official | Deep MVG integration | München only, no live map |
 | Google Maps | N/A | Familiar interface, broad coverage | Not transit-specific, privacy concerns |
 
-## v1.7 ASO State (current — Berlin-led, multi-city foundation)
+## v1.8 ASO State (current — German Transit Map rename, in review)
+
+The actual v1.8 metadata pushed to ASC is in `metadata/app-info/{locale}.json`
+(name + subtitle, cross-version) and `metadata/version/1.8/{locale}.json`
+(description + keywords + promotionalText + whatsNew, version-specific).
+Verified pre-push: name ≤ 30 chars per locale, subtitle ≤ 30 chars, keywords
+≤ 100 UTF-8 bytes (en-US 90B / de-DE 91B / es-ES 88B / fr-FR 87B / ja 87B),
+promo ≤ 170 chars (en 147 / de 142 / es 149 / fr 160 / ja 68), description
+≤ 4000 chars per locale.
+
+Notable: v1.8 keyword field drops VVS (Stuttgart hidden) and replaces with
+LVB/Leipzig — keywords now match cities the user can actually pick. The seven
+working cities listed in the description are Berlin, München, Hamburg,
+Frankfurt, Köln, Leipzig, Nürnberg.
+
+## v1.7 ASO State (now superseded — Berlin-led, multi-city foundation)
 
 ### Live (v1.5, all locales)
 - **Title (en-US):** Berlin Transit Map: Live BVG (28 chars)
