@@ -106,6 +106,10 @@ struct TransportMapView: View {
     @State private var activeSheet: MapSheet?
     @AppStorage("vehicleFetchCount") private var vehicleFetchCount = 0
     @AppStorage("hasSeenOnboardingV2") private var hasSeenOnboardingV2 = false
+    @AppStorage("reviewPromptCount") private var reviewPromptCount = 0
+    @AppStorage("lastReviewPromptDate") private var lastReviewPromptDate: Double = 0
+    @AppStorage("installDate") private var installDate: Double = 0
+    @AppStorage("successfulUseCount") private var successfulUseCount = 0
     @Environment(\.requestReview) private var requestReview
 
     private let services = ServiceContainer.shared
@@ -314,6 +318,9 @@ struct TransportMapView: View {
         contentWithSheets
             .transportMapFeedback(trigger: favoritesFeedbackTrigger)
             .task {
+                if installDate == 0 {
+                    installDate = Date().timeIntervalSince1970
+                }
                 if let region = currentRegion {
                     await loadStopsForRegion(region)
                     await loadVehicles(for: region)
@@ -796,9 +803,8 @@ struct TransportMapView: View {
             updateVehiclesWithAnimation(fetchedVehicles)
             dataSource = .network
             if vehicleFetchCount < 21 { vehicleFetchCount += 1 }
-            if hasSeenOnboardingV2 && (vehicleFetchCount == 5 || vehicleFetchCount == 20) {
-                requestReview()
-            }
+            successfulUseCount += 1
+            checkAndRequestReview()
             let anchored = fetchedVehicles.filter { $0.nextStopCoordinate != nil && $0.nextStopArrival != nil }.count
             print("VehicleRadar: Fetched \(fetchedVehicles.count) vehicles, \(anchored) with next-stop anchors ✓")
         } catch {
@@ -1068,6 +1074,19 @@ struct TransportMapView: View {
         favoritesFeedbackTrigger += 1
     }
     
+    private func checkAndRequestReview() {
+        let now = Date().timeIntervalSince1970
+        let daysSinceInstall = (now - installDate) / 86400
+        let daysSinceLastPrompt = (now - lastReviewPromptDate) / 86400
+        guard successfulUseCount >= 2,
+              daysSinceInstall >= 7,
+              reviewPromptCount < 3,
+              daysSinceLastPrompt >= 120 else { return }
+        reviewPromptCount += 1
+        lastReviewPromptDate = now
+        requestReview()
+    }
+
     private func refreshData() {
         services.cacheService.clear()
         if let region = currentRegion {
