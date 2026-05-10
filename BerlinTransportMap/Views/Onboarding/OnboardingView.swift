@@ -367,31 +367,23 @@ private struct LocationPrimingScreen: View {
 
             Spacer()
 
-            VStack(spacing: 12) {
-                Button {
-                    guard !isRequesting else { return }
-                    isRequesting = true
-                    locationManager.requestWhenInUseAuthorization()
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .seconds(1.5))
-                        onNext()
-                    }
-                } label: {
-                    Text(isRequesting ? "Requesting…" : "Enable Location")
-                        .font(.headline)
-                        .foregroundStyle(Color(hex: "#115D97"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 17)
-                        .background(.white, in: .rect(cornerRadius: 16))
+            Button {
+                guard !isRequesting else { return }
+                isRequesting = true
+                locationManager.requestWhenInUseAuthorization()
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(1.5))
+                    onNext()
                 }
-                .disabled(isRequesting)
-
-                Button(action: onNext) {
-                    Text("Not now")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
-                }
+            } label: {
+                Text(isRequesting ? "Requesting…" : "Continue")
+                    .font(.headline)
+                    .foregroundStyle(Color(hex: "#115D97"))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 17)
+                    .background(.white, in: .rect(cornerRadius: 16))
             }
+            .disabled(isRequesting)
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
         }

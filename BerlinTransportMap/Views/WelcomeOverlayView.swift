@@ -33,8 +33,6 @@ struct WelcomeOverlayView: View {
                         WelcomeLocationContent(onAllow: {
                             requestLocationPermission()
                             onDismiss()
-                        }, onSkip: {
-                            onDismiss()
                         })
                     }
                 }
@@ -201,7 +199,6 @@ private struct WelcomeFeaturesContent: View {
 
 private struct WelcomeLocationContent: View {
     var onAllow: () -> Void
-    var onSkip: () -> Void
 
     var body: some View {
         VStack(spacing: AppTheme.Spacing.lg) {
@@ -231,15 +228,10 @@ private struct WelcomeLocationContent: View {
 
             Spacer()
 
-            VStack(spacing: AppTheme.Spacing.sm) {
-                Button("Allow Location", action: onAllow)
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .frame(maxWidth: .infinity)
-
-                Button("Browse Berlin", action: onSkip)
-                    .foregroundStyle(.secondary)
-            }
+            Button("Continue", action: onAllow)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .frame(maxWidth: .infinity)
         }
     }
 }
