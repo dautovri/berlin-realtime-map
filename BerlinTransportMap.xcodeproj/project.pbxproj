@@ -30,6 +30,7 @@
 		D5110005000000000003CCC1 /* ServiceContainerUpdateCityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5110006000000000003CCC1 /* ServiceContainerUpdateCityTests.swift */; };
 		D5110007000000000004CCC1 /* FavoriteCityIdMigrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5110008000000000004CCC1 /* FavoriteCityIdMigrationTests.swift */; };
 		D5110009000000000005CCC1 /* OfflineStopsDatabaseCityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D511000A000000000005CCC1 /* OfflineStopsDatabaseCityTests.swift */; };
+		D511000B000000000006CCC1 /* VehicleRadarLiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D511000C000000000006CCC1 /* VehicleRadarLiveTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -103,6 +104,7 @@
 		D5110006000000000003CCC1 /* ServiceContainerUpdateCityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/ServiceContainerUpdateCityTests.swift; sourceTree = SOURCE_ROOT; };
 		D5110008000000000004CCC1 /* FavoriteCityIdMigrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/FavoriteCityIdMigrationTests.swift; sourceTree = SOURCE_ROOT; };
 		D511000A000000000005CCC1 /* OfflineStopsDatabaseCityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/OfflineStopsDatabaseCityTests.swift; sourceTree = SOURCE_ROOT; };
+		D511000C000000000006CCC1 /* VehicleRadarLiveTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Tests/VehicleRadarLiveTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -173,6 +175,7 @@
 				D5110006000000000003CCC1 /* ServiceContainerUpdateCityTests.swift */,
 				D5110008000000000004CCC1 /* FavoriteCityIdMigrationTests.swift */,
 				D511000A000000000005CCC1 /* OfflineStopsDatabaseCityTests.swift */,
+				D511000C000000000006CCC1 /* VehicleRadarLiveTests.swift */,
 			);
 			name = Tests;
 			path = Tests;
@@ -424,6 +427,7 @@
 				D5110005000000000003CCC1 /* ServiceContainerUpdateCityTests.swift in Sources */,
 				D5110007000000000004CCC1 /* FavoriteCityIdMigrationTests.swift in Sources */,
 				D5110009000000000005CCC1 /* OfflineStopsDatabaseCityTests.swift in Sources */,
+				D511000B000000000006CCC1 /* VehicleRadarLiveTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
