@@ -1,74 +1,63 @@
-# Berlin Transport Map 🚇
+# Berlin Transport Map
 
-**Track Berlin's U-Bahn, S-Bahn, trams, and buses in real-time — with multi-city support across Germany**
+A real-time transit map for German cities. See U-Bahn, S-Bahn, trams, buses, and ferries move live on a map — no account, no tracking, no ads. Open source and built with SwiftUI.
 
-[![App Store](https://img.shields.io/badge/App%20Store-Download-blue?logo=apple)](https://apps.apple.com/de/app/berlin-transport-map/id6757723208?l=en-GB)
-[![Platform](https://img.shields.io/badge/Platform-iOS%2026.0%2B-blue?logo=apple)](https://www.apple.com/ios)
-[![Swift](https://img.shields.io/badge/Swift-6.0-orange?logo=swift)](https://swift.org)
-[![Stars](https://img.shields.io/github/stars/dautovri/berlin-realtime-map?style=flat)](https://github.com/dautovri/berlin-realtime-map/stargazers)
-[![License](https://img.shields.io/github/license/dautovri/berlin-realtime-map?style=flat)](LICENSE)
+Most transit apps show you a countdown. This one shows you the actual vehicle, right now, on the map. Berlin is fully supported with live radar; additional German cities have departures and routing.
 
-See where your train, bus, or tram is right now on a live map. No account required, no tracking—just real-time German transit data on an interactive map. Berlin is the default city; additional German cities can be selected from the in-app city picker.
+- **Live radar.** Vehicles update every 5 seconds on the map. Berlin has full radar support; other cities show departures and routes.
+- **4,775 Berlin stops** in an offline database — search works instantly, even without a network connection.
+- **10 German cities.** Berlin, Hamburg, Munich, Cologne, Frankfurt, Leipzig, and more — each with its own transit authority API.
+- **Zero tracking.** No analytics SDKs, no accounts, no third-party data collection. Location is used only to center the map.
+- **Open source.** MIT licensed. The entire codebase is here.
 
-**Repo topics:** iOS · Swift · SwiftUI · MapKit · Berlin · Germany · Public Transport · Realtime · VBB · HAFAS
-
-## ✨ Features
-
-- 📍 **Live Vehicle Tracking** - Watch U-Bahn, S-Bahn, trams, and buses move in real-time
-- 🗺️ **Interactive Map** - Pan and zoom with smooth MapKit performance to find nearby stops
-- ⏱️ **Real-Time Departures** - Tap any stop to see upcoming departures with live delay information
-- 🚏 **Stop Search** - Find stations and stops instantly
-- 🌍 **Multi-City (Germany)** - Berlin by default, with a city picker for additional German cities. Per-city capability flags gate features (radar, events, routes) so the UI only shows what each transit authority's API supports.
-- 📱 **Native iOS & tvOS** - Built with SwiftUI and MapKit for a fast, modern experience; also runs on Apple TV
-- 🎯 **First-Launch Onboarding** - Welcome overlay explains live tracking and prompts for location with context
-- 🔒 **Privacy First** - No account required, no tracking, no third-party analytics
-- 🌐 **Multi-Language** - Available in English, German, and French
-
-## Demo video
-
-GitHub READMEs don’t reliably embed playable video inline, but a hosted MP4 link works well.
-
+```
+Tap any stop → see live departures with delay info → tap a vehicle → watch it move
+```
 
 https://github.com/user-attachments/assets/24c63c55-b6df-4db9-b696-d4b377d96b81
 
-## Requirements
+---
 
-- iOS 26.0+
-- Xcode 16.0+
+## Get it
 
-## Architecture
+[Download on the App Store](https://apps.apple.com/de/app/berlin-transport-map/id6757723208?l=en-GB) — free, with an optional tip jar.
 
-Simple single-target iOS app:
+---
 
-- **App code**: `BerlinTransportMap/`
-- **Dependencies**: Swift Package dependencies managed by Xcode (TripKit)
-- **Build Settings**: Stored in `BerlinTransportMap.xcodeproj` (no separate xcconfig files)
+## Contents
 
-## Libraries used
+- [Development](#development)
+- [Architecture](#architecture)
+- [Data source](#data-source)
+- [Support](#support)
+- [Privacy](#privacy)
 
-- **SwiftUI** (Apple) — UI framework
-- **MapKit** (Apple) — map rendering, annotations, polylines
-- **TripKit** (third-party) — public transport client used to fetch Berlin/VBB real-time data
-	- Repo: https://github.com/alexander-albers/tripkit
-	- Data backend: VBB HAFAS (see also https://github.com/public-transport/hafas-client)
+---
 
 ## Development
 
-### Building
-```bash
-# Open in Xcode
-open BerlinTransportMap.xcworkspace
+Requires iOS 26.0+ and Xcode 16.0+.
 
-# Build from terminal
+### Build
+
+```bash
+open BerlinTransportMap.xcworkspace
+```
+
+Or from the terminal:
+
+```bash
 xcodebuild -workspace BerlinTransportMap.xcworkspace -scheme BerlinTransportMap build
 ```
 
-### Testing
+### Test
+
 ```bash
 bundle exec fastlane ios test
 ```
 
-### Deployment
+### Deploy
+
 ```bash
 # TestFlight
 bundle exec fastlane ios beta
@@ -77,40 +66,33 @@ bundle exec fastlane ios beta
 bundle exec fastlane ios release
 ```
 
-### Release checklist
+## Architecture
 
-- Confirm `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `BerlinTransportMap.xcodeproj` are correct
-- Run tests (`bundle exec fastlane ios test`)
-- Run `bundle exec fastlane ios beta` (TestFlight) before `ios release`
+Single-target SwiftUI app. Key directories:
 
-## Data Source
+- `BerlinTransportMap/` — all app code
+- `BerlinTransportMap/Models/CityConfig.swift` — per-city transit authority, API base URL, map region, and capability flags
+- `BerlinTransportMap/Services/` — transport, radar, and route services, rebuilt on city switch
+- Dependencies managed via Swift Package Manager (TripKit)
 
-Uses HAFAS-based public-transport APIs for real-time data. Berlin uses the [VBB HAFAS API](https://github.com/public-transport/hafas-client) (Berlin-Brandenburg). Additional German cities are configured per-city in `BerlinTransportMap/Models/CityConfig.swift` with their own API base URL, supported transport products, and capability flags.
+## Data source
 
-## License
-
-MIT License - see [LICENSE](LICENSE)
-
-## Author
-
-**Ruslan Dautov** - [GitHub](https://github.com/dautovri)
-
----
+Real-time data comes from HAFAS-based public transport APIs. Berlin uses the [VBB HAFAS API](https://github.com/public-transport/hafas-client); other cities use [DB transport.rest](https://v6.db.transport.rest). The HAFAS client library is [TripKit](https://github.com/alexander-albers/tripkit).
 
 ## Support
 
-For bugs and feature requests:
+File bugs and feature requests: [open an issue](https://github.com/dautovri/berlin-realtime-map/issues/new).
 
-- https://github.com/dautovri/berlin-realtime-map/issues/new
-
-When reporting a problem, please include:
-- iPhone/iPad model
-- iOS version
-- What you expected vs what happened
-- Screenshot/screen recording (if possible)
+When reporting a problem, include your device model, iOS version, what you expected vs. what happened, and a screenshot if possible.
 
 ## Privacy
 
-Privacy policy:
+[Privacy policy](https://gist.github.com/dautovri/2ca5f7b5b4b3789056c5dadbf1f60966) — no data collected, no accounts, location used only to center the map.
 
-- https://gist.github.com/dautovri/2ca5f7b5b4b3789056c5dadbf1f60966
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+## Author
+
+[Ruslan Dautov](https://github.com/dautovri)
