@@ -144,7 +144,10 @@ extension CityConfig {
         accentColorHex: "#115D97",
         supportedProducts: [.suburbanTrain, .subway, .tram, .bus, .ferry, .regionalTrain],
         supportsRadar: true,
-        supportsEvents: true,
+        // Events feature disabled: the api.berlin.de events endpoint no longer
+        // resolves (NXDOMAIN), so the feature could never load data. Gating the
+        // capability flag hides the affordance cleanly until a live endpoint exists.
+        supportsEvents: false,
         supportsRoutes: true
     )
 

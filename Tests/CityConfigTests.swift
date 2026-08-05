@@ -80,12 +80,13 @@ final class CityConfigTests: XCTestCase {
         }
     }
 
-    func testOnlyBerlinSupportsEvents() {
-        XCTAssertTrue(CityConfig.berlin.supportsEvents)
-        for city in CityConfig.allCities where city.id != "berlin" {
+    func testNoCitySupportsEvents() {
+        // The api.berlin.de events endpoint no longer resolves (NXDOMAIN), so the
+        // events capability is disabled for every city until a live endpoint exists.
+        for city in CityConfig.allCities {
             XCTAssertFalse(
                 city.supportsEvents,
-                "\(city.id) supportsEvents must be false — api.berlin.de has no equivalent for other cities"
+                "\(city.id) supportsEvents must be false — api.berlin.de no longer resolves"
             )
         }
     }
