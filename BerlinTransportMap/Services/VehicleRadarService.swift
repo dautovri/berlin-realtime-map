@@ -248,6 +248,20 @@ struct RESTDeparture: Identifiable, Decodable {
         guard let d = delay else { return nil }
         return d / 60
     }
+
+    /// Whole minutes from `reference` until this departure, floored at zero.
+    /// `nil` when the feed gave us no usable time.
+    func minutesUntilDeparture(from reference: Date = .now) -> Int? {
+        guard let displayTime else { return nil }
+        return max(0, Int(displayTime.timeIntervalSince(reference) / 60))
+    }
+
+    /// The glanceable answer to "when is my ride" — "Now" or "7 min".
+    /// A walking rider must never have to subtract a wall-clock time in their head.
+    func countdownText(from reference: Date = .now) -> String? {
+        guard let minutes = minutesUntilDeparture(from: reference) else { return nil }
+        return minutes == 0 ? "Now" : "\(minutes) min"
+    }
 }
 
 struct RESTStop: Decodable {

@@ -14,31 +14,53 @@ struct SettingsView: View {
 
     private let services = ServiceContainer.shared
 
+    /// The three states a user can actually reason about. Persisted to the
+    /// existing `useSystemTheme`/`darkMode` keys that `ContentView` and the
+    /// widget already read, so nothing downstream changes.
+    enum ThemeSelection: Hashable {
+        case system, light, dark
+    }
+
+    private var themeSelection: Binding<ThemeSelection> {
+        Binding {
+            if useSystemTheme { return .system }
+            return darkMode ? .dark : .light
+        } set: { newValue in
+            switch newValue {
+            case .system:
+                useSystemTheme = true
+            case .light:
+                useSystemTheme = false
+                darkMode = false
+            case .dark:
+                useSystemTheme = false
+                darkMode = true
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
                 // MARK: City
                 Section {
-                    ForEach(CityConfig.availableCities) { city in
-                        Button {
-                            Task { await services.updateCity(city) }
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(city.name)
-                                        .font(.subheadline)
-                                        .fontDesign(.rounded)
-                                        .foregroundStyle(.primary)
-                                    Text(city.transitAuthority)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if city.id == services.cityManager.currentCity.id {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(Color.accentColor)
-                                        .font(.subheadline.bold())
-                                }
+                    // Seven inline city rows pushed every other setting below the
+                    // fold. One row that states the current city is enough.
+                    NavigationLink {
+                        CityPickerView(dismissOnSelection: false)
+                    } label: {
+                        HStack {
+                            Text("City")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(services.cityManager.currentCity.name)
+                                    .font(.subheadline)
+                                    .fontDesign(.rounded)
+                                    .foregroundStyle(.secondary)
+                                Text(services.cityManager.currentCity.transitAuthority)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }
@@ -48,9 +70,14 @@ struct SettingsView: View {
 
                 // MARK: Appearance
                 Section {
-                    Toggle("Follow System", isOn: $useSystemTheme)
-                    Toggle("Dark Mode", isOn: $darkMode)
-                        .disabled(useSystemTheme)
+                    // Two independent toggles let the user reach a state where
+                    // "Dark Mode" is on but visibly does nothing. One picker can't.
+                    Picker("Theme", selection: themeSelection) {
+                        Text("System").tag(ThemeSelection.system)
+                        Text("Light").tag(ThemeSelection.light)
+                        Text("Dark").tag(ThemeSelection.dark)
+                    }
+                    .pickerStyle(.segmented)
                 } header: {
                     Text("Appearance")
                 }

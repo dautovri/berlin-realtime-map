@@ -1520,6 +1520,8 @@ struct RESTDeparturesSheet: View {
     @State private var favoriteMessage: String?
     @State private var showingFavoriteAlert = false
     @State private var isFavorite = false
+    /// Drives the per-row countdowns so "4 min" doesn't freeze while the sheet is open.
+    @State private var now = Date.now
 
     var body: some View {
         NavigationStack {
@@ -1538,13 +1540,28 @@ struct RESTDeparturesSheet: View {
                     )
                 } else {
                     ForEach(departures) { departure in
-                        RESTDepartureRow(departure: departure, predictionService: predictionService, stop: stop)
+                        RESTDepartureRow(
+                            departure: departure,
+                            predictionService: predictionService,
+                            stop: stop,
+                            now: now
+                        )
                     }
                 }
             }
-            .navigationTitle(stop.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    // Inline navigationTitle truncated long Berlin stop names to
+                    // "Spandauer Str./Marienkirc…", hiding the "from where" half of the job.
+                    Text(stop.name)
+                        .font(.title3.bold())
+                        .fontDesign(.rounded)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.7)
+                        .multilineTextAlignment(.center)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         addFavorite()
@@ -1561,6 +1578,12 @@ struct RESTDeparturesSheet: View {
             }
             .alert(favoriteMessage ?? "", isPresented: $showingFavoriteAlert) {
                 Button("OK", role: .cancel) { }
+            }
+            .task {
+                while !Task.isCancelled {
+                    now = .now
+                    try? await Task.sleep(for: .seconds(15))
+                }
             }
             .task(id: stop.id) {
                 let stopId = stop.id
@@ -1590,6 +1613,26 @@ struct RESTDepartureRow: View {
     let departure: RESTDeparture
     let predictionService: PredictionService
     let stop: TransportStop
+    /// Ticking clock owned by the sheet so every countdown in the list stays honest.
+    var now: Date = .now
+
+    /// Punctuality, not urgency — the DESIGN.md status palette. Urgency is carried
+    /// by size and weight so a bare red countdown never reads as an error state.
+    private var countdownColor: Color {
+        if departure.cancelled == true { return Color(hex: "#C41E3A") }
+        if (departure.delay ?? 0) > 0 { return Color(hex: "#E8641A") }
+        return Color(hex: "#00A550")
+    }
+
+    private var countdownAccessibilityLabel: String {
+        if departure.cancelled == true { return "Cancelled" }
+        guard let minutes = departure.minutesUntilDeparture(from: now) else { return "Departure time unknown" }
+        let base = minutes == 0 ? "Departing now" : "Departs in \(minutes) minutes"
+        if let delay = departure.delay, delay > 0 {
+            return base + ", \(delay / 60) minutes late"
+        }
+        return base
+    }
 
     private var mockVehicle: Vehicle {
         Vehicle(
@@ -1617,10 +1660,14 @@ struct RESTDepartureRow: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
+                // Berlin destinations are long ("Hohenschönhausen, Zingster Str.");
+                // one line clipped the half that tells you which way you're going.
                 Text(departure.direction ?? "Unknown")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .lineLimit(1)
+                    .fontDesign(.rounded)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if let platform = departure.platform {
                     Text("Platform \(platform)")
@@ -1633,24 +1680,41 @@ struct RESTDepartureRow: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 2) {
-                if let time = departure.displayTime {
-                    Text(time, style: .time)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+            VStack(alignment: .trailing, spacing: 0) {
+                // Countdown is the hero: a rider glancing while walking reads
+                // "4 min", never a wall-clock time they have to subtract from.
+                if departure.cancelled == true {
+                    Text("Cancelled")
+                        .font(.title3.bold())
+                        .foregroundStyle(Color(hex: "#C41E3A"))
+                } else if let countdown = departure.countdownText(from: now) {
+                    Text(countdown)
+                        .font(.title2.bold())
                         .monospacedDigit()
+                        .foregroundStyle(countdownColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(countdownColor.opacity(0.12), in: .capsule)
                 }
 
-                if let delay = departure.delay, delay > 0 {
+                if let time = departure.displayTime {
+                    Text(time, style: .time)
+                        .font(.caption)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+
+                if let delay = departure.delay, delay > 0, departure.cancelled != true {
                     Text("+\(delay / 60) min")
                         .font(.caption)
+                        .monospacedDigit()
                         .foregroundStyle(Color(hex: "#E8641A"))
-                } else if departure.cancelled == true {
-                    Text("Cancelled")
-                        .font(.caption)
-                        .foregroundStyle(Color(hex: "#C41E3A"))
                 }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(countdownAccessibilityLabel)
         }
         .opacity(departure.cancelled == true ? 0.5 : 1.0)
     }

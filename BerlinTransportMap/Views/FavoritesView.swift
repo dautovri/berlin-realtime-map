@@ -28,11 +28,17 @@ struct FavoritesView: View {
         NavigationStack {
             Group {
                 if favorites.isEmpty {
-                    ContentUnavailableView(
-                        "No Favorites",
-                        systemImage: "star",
-                        description: Text("Tap any stop on the map and press ★ to save it here")
-                    )
+                    // The old empty state was a dead end: it described an action
+                    // the user could not take from here. Give it a way out.
+                    ContentUnavailableView {
+                        Label("No Saved Stops", systemImage: "tram.fill")
+                    } description: {
+                        Text("Save the stops you use every day and their next departures show up here instantly.")
+                    } actions: {
+                        Button("Browse the Map", action: onClose)
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.large)
+                    }
                 } else {
                     List {
                         ForEach(favorites) { favorite in

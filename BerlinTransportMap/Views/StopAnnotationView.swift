@@ -32,11 +32,13 @@ struct StopAnnotationView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 4))
 
                 if let departures = departures, let next = departures.first {
-                    if let displayTime = next.displayTime {
-                        Text(displayTime, style: .time)
-                            .font(.caption2)
+                    if let countdown = next.countdownText() {
+                        // Countdown, not wall-clock: the map label has to answer
+                        // "how long have I got" without any mental arithmetic.
+                        Text(countdown)
+                            .font(.caption2.bold())
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
                             .padding(.horizontal, 4)
                             .background(.ultraThinMaterial.opacity(0.8))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
